@@ -69,7 +69,7 @@ CtkScore : CtkObj {
 				notes = notes.add(event);
 				(event.releases.size > 0).if({
 					event.releases.do({arg me;
-						this.add(me.ctkNotes);
+						this.add(me.ctkNote);
 						})
 					});
 				this.checkEndTime(event);
@@ -101,7 +101,6 @@ CtkScore : CtkObj {
 				event.isKindOf(CtkScore);
 				} {
 				ctkscores = ctkscores.add(event);
-//				this.merge(event);
 				} {
 				event.respondsTo(\messages);
 				} {
@@ -561,12 +560,12 @@ CtkNode : CtkObj {
 		cmd = true;
 		}
 		
-	set {arg time = 0.0, key, value, latency = 0.1;
+	set {arg time = 0.0, key, value; //, latency = 0.1;
 		var bund;
 		bund = [\n_set, this.node, key, value];
 		this.isPlaying.if({ // if playing... send the set message now!
 			SystemClock.sched(time, {
-				server.sendBundle(latency, bund);
+				server.sendBundle(nil, bund);
 				});
 			}, {
 			starttime = starttime ?? {0.0};
@@ -606,13 +605,13 @@ CtkNode : CtkObj {
 		}
 	
 	// immeditaely kill the node
-	free {arg time = 0.0, addMsg = true, latency = 0.1;
+	free {arg time = 0.0, addMsg = true; //, latency = 0.1;
 		var bund;
 		bund = [\n_free, this.node];
 		willFree = true;
 		this.isPlaying.if({
 			SystemClock.sched(time, {
-				server.sendBundle(latency, bund);
+				server.sendBundle(nil, bund);
 				(releases.size > 0).if({	
 					releases.do({arg me;
 						me.free;
@@ -730,7 +729,7 @@ CtkNote : CtkNode {
 				oldval = args[argname];
 				args.put(argname.asSymbol, newValue);
 				(newValue.isKindOf(CtkControl) and: {
-						(newValue.isPlaying.not && newValue.isScored.not)}).if({
+						(newValue.isPlaying || newValue.isScored)}.not).if({
 					newValue.starttime_(starttime);
 					releases = releases.add(newValue);
 					});
@@ -742,19 +741,12 @@ CtkNote : CtkNode {
 			});		
 		}
 		
-	handleRealTimeUpdate {arg argname, newValue, oldval, latency = 0.1;
-		// real-time support
-		oldval.isKindOf(CtkControl).if({
-			releases.indexOf(oldval).notNil.if({
-				oldval.free;
-				releases.remove(oldval);
-				})
-			});
+	handleRealTimeUpdate {arg argname, newValue, oldval; //, latency = 0.1;
 		case {
 			(newValue.isArray || newValue.isKindOf(Env) || newValue.isKindOf(InterplEnv))
 			}{
 			newValue = newValue.asArray;
-			server.sendBundle(latency, [\n_setn, node, argname, newValue.size] ++
+			server.sendBundle(nil, [\n_setn, node, argname, newValue.size] ++
 				newValue) 
 			}{
 			newValue.isKindOf(CtkControl)
@@ -762,12 +754,19 @@ CtkNote : CtkNode {
 			newValue.isPlaying.not.if({
 				newValue.play;
 				});
-			server.sendBundle(latency, [\n_map, node, argname, newValue.bus])
+			server.sendBundle(nil, [\n_map, node, argname, newValue.bus])
 			}{
 			true
 			}{
-			server.sendBundle(latency, [\n_set, node, argname, newValue.asUGenInput])
+			server.sendBundle(nil, [\n_set, node, argname, newValue.asUGenInput])
 			};
+		// real-time support
+		oldval.isKindOf(CtkControl).if({
+			releases.indexOf(oldval).notNil.if({
+				oldval.free;
+				releases.remove(oldval);
+				})
+			});
 		}
 
 	// every one of these has a tag and body... leaves room for addAction and 
@@ -832,7 +831,7 @@ CtkNote : CtkNode {
 					val.isPlaying.not.if({val.play});
 					bund.add([\n_map, node, key, val.asUGenInput]);
 					});
-				bund.send(server, latency);
+				bund.send(server, nil);
 				this.watch(group);
 				// if a duration is given... kill it
 				duration.notNil.if({
@@ -903,12 +902,12 @@ CtkGroup : CtkNode {
 		}
 		
 	// create the group for RT uses
-	play {arg latency, group;
+	play {//arg latency;
 		var bundle = this.buildBundle;
 		starttime.notNil.if({
-			SystemClock.sched(starttime, {server.sendBundle(latency, bundle)});
+			SystemClock.sched(starttime, {server.sendBundle(nil, bundle)});
 			}, {
-			server.sendBundle(latency, bundle);
+			server.sendBundle(nil, bundle);
 			});
 		duration.notNil.if({
 			SystemClock.sched(duration, {this.freeAll})
@@ -1261,25 +1260,29 @@ CtkControl : CtkObj {
 			})
 		}
 		
-	play {arg latency = 0.1;
+	play {//arg latency = 0.1;
 		var time, bund;
 		isPlaying = true;
 		messages.do({arg me;
 			#time, bund = me;
-			SystemClock.sched(time, {
-				server.sendBundle(latency, bund);
-				})
+			me.postln;
+			(time > 0).if({
+				SystemClock.sched(time, {
+					server.sendBundle(nil, bund);
+					})}, {
+				server.sendBundle(nil, bund);
+				});	
 			});
 		ctkNote.notNil.if({
 			ctkNote.play;
 			})
 		}
 		
-	set {arg val, time = 0.0, latency = 0.1;
+	set {arg val, time = 0.0; //, latency = 0.1;
 		var bund;
 		bund = [\c_setn, bus, numChans, val];
 		isPlaying.if({
-			SystemClock.sched(time, {server.sendBundle(latency, bund)});
+			SystemClock.sched(time, {server.sendBundle(nil, bund)});
 			}, {
 			time = time ?? {0.0};
 			messages = messages.add([starttime + time, bund]);
