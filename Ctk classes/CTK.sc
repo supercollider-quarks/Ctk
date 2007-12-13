@@ -1136,7 +1136,7 @@ CtkBuffer : CtkObj {
 	}
 		
 CtkControl : CtkObj {
-	var <>server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false, 
+	var <server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false, 
 	<endtime = 0.0;
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, 
 	isLFO = false;
@@ -1322,7 +1322,7 @@ CtkControl : CtkObj {
 
 // not really needed... but it does most of the things that CtkControl does
 CtkAudio : CtkObj {
-	var server, <bus, <numChans;
+	var <server, <bus, <numChans;
 	*new {arg bus, numChans = 1, server;
 		^this.newCopyArgs(Dictionary.new, server, bus, numChans).init;
 		}
@@ -1409,7 +1409,7 @@ CtkTimer {
 	
 CtkEvent : CtkObj {
 	classvar envsd, addActions;
-	var starttime, <>condition, <function, amp, server, addAction, target, isRecording = false;
+	var starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
 	var isPlaying = false, isReleasing = false, releaseTime = 0.0, <timer, clock, 
 		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, envbus, playinit, notes, 
 		score, <endtime, endtimeud;

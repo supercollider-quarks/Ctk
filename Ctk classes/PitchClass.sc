@@ -728,6 +728,10 @@ PitchCollection {
 	add {arg aPitchClass;
 		^this.class.new(pitchCollection ++ aPitchClass, tonic, 12)
 		}
+	
+	invert {arg aPitchClass;
+		^this.class.new(pitchCollection.collect({arg me; me.invert(aPitchClass)}));
+		}
 		
 	insert {arg position = 0, aPitchClass;
 		^this.class.new(pitchCollection.insert(position, aPitchClass).flat, tonic, 12)
