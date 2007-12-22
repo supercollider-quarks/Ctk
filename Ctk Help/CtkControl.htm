@@ -11,21 +11,20 @@ p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
 p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
 p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
-p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #002fa6}
-p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #712d2d}
-p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #000000; min-height: 12.0px}
-p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #bf0000}
-p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #000000}
-p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #000000; min-height: 14.0px}
-p.p11 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #0000bf}
+p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #1b389d}
+p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #573232}
+p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #862323}
+p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco}
+p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; min-height: 14.0px}
+p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #0023b6}
 span.s1 {font: 18.0px Helvetica}
-span.s2 {color: #103698}
-span.s3 {color: #002fa6}
+span.s2 {color: #233c92}
+span.s3 {color: #1b389d}
 span.s4 {color: #000000}
-span.s5 {color: #5a6a27}
-span.s6 {color: #712d2d}
-span.s7 {color: #0000bf}
-span.s8 {color: #007300}
+span.s5 {color: #63672e}
+span.s6 {color: #573232}
+span.s7 {color: #0023b6}
+span.s8 {color: #4d6d13}
 span.Apple-tab-span {white-space:pre}
 </style>
 </head>
@@ -57,12 +56,10 @@ span.Apple-tab-span {white-space:pre}
 <p class="p1"><b>bus</b> - returns the id of the CtkControl bus.</p>
 <p class="p1"><b>free </b>- returns the bus id to the allocation pool.</p>
 <p class="p2"><br></p>
-<p class="p1">Passing a CtkControl to a CtkNote SynthDef argument will map that control bus to the argument. If you want to pass in the bus number, you MUST use CtkControl.bus (see below). This behavior is slightly different then CtkAudio (see CtkAudio.help for more information).</p>
-<p class="p2"><br></p>
 <p class="p3"><br></p>
 <p class="p1"><b>Examples:</b></p>
 <p class="p3"><br></p>
-<p class="p4">s = <span class="s2">Server</span>.internal.boot;</p>
+<p class="p4">s = <span class="s2">Server</span>.local.boot;</p>
 <p class="p4"><span class="s2">Server</span>.default = s;</p>
 <p class="p3"><br></p>
 <p class="p4">(</p>
@@ -98,14 +95,14 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3"><span class="Apple-tab-span">	</span></p>
 <p class="p6"><span class="s4"><span class="Apple-tab-span">	</span></span>// create a controlenv and a loop of CtkNotes to play inside the CtkGroup</p>
 <p class="p4"><span class="Apple-tab-span">	</span>freq = pnotes[<span class="s5">\control</span>].new(addAction: <span class="s5">\head</span>, target: group)</p>
-<p class="p6"><span class="s4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.outbus_(bus1.bus) </span>// need to use the .bus method on CtkControl to just pass in its bus id<span class="Apple-converted-space"> </span></p>
+<p class="p6"><span class="s4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.outbus_(bus1) </span>// need to use the .bus method on CtkControl to just pass in its bus id<span class="Apple-converted-space"> </span></p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.rate_(1)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.low_(100)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.hi_(1050)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.play;</p>
 <p class="p3"><br></p>
 <p class="p4"><span class="Apple-tab-span">	</span>control = pnotes[<span class="s5">\controlenv</span>].new(addAction: <span class="s5">\head</span>, target: group)</p>
-<p class="p6"><span class="s4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.outbus_(bus2.bus) </span>// need to use the .bus method on CtkControl to just pass in its bus id</p>
+<p class="p6"><span class="s4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.outbus_(bus2) </span>// need to use the .bus method on CtkControl to just pass in its bus id</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.env_(env)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.play;</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span></p>
@@ -213,7 +210,7 @@ span.Apple-tab-span {white-space:pre}
 <p class="p6"><span class="s4"><span class="Apple-tab-span">	</span></span>// run these processes within its own CtkGroup</p>
 <p class="p4"><span class="Apple-tab-span">	</span>group = <span class="s3">CtkGroup</span>.new(addAction: <span class="s5">\head</span>, target: 1).addTo(score);</p>
 <p class="p4"><span class="Apple-tab-span">	</span>control = scpn[<span class="s5">\control</span>].new(starttime, duration, <span class="s5">\head</span>, group)</p>
-<p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.outbus_(cbus.bus)</p>
+<p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.outbus_(cbus)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.rate_(rate)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.low_(lowfreq)</p>
 <p class="p4"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.hi_(hifreq)</p>
@@ -248,31 +245,33 @@ span.Apple-tab-span {white-space:pre}
 <p class="p6">//score.saveToFile("~/Desktop/test.sc".standardizePath);</p>
 <p class="p4">)</p>
 <p class="p3"><br></p>
-<p class="p7"><br></p>
-<p class="p8">// basic lfo and env usage</p>
-<p class="p9">s.boot;</p>
-<p class="p9">a = <span class="s7">CtkControl</span>.lfo(<span class="s7">LFSaw</span>, 10, 1, 0, 0);</p>
-<p class="p9">a.play;</p>
-<p class="p10"><br></p>
-<p class="p11"><span class="s4">c = </span>CtkNoteObject<span class="s4">(</span></p>
-<p class="p9"><span class="Apple-tab-span">	</span><span class="s7">SynthDef</span>(<span class="s8">\test</span>, {<span class="s7">arg</span> freq, amp, pan;</p>
-<p class="p9"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">Out</span>.ar(0, <span class="s7">SinOsc</span>.ar(freq, 0, amp))</p>
-<p class="p9"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>})</p>
-<p class="p9"><span class="Apple-tab-span">	</span>);</p>
-<p class="p10"><br></p>
-<p class="p9">b = c.new().freq_(440).amp_(a).play</p>
-<p class="p10"><br></p>
-<p class="p9">b.freq_(<span class="s7">CtkControl</span>.env(<span class="s7">Env</span>([440, 550], [5], <span class="s8">\exp</span>)));</p>
-<p class="p10"><br></p>
-<p class="p9">b.amp_(0.1);</p>
-<p class="p9">b.amp_(a);</p>
-<p class="p10"><br></p>
-<p class="p9">b.freq_(<span class="s7">CtkControl</span>.lfo(<span class="s7">LFNoise1</span>, 1, 550, <span class="s7">CtkControl</span>.env(<span class="s7">Env</span>([550, 330], [10]))))</p>
-<p class="p10"><br></p>
+<p class="p3"><br></p>
+<p class="p7">// basic lfo and env usage</p>
+<p class="p8">s.boot;</p>
+<p class="p8">a = <span class="s7">CtkControl</span>.lfo(<span class="s7">LFSaw</span>, 10, 1, 0, 0);</p>
+<p class="p8">a.play;</p>
+<p class="p9"><br></p>
+<p class="p10"><span class="s4">c = </span>CtkNoteObject<span class="s4">(</span></p>
+<p class="p8"><span class="Apple-tab-span">	</span><span class="s7">SynthDef</span>(<span class="s8">\test</span>, {<span class="s7">arg</span> freq, amp, pan;</p>
+<p class="p8"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">Out</span>.ar(0, <span class="s7">SinOsc</span>.ar(freq, 0, amp))</p>
+<p class="p8"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>})</p>
+<p class="p8"><span class="Apple-tab-span">	</span>);</p>
+<p class="p9"><br></p>
+<p class="p8">b = c.new().freq_(440).amp_(a).play</p>
+<p class="p9"><br></p>
+<p class="p8">b.freq_(<span class="s7">CtkControl</span>.env(<span class="s7">Env</span>([440, 550], [5], <span class="s8">\exp</span>)));</p>
+<p class="p9"><br></p>
+<p class="p8">b.amp_(0.1);</p>
+<p class="p8">b.amp_(a);</p>
+<p class="p9"><br></p>
+<p class="p8">b.freq_(<span class="s7">CtkControl</span>.lfo(<span class="s7">LFNoise1</span>, 1, 550, <span class="s7">CtkControl</span>.env(<span class="s7">Env</span>([550, 330], [10]))))</p>
+<p class="p9"><br></p>
+<p class="p8">b.amp_(0.1);</p>
+<p class="p7">b.amp_(CtkControl.lfo(LFNoise1, 1, 0.1, CtkControl.env(Env([0.1, 1.0], [10]))))</p>
+<p class="p7">b.amp.high_(CtkControl.env(Env([1.0, 0.1], [10])))</p>
+<p class="p7">// free the LFSaw</p>
+<p class="p8">a.free</p>
 <p class="p8">// free the synth</p>
-<p class="p9">b.free;</p>
-<p class="p10"><br></p>
-<p class="p8">// free the LFSaw</p>
-<p class="p9">a.free</p>
+<p class="p8">b.free;</p>
 </body>
 </html>

@@ -9,20 +9,20 @@
 <style type="text/css">
 p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
-p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
-p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #6d2d2d}
-p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #001db9}
-p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #606060}
-p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #961e1e}
+p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #000000}
+p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #000000; min-height: 12.0px}
+p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #bf0000}
+p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #000000; min-height: 14.0px}
+p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #0000bf}
+p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #0000bf}
+p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #606060}
+p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
 span.s1 {font: 18.0px Helvetica}
-span.s2 {color: #0d2ea7}
+span.s2 {color: #0000bf}
 span.s3 {color: #000000}
 span.s4 {color: #606060}
-span.s5 {color: #6d2d2d}
-span.s6 {color: #596a27}
-span.s7 {color: #001db9}
-span.s8 {color: #426f0e}
+span.s5 {color: #bf0000}
+span.s6 {color: #007300}
 span.Apple-tab-span {white-space:pre}
 </style>
 </head>
@@ -161,7 +161,7 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3">a.set(0.0, 0, <span class="s2">Array</span>.fill(1024, {-1.0.rrand(1.0)}));</p>
 <p class="p4"><br></p>
 <p class="p3">b = {<span class="s2">PlayBuf</span>.ar(1, a, loop: 1)}.play(s);</p>
-<p class="p2"><br></p>
+<p class="p6"><br></p>
 <p class="p5">// change the values in the buffer</p>
 <p class="p3">a.set(0.0, 1024, <span class="s2">Array</span>.fill(1024, {-1.0.rrand(1.0)}));</p>
 <p class="p4"><br></p>
@@ -187,8 +187,8 @@ span.Apple-tab-span {white-space:pre}
 <p class="p4"><br></p>
 <p class="p3">b.free;</p>
 <p class="p3">a.free;</p>
-<p class="p2"><br></p>
-<p class="p3">a = <span class="s2">CtkBuffer.new</span>(size: 32768).load(sync: <span class="s2">true</span>);</p>
+<p class="p6"><br></p>
+<p class="p3">a = <span class="s2">CtkBuffer</span>.new(size: 32768).load(sync: <span class="s2">true</span>);</p>
 <p class="p3">a.sine1(0.0, 1, 0, 1, 0.3);</p>
 <p class="p4"><br></p>
 <p class="p3">b = {<span class="s2">OscN</span>.ar(a, 440, mul: 0.5)}.play(s);</p>
@@ -198,9 +198,9 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3">b.free;</p>
 <p class="p3">a.free;</p>
 <p class="p4"><br></p>
-<p class="p3">a = <span class="s2">CtkBuffer</span>(size: 32768).load(sync: <span class="s2">true</span>);</p>
+<p class="p3">a = <span class="s2">CtkBuffer</span>(size: 32768);</p>
 <p class="p3">a.cheby(0.0, 1, 1, 1, 0.3, 0.2, 0.5);</p>
-<p class="p4"><br></p>
+<p class="p3">a.load(sync: <span class="s2">true</span>);</p>
 <p class="p3">s.scope;</p>
 <p class="p4"><br></p>
 <p class="p3">b = {<span class="s2">Shaper</span>.ar(a, <span class="s2">SinOsc</span>.ar(440, 0, 0.5), mul: 0.5)}.play(s);</p>
@@ -237,40 +237,40 @@ span.Apple-tab-span {white-space:pre}
 <p class="p4"><br></p>
 <p class="p3">b.free;</p>
 <p class="p3">a.free;</p>
-<p class="p2"><br></p>
-<p class="p2"><br></p>
-<p class="p1"><b><span class="Apple-converted-space"> </span>Uses with CtkScore</b></p>
-<p class="p2"><br></p>
+<p class="p6"><br></p>
+<p class="p6"><br></p>
+<p class="p7"><span class="s3"><b><span class="Apple-converted-space"> </span></b></span><b>Uses</b><span class="s3"><b> with </b></span><b>CtkScore</b></p>
+<p class="p6"><br></p>
 <p class="p3">(</p>
-<p class="p3"><span class="s7">var</span> play, buf, score, playfun;</p>
+<p class="p3"><span class="s2">var</span> play, buf, score, playfun;</p>
 <p class="p4"><br></p>
-<p class="p3">score = <span class="s7">CtkScore</span>.new;</p>
+<p class="p3">score = <span class="s2">CtkScore</span>.new;</p>
 <p class="p4"><br></p>
-<p class="p6"><span class="s3">play = </span>CtkNoteObject<span class="s3">(</span></p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="s7">SynthDef</span>(<span class="s8">\play</span>, {<span class="s7">arg</span> buffer, rate = 1, dur, start;</p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">OffsetOut</span>.ar(0,<span class="Apple-converted-space"> </span></p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">Pan2</span>.ar(</p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">PlayBuf</span>.ar(1, buffer, <span class="s7">BufRateScale</span>.kr(buffer) * rate,<span class="Apple-converted-space"> </span></p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>startPos: start * <span class="s7">BufSampleRate</span>.kr(buffer)) *</p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">EnvGen</span>.ar(</p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s7">Env</span>([0, 1, 0], [0.5, 0.5], <span class="s8">\sin</span>),</p>
+<p class="p8"><span class="s3">play = </span>CtkNoteObject<span class="s3">(</span></p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="s2">SynthDef</span>(<span class="s6">\play</span>, {<span class="s2">arg</span> buffer, rate = 1, dur, start;</p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">OffsetOut</span>.ar(0,<span class="Apple-converted-space"> </span></p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">Pan2</span>.ar(</p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">PlayBuf</span>.ar(1, buffer, <span class="s2">BufRateScale</span>.kr(buffer) * rate,<span class="Apple-converted-space"> </span></p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>startPos: start * <span class="s2">BufSampleRate</span>.kr(buffer)) *</p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">EnvGen</span>.ar(</p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">Env</span>([0, 1, 0], [0.5, 0.5], <span class="s6">\sin</span>),</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>timeScale: dur)))</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>})</p>
 <p class="p3"><span class="Apple-tab-span">	</span>);</p>
 <p class="p4"><span class="Apple-tab-span">	</span></p>
-<p class="p7"><span class="s3">buf = </span><span class="s7">CtkBuffer</span><span class="s3">(</span>"sounds/a11wlk01-44_1.aiff"<span class="s3">).addTo(score);</span></p>
+<p class="p9"><span class="s3">buf = </span><span class="s2">CtkBuffer</span><span class="s3">(</span>"sounds/a11wlk01-44_1.aiff"<span class="s3">).addTo(score);</span></p>
 <p class="p4"><br></p>
-<p class="p8">//CtkBuffer(size: 1024).set(0.0, 0, Array.fill(1024, {-1.0.rrand(1.0)})).zero(1).addTo(score);</p>
+<p class="p5">//CtkBuffer(size: 1024).set(0.0, 0, Array.fill(1024, {-1.0.rrand(1.0)})).zero(1).addTo(score);</p>
 <p class="p4"><br></p>
-<p class="p3">playfun = {<span class="s7">arg</span> starttime, gestdur, rateenv;</p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="s7">var</span> note, now, ratio, rate;</p>
+<p class="p3">playfun = {<span class="s2">arg</span> starttime, gestdur, rateenv;</p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="s2">var</span> note, now, ratio, rate;</p>
 <p class="p3"><span class="Apple-tab-span">	</span>now = 0;</p>
 <p class="p3"><span class="Apple-tab-span">	</span>while({</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>ratio = now / gestdur;</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>rate = rateenv[ratio];</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>play.new(now + starttime, 0.5)</p>
-<p class="p8"><span class="s3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.buffer_(buf) </span>// the arg will parse the CtkBuffer and grab its bufnum</p>
-<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.rate_(rate)</p>
+<p class="p5"><span class="s3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.buffer_(buf) </span>// the arg will parse the CtkBuffer and grab its bufnum</p>
+<p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.rate_(<span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([rate, 1], [0.5])))</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.dur_(0.5)</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.start_((buf.duration - (0.5 * rate)).rand)</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>.addTo(score);</p>
@@ -279,15 +279,15 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><span class="Apple-tab-span">	</span>};</p>
 <p class="p4"><span class="Apple-tab-span">	</span></p>
-<p class="p3">playfun.value(0, 20, <span class="s7">Env</span>([0.5, 2.0, 1.0], [0.2, 0.8], [3, -5]));</p>
+<p class="p3">playfun.value(0, 20, <span class="s2">Env</span>([0.5, 2.0, 1.0], [0.2, 0.8], [3, -5]));</p>
 <p class="p4"><br></p>
-<p class="p8">// uncomment to play the score</p>
+<p class="p5">// uncomment to play the score</p>
 <p class="p3">score.play(s);</p>
-<p class="p8">// uncomment to save the score</p>
-<p class="p3">score.saveToFile(<span class="s4">"~/Desktop/test.sc"</span>.standardizePath);</p>
-<p class="p8">// uncomment to write the score to a soundfile</p>
-<p class="p8">//score.write("~/Desktop/test.aiff".standardizePath,<span class="Apple-converted-space"> </span></p>
-<p class="p8">//<span class="Apple-tab-span">	</span>options: ServerOptions.new.numOutputBusChannels_(2));</p>
-<p class="p3">)</p>
+<p class="p5">// uncomment to save the score</p>
+<p class="p5">//score.saveToFile("~/Desktop/test.sc".standardizePath);</p>
+<p class="p5">// uncomment to write the score to a soundfile</p>
+<p class="p5">//score.write("~/Desktop/test.aiff".standardizePath,<span class="Apple-converted-space"> </span></p>
+<p class="p5">//<span class="Apple-tab-span">	</span>options: ServerOptions.new.numOutputBusChannels_(2));</p>
+<p class="p10">)</p>
 </body>
 </html>
