@@ -11,13 +11,13 @@ p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
 p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
 p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
-p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #00009e}
-p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #830010}
+p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #00109b}
+p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #740f16}
 span.s1 {font: 18.0px Helvetica}
-span.s2 {color: #00009e}
+span.s2 {color: #00109b}
 span.s3 {color: #000000}
-span.s4 {color: #1f4f0b}
-span.s5 {color: #830010}
+span.s4 {color: #2c4e0e}
+span.s5 {color: #740f16}
 span.s6 {color: #3c3c3c}
 span.Apple-tab-span {white-space:pre}
 </style>
@@ -117,7 +117,7 @@ span.Apple-tab-span {white-space:pre}
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><br></p>
 <p class="p6">// uncomment to play the CtkScore you have created</p>
-<p class="p6">//score.play(s);</p>
+<p class="p6">score.play(s);</p>
 <p class="p3"><br></p>
 <p class="p6">// uncomment to write the score to a soundfile</p>
 <p class="p4">score.write(<span class="s6">"~/Desktop/test.aiff"</span>.standardizePath, 22,<span class="Apple-converted-space"> </span></p>
@@ -159,8 +159,8 @@ span.Apple-tab-span {white-space:pre}
 <p class="p4">p = <span class="s2">Player</span>.new(<span class="s6">"~/Desktop/test.aiff"</span>.standardizePath).gui</p>
 <p class="p3"><br></p>
 <p class="p6">// make a copy of b with an offset of 2.05 seconds</p>
-<p class="p4">c = b.offset(2.05);</p>
-<p class="p3"><br></p>
+<p class="p4">c = b.copy;</p>
+<p class="p4">c.offset(2.05);</p>
 <p class="p6">// alter the freq , durations and the dur parameter of c's notes</p>
 <p class="p4">c.notes.do({<span class="s2">arg</span> me;</p>
 <p class="p4"><span class="Apple-tab-span">	</span>me.duration_(0.11).dur_(0.11).freq_(me.freq * 2)</p>
@@ -173,17 +173,14 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3"><br></p>
 <p class="p4">p = <span class="s2">Player</span>.new(<span class="s6">"~/Desktop/test.aiff"</span>.standardizePath).gui;</p>
 <p class="p3"><br></p>
-<p class="p6">// let's alter the score 'c'... first, remove it!</p>
-<p class="p4">a.ctkscores.remove(c);</p>
+<p class="p6">// let's alter the score 'c'...<span class="Apple-converted-space"> </span></p>
 <p class="p3"><br></p>
 <p class="p4">c.notes.do({<span class="s2">arg</span> me;</p>
-<p class="p4"><span class="Apple-tab-span">	</span>me.freq_(me.freq * 0.25.rand2);</p>
+<p class="p4"><span class="Apple-tab-span">	</span>me.freq_(me.freq * (1 + 0.25.rand2));</p>
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><br></p>
 <p class="p6">// offset it another 0.123 seconds<span class="Apple-tab-span">	</span></p>
 <p class="p4">c = c.offset(0.123);</p>
-<p class="p6">// add it back in</p>
-<p class="p4">a.add(c);</p>
 <p class="p3"><br></p>
 <p class="p4">a.write(<span class="s6">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
 <p class="p3"><br></p>

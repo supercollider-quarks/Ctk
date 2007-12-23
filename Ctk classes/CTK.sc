@@ -226,6 +226,18 @@ CtkScore : CtkObj {
 			theseReleases = this.collectReleases(theseReleases);
 			theseReleases.size > 0;
 			});
+		allReleases.do({arg thisnote;
+			var endmsg;
+			endmsg = thisnote.getFreeMsg;
+			endmsg.notNil.if({
+				masterMessages = masterMessages.add(endmsg);
+				});
+			(thisnote.messages.size > 0).if({
+				thisnote.messages.do({arg me;
+					masterMessages = masterMessages.add(me);
+					})
+				});	
+			});
 		masterNotes = masterNotes ++ allReleases;
 		masterBuffers.do({arg thisbuffer;
 			(thisbuffer.messages.size > 0).if({
@@ -246,7 +258,7 @@ CtkScore : CtkObj {
 			});
 		ctkns = rels.flat.collect({arg me;
 			me.ctkNote});
-		^ctkns;
+		^ctkns = ctkns.select({arg me; me.notNil});
 		}
 		
 	grabEvents {arg thesegroups, thesenotes, thesecontrols, thesebuffers;
@@ -810,17 +822,58 @@ CtkNote : CtkNode {
 		args = argdict;
 		argdict.keysValuesDo({arg argname, val;
 			this.addUniqueMethod(argname.asSymbol, {arg note; args.at(argname)});
-			this.addUniqueMethod((argname.asString++"_").asSymbol, {arg note, newValue;
+			this.addUniqueMethod((argname.asString++"_").asSymbol, {arg note, newValue, 
+					timeOffset;
 				var oldval;
 				oldval = args[argname];
 				args.put(argname.asSymbol, newValue);
-				(newValue.isKindOf(CtkControl) and: {
-						(newValue.isPlaying || newValue.isScored)}.not).if({
-					newValue.starttime_(starttime);
-					releases = releases.add(newValue);
-					});
+				(this.isPlaying.not).if({
+					newValue.isKindOf(CtkControl).if({
+						(newValue.isScored or: {newValue.isARelease}).if({
+							timeOffset.notNil.if({
+								noMaps.indexOf(argname).isNil.if({
+									messages = messages.add(CtkMsg(server, 
+										timeOffset + starttime, 
+										[\n_map, this.node, argname.asSymbol,
+											newValue.asUGenInput]));
+									});
+								})
+							}, {
+							(newValue.isPlaying or: {newValue.isScored}).not.if({
+								newValue.isARelease = true;
+								timeOffset = timeOffset ?? {0.0};
+								newValue.starttime_(starttime + timeOffset);
+								noMaps.indexOf(argname).isNil.if({
+									messages = messages.add(CtkMsg(server, 
+										timeOffset + starttime, 
+										[\n_map, this.node, argname.asSymbol, 
+											newValue.asUGenInput]));
+										});
+								newValue.isLFO.if({
+									newValue.ctkNote.duration_(endtime - newValue.starttime);
+									});	
+								});
+								releases = releases.add(newValue);
+							});
+						}, {
+						(oldval.isKindOf(CtkControl) and: 
+							{oldval.isLFO and: {oldval.isARelease and: 
+								{(oldval.ctkNote.starttime + oldval.ctkNote.duration) > 
+									(timeOffset + starttime)}}}).if({
+										oldval.ctkNote.duration_(
+											(timeOffset + starttime) - 
+											oldval.ctkNote.starttime)
+									})
+							})	
+						});	
 				this.isPlaying.if({
 					this.handleRealTimeUpdate(argname, newValue, oldval);
+					}, {
+					timeOffset.notNil.if({
+						newValue.isKindOf(SimpleNumber).if({
+							this.set(timeOffset, argname.asSymbol, newValue)
+							})
+						})
 					});
 				note;
 				});
@@ -839,6 +892,7 @@ CtkNote : CtkNode {
 			}{
 			newValue.isPlaying.not.if({
 				newValue.play(node, argname);
+				releases = releases.add(newValue);
 				}, {
 				noMaps.indexOf(argname).notNil.if({
 					server.sendBundle(latency, [\n_set, node, argname, newValue.bus])
@@ -851,9 +905,9 @@ CtkNote : CtkNode {
 			}{
 			server.sendBundle(latency, [\n_set, node, argname, newValue.asUGenInput])
 			};
-		// real-time support
+		// real-time support for CtkControls
 		oldval.isKindOf(CtkControl).if({
-			releases.indexOf(oldval).notNil.if({
+			(releases.indexOf(oldval)).notNil.if({
 				oldval.free;
 				releases.remove(oldval);
 				})
@@ -1269,8 +1323,8 @@ CtkControl : CtkObj {
 	var <server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false, 
 	<endtime = 0.0;
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, 
-	isLFO = false, isEnv = false;
-	var timeScale, <levelBias, <levelScale, <doneAction;
+	<isLFO = false, <isEnv = false;
+	var timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
 		
 	classvar ctkEnv, sddict; 
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
