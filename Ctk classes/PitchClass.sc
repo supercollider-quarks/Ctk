@@ -16,14 +16,16 @@ PitchClass {
 		}
 		
 	calcpitch {arg thispitch, thisoctave;
-		var str;
+		var str, pitchnum;
 		octave = thisoctave ?? {octave};
 		thispitch.isKindOf(Number).if({
-			octave = (thispitch.round/12).floor - 1;
-			pitch = notenums[thispitch%12];
+			octave = (thispitch.round*0.0833333333).floor - 1;
+			pitchnum = thispitch % 12;
+			(pitchnum == -0).if({pitchnum = 0});
+			pitch = notenums[pitchnum];
 			}, {
 			pitch = thispitch;
-			});	
+			});
 		str = pitch.asString;
 		note = str[0].asSymbol;
 		if(str.size > 1, 

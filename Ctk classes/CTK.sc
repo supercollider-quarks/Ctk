@@ -40,9 +40,9 @@ CtkObj {
 CtkScore : CtkObj {
 	
 	var <endtime = 0, score, <buffers, <ctkevents, <ctkscores, <controls, notes, <others, 
-		<buffermsg, buffersScored = false, <groups, oscready = false, <messages;
-	var <masterScore, <allScores, <masterNotes, <masterControls, <masterBuffers, <masterGroups,
-		<masterMessages;
+		<buffermsg, <buffersScored = false, <groups, oscready = false, <messages;
+	var <masterScore, <allScores, <masterNotes, <masterControls, <masterBuffers, 
+		<masterGroups, <masterMessages;
 	
 	
 	*new {arg ... events;
@@ -91,12 +91,14 @@ CtkScore : CtkObj {
 				} {
 				event.isKindOf(CtkControl);
 				} {
-				controls = controls.add(event);
-				event.isScored = true;
-				event.ctkNote.notNil.if({
-					this.add(event.ctkNote);
-					});
-				this.checkEndTime(event);
+				event.isScored.not.if({
+					controls = controls.add(event);
+					event.isScored = true;
+					event.ctkNote.notNil.if({
+						this.add(event.ctkNote);
+						});
+					this.checkEndTime(event);
+					})
 				} {
 				event.isKindOf(CtkScore);
 				} {
@@ -175,6 +177,7 @@ CtkScore : CtkObj {
 	
 	prepareObjects {var rt = false;
 		var eventArray, allReleases, theseReleases;
+		var time, argname, argval;
 		masterNotes = Array.new;
 		masterControls = Array.new;
 		masterBuffers = Array.new;
@@ -187,12 +190,12 @@ CtkScore : CtkObj {
 			allScores = allScores.add(thisctkev.score)
 			});
 		allScores.do({arg thisscore;
-			this.grabEvents(thisscore.groups, thisscore.notes, thisscore.buffers,
-				thisscore.controls);
+			this.grabEvents(thisscore.groups, thisscore.notes, 				thisscore.controls, thisscore.buffers);
 			});
 		rt.not.if({
 			this.addBuffers;
 			});
+		/* here */
 		masterMessages = messages;
 		masterGroups.do({arg thisgroup;
 			(thisgroup.messages.size > 0).if({
@@ -209,10 +212,50 @@ CtkScore : CtkObj {
 				});
 			});
 		masterNotes.do({arg thisnote;
-			var bundle, endmsg;
+			var bundle, endmsg, oldval, refsSort;
 			endmsg = thisnote.getFreeMsg;
 			endmsg.notNil.if({
 				masterMessages = masterMessages.add(endmsg);
+				});
+			thisnote.refsDict.do({arg key, val;
+				var tmpdur;
+				refsSort = key.value.sort({arg a, b; a[0] < b[0]});
+				refsSort.do({arg me;
+					#time, argname, argval = me;
+					case
+						{argval.isKindOf(SimpleNumber)}
+						{
+							thisnote.set(time, argname, argval)
+						}
+						{argval.isKindOf(CtkControl) and: 
+							{argval.isScored.not or: {
+								argval.isARelease}}}
+						{
+							argval.starttime_(time + thisnote.starttime);
+							"Endtime".postln;
+							tmpdur = thisnote.endtime - time;// - thisnote.starttime;
+							[thisnote.endtime, tmpdur].postln;
+							(argval.duration.isNil or: {argval.duration > tmpdur}).if({
+								argval.duration_(tmpdur);
+								});
+							thisnote.releases = thisnote.releases.add(argval);
+							argval.isARelease = true;
+							thisnote.noMaps.indexOf(argname).notNil.if({
+								thisnote.set(time, argname, argval)
+								}, {
+								thisnote.map(time, argname, argval)								})
+							}
+						{argval.isKindOf(CtkControl)}
+						{
+							thisnote.noMaps.indexOf(argname).notNil.if({
+								thisnote.set(time, argname, argval.asUGenInput)
+								}, {
+								thisnote.map(time, argname, argval.asUGenInput)
+								})
+						}
+						{true}
+						{thisnote.set(time, argname, argval)}
+					});
 				});
 			(thisnote.messages.size > 0).if({
 				thisnote.messages.do({arg me;
@@ -260,7 +303,7 @@ CtkScore : CtkObj {
 			me.ctkNote});
 		^ctkns = ctkns.select({arg me; me.notNil});
 		}
-		
+	
 	grabEvents {arg thesegroups, thesenotes, thesecontrols, thesebuffers;
 		masterGroups = masterGroups ++ thesegroups.collect({arg me; me});
 		masterNotes = masterNotes ++ thesenotes.collect({arg me; me});
@@ -526,6 +569,7 @@ CtkNoteObject {
 						args.add(name -> def);
 						})
 					});
+					// no maps keeps Out.kr output vars from being mapped to
 					kouts = sd.outputs.collect({arg me; me.startingChannel.source});
 					kouts.removeAllSuchThat({arg item; item.isKindOf(String).not});
 					noMaps = kouts.collect({arg item; item.asSymbol});
@@ -598,7 +642,7 @@ CtkNode : CtkObj {
 
 	var <addAction, <target, <>server;
 	var >node, <>messages, <>starttime, <>willFree = false;
-	var <isPaused = false, <releases;
+	var <isPaused = false, <>releases;
 
 	node {
 		^node ?? {node = server.nextNodeID};
@@ -655,32 +699,49 @@ CtkNode : CtkObj {
 		cmd = true;
 		}
 		
-	set {arg time = 0.0, key, value; //, latency = 0.1;
+	set {arg time, key, value; 
 		var bund;
 		bund = [\n_set, this.node, key, value];
-		this.isPlaying.if({ // if playing... send the set message now!
-			SystemClock.sched(time, {
-				server.sendBundle(latency, bund);
-				});
-			}, {
-			starttime = starttime ?? {0.0};
-			messages = messages.add(CtkMsg(server, starttime + time, bund));
-			})
+		this.handleMsg(time, bund);
 		}
 	
-	setn {arg time = 0.0, key ... values;
+	setn {arg time, key ... values;
 		var bund;
 		values = values.flat;
 		bund = [\n_setn, this.node, key, values.size] ++ values;
-		this.isPlaying.if({
-			SystemClock.sched(time, {server.sendBundle(latency, bund)});
-			}, {
-			starttime = starttime ? {0.0};
-			messages = messages.add(CtkMsg(server, time+starttime, bund))
-			})		
+		this.handleMsg(time, bund);	
 		}
 	
-	release {arg time = 0.0, key = \gate;
+	map {arg time, key, value;
+		var bund;
+		bund = [\n_map, this.node, key, value.asUGenInput];
+		this.handleMsg(time, bund);
+		}
+
+	mapn {arg time, key ... values;
+		var bund;
+		values = values.flat;
+		bund = [\n_map, this.node, key, values.size] ++ values.collect({arg me; me.bus});
+		this.handleMsg(time, bund);
+		}
+	
+	handleMsg {arg time, bund;
+		this.isPlaying.if({ // if playing... send the set message now!
+			time.notNil.if({
+				SystemClock.sched(time, {
+					server.sendBundle(latency, bund);
+					});
+				}, {
+				server.sendBundle(latency, bund);
+				})
+			}, {
+			starttime = starttime ?? {0.0};
+			time = time ?? {0.0};
+			messages = messages.add(CtkMsg(server, starttime + time, bund));
+			})
+	}	
+	
+	release {arg time, key = \gate;
 		this.set(time, key, 0);
 		willFree = true;
 		((releases.size > 0) && this.isPlaying).if({
@@ -711,7 +772,7 @@ CtkNode : CtkObj {
 					releases.do({arg me;
 						me.free;
 						})
-					})
+					});
 				});
 			}, {
 			addMsg.if({
@@ -767,14 +828,14 @@ CtkNode : CtkObj {
 CtkNote : CtkNode {
 
 	var <duration, <synthdefname,
-		<endtime, <args, <setnDict, <mapDict, <noMaps;
+		<endtime, <args, <setnDict, <mapDict, <noMaps, automations, <refsDict;
 			
 	*new {arg starttime = 0.0, duration, addAction = 0, target = 1, server, synthdefname, noMaps;
 		server = server ?? {Server.default};
 		^super.newCopyArgs(Dictionary.new, addAction, target, server)
 			.initCN(starttime, duration, synthdefname, noMaps);
 		}
-		
+				
 	copy {arg newStarttime;
 		var newNote;
 		newStarttime = newStarttime ?? {starttime};
@@ -799,7 +860,9 @@ CtkNote : CtkNode {
 			});
 		setnDict = Dictionary.new;
 		mapDict = Dictionary.new;
+		refsDict = Dictionary.new;
 		releases = [];
+		automations = [];
 		}
 	
 	starttime_ {arg newstart;
@@ -818,99 +881,123 @@ CtkNote : CtkNode {
 			})
 		}
 
+	getValueAtTime {arg argname, time = 0.0;
+		var times, argkey, values, pos, myRef;
+		refsDict[argname].isNil.if({
+			^args.at(argname)
+			}, {
+			myRef = refsDict[argname].value ++ [[0.0, argname, args.at(argname)]];
+			#times, argkey, values = myRef.value.sort({arg a, b;
+				a[0] < b[0]
+				}).flop;
+			pos = times.indexOfGreaterThan(time);
+			pos = pos.isNil.if({
+				times.size - 1;
+				}, {
+				pos - 1;
+				});
+			^values[pos];	
+			})
+		}
+		
 	args_ {arg argdict;
 		args = argdict;
 		argdict.keysValuesDo({arg argname, val;
-			this.addUniqueMethod(argname.asSymbol, {arg note; args.at(argname)});
-			this.addUniqueMethod((argname.asString++"_").asSymbol, {arg note, newValue, 
-					timeOffset;
-				var oldval;
-				oldval = args[argname];
-				args.put(argname.asSymbol, newValue);
-				(this.isPlaying.not).if({
-					newValue.isKindOf(CtkControl).if({
-						(newValue.isScored or: {newValue.isARelease}).if({
-							timeOffset.notNil.if({
-								noMaps.indexOf(argname).isNil.if({
-									messages = messages.add(CtkMsg(server, 
-										timeOffset + starttime, 
-										[\n_map, this.node, argname.asSymbol,
-											newValue.asUGenInput]));
-									});
-								})
-							}, {
-							(newValue.isPlaying or: {newValue.isScored}).not.if({
-								newValue.isARelease = true;
-								timeOffset = timeOffset ?? {0.0};
-								newValue.starttime_(starttime + timeOffset);
-								noMaps.indexOf(argname).isNil.if({
-									messages = messages.add(CtkMsg(server, 
-										timeOffset + starttime, 
-										[\n_map, this.node, argname.asSymbol, 
-											newValue.asUGenInput]));
-										});
-								newValue.isLFO.if({
-									newValue.ctkNote.duration_(endtime - newValue.starttime);
-									});	
-								});
-								releases = releases.add(newValue);
-							});
-						}, {
-						(oldval.isKindOf(CtkControl) and: 
-							{oldval.isLFO and: {oldval.isARelease and: 
-								{(oldval.ctkNote.starttime + oldval.ctkNote.duration) > 
-									(timeOffset + starttime)}}}).if({
-										oldval.ctkNote.duration_(
-											(timeOffset + starttime) - 
-											oldval.ctkNote.starttime)
-									})
-							})	
-						});	
-				this.isPlaying.if({
-					this.handleRealTimeUpdate(argname, newValue, oldval);
+			this.addUniqueMethod(argname.asSymbol, {arg note, time;
+				time.isNil.if({
+					args.at(argname)
 					}, {
-					timeOffset.notNil.if({
-						newValue.isKindOf(SimpleNumber).if({
-							this.set(timeOffset, argname.asSymbol, newValue)
-							})
-						})
+					this.getValueAtTime(argname, time)
 					});
+				});
+			this.addUniqueMethod((argname.asString++"_").asSymbol, {
+				arg note, newValue, timeOffset, curval;
+				var oldval, thisarg;
+				(this.isPlaying).if({
+						oldval = args[argname];
+						args.put(argname.asSymbol, newValue);
+						this.handleRealTimeUpdate(argname, newValue, oldval, timeOffset);
+						}, {	
+						timeOffset.isNil.if({
+							args.put(argname, newValue);
+							this.checkIfRelease(newValue);
+							}, {
+							curval = this.perform(argname, timeOffset);
+							refsDict[argname].isNil.if({
+								refsDict.put(argname, 
+									Ref([[timeOffset, argname, newValue]]))
+								}, {
+								refsDict[argname] = refsDict[argname].value.add( 
+									[timeOffset, argname, newValue])
+								});
+							(curval.isKindOf(CtkControl) and: {curval.isARelease}).if({
+								curval.duration_(timeOffset - curval.starttime)
+								})
+							});
+						});
+
 				note;
 				});
 			});		
 		}
-		
-	handleRealTimeUpdate {arg argname, newValue, oldval; 
+	
+	checkIfRelease {arg aValue;
+		// if it is a CtkControl     AND
+		(aValue.isKindOf(CtkControl) and: {
+			// it is is NOT playing or already a release
+			(aValue.isARelease or: {aValue.isPlaying or: {aValue.isScored}}).not}).if({
+				// then make it a release;
+				releases = releases.add(aValue);
+				aValue.isARelease = true;
+				aValue.starttime_(starttime);
+				(aValue.duration.notNil and: 
+					{duration.notNil and: {aValue.duration > duration}}).if({
+						aValue.duration_(duration);
+					})
+				})
+		}
+	
+	checkNewValue {arg argname, newValue, oldval;
 		case {
 			(newValue.isArray || newValue.isKindOf(Env) || newValue.isKindOf(InterplEnv))
 			}{
 			newValue = newValue.asArray;
-			server.sendBundle(latency, [\n_setn, node, argname, newValue.size] ++
-				newValue) 
+			this.setn(nil, argname, newValue);
 			}{
 			newValue.isKindOf(CtkControl)
 			}{
 			newValue.isPlaying.not.if({
+				this.checkIfRelease(newValue);
 				newValue.play(node, argname);
-				releases = releases.add(newValue);
+				});
+			noMaps.indexOf(argname).notNil.if({
+				this.set(latency, argname, newValue);
 				}, {
-				noMaps.indexOf(argname).notNil.if({
-					server.sendBundle(latency, [\n_set, node, argname, newValue.bus])
-					}, {
-					server.sendBundle(latency, [\n_map, node, argname, newValue.bus])
-					})
+				this.map(latency, argname, newValue);
 				})
 			}{
 			true
 			}{
-			server.sendBundle(latency, [\n_set, node, argname, newValue.asUGenInput])
+			this.set(nil, argname, newValue.asUGenInput);
 			};
 		// real-time support for CtkControls
-		oldval.isKindOf(CtkControl).if({
+		(oldval.isKindOf(CtkControl)).if({
 			(releases.indexOf(oldval)).notNil.if({
 				oldval.free;
 				releases.remove(oldval);
 				})
+			});
+	}
+				
+	handleRealTimeUpdate {arg argname, newValue, oldval, timeOffset;
+		timeOffset.notNil.if({
+			SystemClock.sched(timeOffset, {
+				this.isPlaying.if({
+					this.checkNewValue(argname, newValue, oldval)
+					})
+				})
+			}, {
+			this.checkNewValue(argname, newValue, oldval);
 			});
 		}
 
@@ -933,7 +1020,7 @@ CtkNote : CtkNode {
 	msgBundle {
 		var bundlearray, initbundle;
 		bundlearray =	this.buildBundle;
-		initbundle =  [bundlearray];
+		initbundle = [bundlearray];
 		setnDict.keysValuesDo({arg key, val;
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
 			});
@@ -943,31 +1030,51 @@ CtkNote : CtkNode {
 		}
 		
 	buildBundle {
-		var bundlearray;
+		var bundlearray, tmp;
 		(target.isKindOf(CtkNote) || target.isKindOf(CtkGroup)).if({
 			target = target.node});
 		bundlearray =	[\s_new, synthdefname, this.node, addActions[addAction], target];
 		args.keysValuesDo({arg key, val;
-			case {
-				(val.isArray || val.isKindOf(Env) || val.isKindOf(InterplEnv))
-				}{
-				setnDict.add(key -> val.asArray)
-				}{
-				val.isKindOf(CtkControl)
-				}{
-				noMaps.indexOf(key).notNil.if({
-					bundlearray = bundlearray ++ [key, val.asUGenInput];
-					}, {
-					mapDict.add(key -> val);
+			var refsize;
+			// check if val is a Ref - if so, we just need the initial value
+			// store and automate its data
+			refsDict[key].notNil.if({
+				refsDict[key].value.do({arg me;
+					automations = automations.add(me)
 					});
-				}{
-				true
-				}{
-				bundlearray = bundlearray ++ [key, val.asUGenInput];
-				}
+				});
+			tmp = this.parseKeys(key, val);
+			tmp.notNil.if({
+				bundlearray = bundlearray ++ tmp;
+				})
 			});
 		^bundlearray;		
 		}
+
+	parseKeys {arg key, val;
+		case {
+			(val.isArray || val.isKindOf(Env) || val.isKindOf(InterplEnv))
+			}{
+			setnDict.add(key -> val.asArray); ^nil;
+			}{
+			val.isKindOf(CtkControl)
+			}{
+			// if this key is a noMap (so, probably the bus arg of Out.kr),
+			// send in the CtkControl's bus number
+			noMaps.indexOf(key).notNil.if({
+				^[key, val.asUGenInput];
+				}, {
+				// oherwise, map the arg to the argument
+				mapDict.add(key -> val); 
+				^nil
+				});
+			}{
+			true
+			}{
+			^[key, val.asUGenInput];
+			}	
+	}
+
 
 	bundle {
 		^this.newBundle;
@@ -992,7 +1099,10 @@ CtkNote : CtkNode {
 					bund.add([\n_setn, node, key, val.size] ++ val);
 					});
 				mapDict.keysValuesDo({arg key, val;
-					val.isPlaying.not.if({val.play});
+					(val.isPlaying.not).if({
+						this.checkIfRelease(val);
+						val.play;
+						});
 					bund.add([\n_map, node, key, val.asUGenInput]);
 					});
 				bund.send(server, latency);
@@ -1002,6 +1112,9 @@ CtkNote : CtkNode {
 				duration.notNil.if({
 					SystemClock.sched(duration, {this.free(0.1, false)})
 					});
+				(automations.size > 0).if({
+					this.playAutomations;
+					})
 				});
 			^this;
 			}, {
@@ -1009,6 +1122,27 @@ CtkNote : CtkNode {
 			})
 		}
 
+	playAutomations {
+		var events, curtime = 0.0, firstev, idx = 0;
+		// first, save the automations to a local var, and clear them out.
+		events = automations;
+		automations = [];
+		events.sort({arg a, b; a[0] < b[0]});
+		firstev = events[0][0];
+		SystemClock.sched(firstev, {
+			(this.isPlaying).if({
+				this.perform((events[idx][1]++"_").asSymbol, events[idx][2]);
+				curtime = events[idx][0];
+				idx = idx + 1;
+				(idx < events.size).if({
+					events[idx][0] - curtime
+					}, {
+					nil
+					});
+				})
+			})
+		}
+		
 	prBundle {
 		^this.bundle;
 		}		
@@ -1321,7 +1455,7 @@ CtkBuffer : CtkObj {
 		
 CtkControl : CtkObj {
 	var <server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false, 
-	<endtime = 0.0;
+	<endtime = 0.0, <duration; //may want to get rid of setter later
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, 
 	<isLFO = false, <isEnv = false;
 	var timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
@@ -1349,16 +1483,31 @@ CtkControl : CtkObj {
 			
 	starttime_ {arg newStarttime;
 		starttime = newStarttime;
-		ctkNote.notNil.if({
-			ctkNote.starttime_(newStarttime);
+		starttime.notNil.if({
+			ctkNote.notNil.if({
+				ctkNote.starttime_(newStarttime);
+				});
+			[freq, phase, high, low].do({arg me;
+				me.isKindOf(CtkControl).if({
+					me.starttime_(newStarttime);
+				});
 			});
-		[freq, phase, high, low].do({arg me;
-			me.isKindOf(CtkControl).if({
-				me.starttime_(newStarttime);
-			});
-		});
+		})
 		}
-		
+	
+	duration_ {arg newDuration;
+		duration = newDuration;
+		duration.notNil.if({
+			ctkNote.notNil.if({
+				ctkNote.duration_(duration)
+				});
+			[freq, phase, high, low].do({arg me;
+				me.isKindOf(CtkControl).if({
+					me.duration_(duration)
+					})
+				})
+			})
+		}
 	*env {arg env, starttime = 0.0, addAction = 0, target = 1, bus, server,
 			levelScale = 1, levelBias = 0, timeScale = 1, doneAction = 2;
 		^this.new(1, env[0], starttime, bus, server).initEnv(env, levelScale, levelBias, timeScale, 
@@ -1367,14 +1516,13 @@ CtkControl : CtkObj {
 	
 	initEnv {arg argenv, argLevelScale, argLevelBias, argTimeScale, argAddAction, argTarget, 
 			argDoneAction;
-		var dur;
 		env = argenv;
 		timeScale = argTimeScale;
 		levelScale = argLevelScale;
 		levelBias = argLevelBias;
 		doneAction = argDoneAction;
 		isEnv = true;
-		dur = env.releaseNode.notNil.if({
+		duration = env.releaseNode.notNil.if({
 			free = false;
 			nil
 			}, {
@@ -1382,7 +1530,7 @@ CtkControl : CtkObj {
 			env.times.sum * timeScale;
 			});
 		// the ctk note object for generating the env
-		ctkNote = sddict[\ctkenv].new(starttime, dur, argAddAction, argTarget, 
+		ctkNote = sddict[\ctkenv].new(starttime, duration, argAddAction, argTarget, 
 			server).myenv_(env).outbus_(bus).levelScale_(levelScale).levelBias_(levelBias)
 			.timeScale_(timeScale).doneAction_(doneAction);
 		}
@@ -1414,6 +1562,7 @@ CtkControl : CtkObj {
 		phase = argphase;
 		low = arglow;
 		high = arghigh;
+		duration = argDuration;
 		free = false;
 		messages = [];
 		isLFO = true;
@@ -1422,12 +1571,12 @@ CtkControl : CtkObj {
 			{
 			[LFNoise0, LFNoise1, LFNoise2].indexOf(ugen).notNil;
 			} {
-			ctkNote = thisctkno.new(starttime, argDuration, argAddAction,
+			ctkNote = thisctkno.new(starttime, duration, argAddAction,
 				argTarget, server).freq_(freq).low_(low).high_(high).bus_(bus);
 			} {
-			[SinOsc, Impulse, LFSaw, LFPar, LFTri].indexOf(ugen).notNil;
+			[SinOsc, Impulse, LFSaw, LFPar, LFTri, LFCub].indexOf(ugen).notNil;
 			} {
-			ctkNote = thisctkno.new(starttime, argDuration, argAddAction, 
+			ctkNote = thisctkno.new(starttime, duration, argAddAction, 
 				argTarget, server).freq_(freq).low_(low).high_(high)
 				.phase_(phase).bus_(bus);
 			}			
@@ -1467,39 +1616,27 @@ CtkControl : CtkObj {
 		}
 		
 	play {arg node, argname;
-		var time, bund;
+		var time, bund, bundle;
 		isPlaying = true;
+		ctkNote.notNil.if({
+			ctkNote.play;
+			});
 		messages.do({arg me;
 			me.msgBundle.do({arg thisMsg;
 				bund = bund.add(thisMsg);
 				});
+			bundle = OSCBundle.new;
+			bund.do({arg me;
+				bundle.add(me)
+				});
 			time = me.starttime;
 			(time > 0).if({
 				SystemClock.sched(time, {
-					bund.do({arg thisbund;
-						server.sendBundle(latency, thisbund);
-						})
+					bundle.send(server, latency);
 					})
 				}, {
-				bund.do({arg thisbund;
-					server.sendBundle(latency, thisbund);
-					})
+					bundle.send(server, latency);
 				});	
-			});
-		ctkNote.notNil.if({
-			ctkNote.play;
-			});
-		(node.notNil && argname.notNil).if({
-			Routine.run({
-				var i = 0;
-				while({
-					(ctkNote.isPlaying.not and: {i < 100});
-					}, {
-					i = i + 1;
-					0.01.wait;
-					});
-				server.sendBundle(latency, [\n_map, node, argname, bus]);
-				})
 			});
 		}
 	
@@ -1528,7 +1665,7 @@ CtkControl : CtkObj {
 		var thisctkno;
 		sddict = CtkProtoNotes(
 			SynthDef(\ctkenv, {arg gate = 1, outbus, levelScale = 1, levelBias = 0, 
-					timeScale = 1, doneAction = 2;
+					timeScale = 1, doneAction = 0;
 				Out.kr(outbus,
 					EnvGen.kr(
 						Control.names([\myenv]).kr(Env.newClear(16)), 
@@ -1542,7 +1679,7 @@ CtkControl : CtkObj {
 					});
 				sddict.add(thisctkno);
 				});
-			[SinOsc, Impulse, LFSaw, LFPar, LFTri].do({arg ugen;
+			[SinOsc, Impulse, LFSaw, LFPar, LFTri, LFCub].do({arg ugen;
 				thisctkno = 
 					SynthDef(("CTK" ++ ugen.class).asSymbol, {arg freq, low, high, phase, bus;
 						Out.kr(bus, ugen.kr(freq, phase).range(low, high));
@@ -1715,7 +1852,8 @@ CtkEvent : CtkObj {
 						}, {
 						initSched = (endtime > timer.now).if({endtime - timer.now}, {0.1});
 						timer.clock.sched(initSched, {
-							((group.children.size == 0) and: {noFunc}).if({
+//							((group.children.size == 0) and: {noFunc}).if({
+							((group.children.size == 0)).if({
 								this.free;
 								}, {
 								0.1;
