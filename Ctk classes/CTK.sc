@@ -172,6 +172,11 @@ CtkScore : CtkObj {
 			})
 		}
 
+	freeGroups {
+		masterGroups.do({arg me;
+			me.freeAll(endtime)
+			})
+		}
 	// builds everything except the buffers since they act
 	// different in NRT and RT
 	
@@ -195,7 +200,7 @@ CtkScore : CtkObj {
 		rt.not.if({
 			this.addBuffers;
 			});
-		/* here */
+		this.freeGroups;
 		masterMessages = messages;
 		masterGroups.do({arg thisgroup;
 			(thisgroup.messages.size > 0).if({
@@ -232,9 +237,7 @@ CtkScore : CtkObj {
 								argval.isARelease}}}
 						{
 							argval.starttime_(time + thisnote.starttime);
-							"Endtime".postln;
-							tmpdur = thisnote.endtime - time;// - thisnote.starttime;
-							[thisnote.endtime, tmpdur].postln;
+							tmpdur = thisnote.endtime - time - thisnote.starttime;
 							(argval.duration.isNil or: {argval.duration > tmpdur}).if({
 								argval.duration_(tmpdur);
 								});
@@ -875,7 +878,11 @@ CtkNote : CtkNode {
 	
 	duration_ {arg newdur;
 		duration = newdur;
-		releases.do({arg me; me.duration_(newdur)});
+		releases.do({arg me;
+			(me.duration > newdur).if({
+				me.duration_(newdur)
+				})
+			});
 		starttime.notNil.if({
 			endtime = starttime + duration;
 			})
@@ -1221,8 +1228,8 @@ CtkGroup : CtkNode {
 		
 	freeAll {arg time = 0.0;
 		var bund1, bund2;
-		bund1 = [\g_freeAll, node];
-		bund2 = [\n_free, node];
+		bund1 = [\g_freeAll, this.node];
+		bund2 = [\n_free, this.node];
 		isGroupPlaying.if({
 			SystemClock.sched(time, {server.sendBundle(latency, bund1, bund2)});
 			isGroupPlaying = false;
@@ -1502,14 +1509,14 @@ CtkControl : CtkObj {
 				ctkNote.duration_(duration)
 				});
 			[freq, phase, high, low].do({arg me;
-				me.isKindOf(CtkControl).if({
+				(me.isKindOf(CtkControl) and: {me.isEnv.not}).if({
 					me.duration_(duration)
 					})
 				})
 			})
 		}
 	*env {arg env, starttime = 0.0, addAction = 0, target = 1, bus, server,
-			levelScale = 1, levelBias = 0, timeScale = 1, doneAction = 2;
+			levelScale = 1, levelBias = 0, timeScale = 1, doneAction = 0;
 		^this.new(1, env[0], starttime, bus, server).initEnv(env, levelScale, levelBias, timeScale, 
 			addAction, target, doneAction);
 		}

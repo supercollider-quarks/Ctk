@@ -11,19 +11,21 @@ p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
 p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
 p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
-p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #0014bc}
-p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #a91616}
-p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #a91616}
-p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco}
-p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; min-height: 14.0px}
-p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #0014bc}
-p.p11 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #000000}
+p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #0428b3}
+p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #782727}
+p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #bf0000}
+p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #000000; min-height: 12.0px}
+p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #000000}
+p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #782727}
+p.p11 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco}
+p.p12 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; min-height: 14.0px}
+p.p13 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px Monaco; color: #0428b3}
 span.s1 {font: 18.0px Helvetica}
-span.s2 {color: #0014bc}
+span.s2 {color: #0428b3}
 span.s3 {color: #000000}
-span.s4 {color: #307109}
-span.s5 {color: #a91616}
-span.s6 {color: #606060}
+span.s4 {color: #556b17}
+span.s5 {color: #782727}
+span.s6 {color: #0000bf}
 span.Apple-tab-span {white-space:pre}
 </style>
 </head>
@@ -237,41 +239,43 @@ span.Apple-tab-span {white-space:pre}
 <p class="p6">score.play(s);</p>
 <p class="p3"><br></p>
 <p class="p6">// uncomment to write the score to a soundfile</p>
-<p class="p4">//score.write(<span class="s6">"~/Desktop/test.aiff"</span>.standardizePath, 22,<span class="Apple-converted-space"> </span></p>
-<p class="p4">//<span class="Apple-tab-span">	</span>options: <span class="s2">ServerOptions</span>.new.numOutputBusChannels_(2));</p>
-<p class="p3"><br></p>
-<p class="p6">// uncomment to save the CtkScore as a file</p>
-<p class="p4">//score.saveToFile(<span class="s6">"~/Desktop/test.sc"</span>.standardizePath);</p>
+<p class="p7">//score.write("~/Desktop/test.aiff".standardizePath, 22,<span class="Apple-converted-space"> </span></p>
+<p class="p7">//<span class="Apple-tab-span">	</span>options: ServerOptions.new.numOutputBusChannels_(2));</p>
+<p class="p8"><br></p>
+<p class="p9">// uncomment to save the <span class="s6">CtkScore</span> as a file</p>
+<p class="p7">//score.saveToFile("~/Desktop/test.sc".standardizePath);</p>
 <p class="p4">)</p>
 <p class="p3"><br></p>
 <p class="p3"><br></p>
-<p class="p7">// basic lfo and env usage</p>
-<p class="p8">s.boot;</p>
-<p class="p8">a = <span class="s2">CtkControl</span>.lfo(<span class="s2">LFSaw</span>, 10, 1, 0, 0);</p>
-<p class="p8">a.play;</p>
-<p class="p9"><br></p>
-<p class="p10"><span class="s3">c = </span>CtkNoteObject<span class="s3">(</span></p>
-<p class="p8"><span class="Apple-tab-span">	</span><span class="s2">SynthDef</span>(<span class="s4">\test</span>, {<span class="s2">arg</span> freq, amp, pan;</p>
-<p class="p8"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">Out</span>.ar(0, <span class="s2">SinOsc</span>.ar(freq, 0, amp))</p>
-<p class="p8"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>})</p>
-<p class="p8"><span class="Apple-tab-span">	</span>);</p>
-<p class="p9"><br></p>
-<p class="p8">b = c.new().freq_(440).amp_(a).play</p>
-<p class="p9"><br></p>
-<p class="p8">b.freq_(<span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([440, 550], [5], <span class="s4">\exp</span>)));</p>
-<p class="p9"><br></p>
-<p class="p8">b.amp_(0.1);</p>
-<p class="p8">b.amp_(a);</p>
-<p class="p9"><br></p>
-<p class="p8">b.freq_(<span class="s2">CtkControl</span>.lfo(<span class="s2">LFNoise1</span>, 1, 550, <span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([550, 330], [10]))))</p>
-<p class="p9"><br></p>
-<p class="p8">b.amp_(0.1);</p>
-<p class="p8">b.amp_(<span class="s2">CtkControl</span>.lfo(<span class="s2">LFNoise1</span>, 1, 0.1, <span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([0.1, 1.0], [10]))))</p>
-<p class="p8">b.amp.high_(<span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([1.0, 0.1], [10])))</p>
+<p class="p10">// basic lfo and env usage</p>
+<p class="p11">s.boot;</p>
+<p class="p11">a = <span class="s2">CtkControl</span>.lfo(<span class="s2">LFSaw</span>, 10, 1, 0, 0);</p>
+<p class="p11">a.play;</p>
+<p class="p12"><br></p>
+<p class="p13"><span class="s3">c = </span>CtkNoteObject<span class="s3">(</span></p>
+<p class="p11"><span class="Apple-tab-span">	</span><span class="s2">SynthDef</span>(<span class="s4">\test</span>, {<span class="s2">arg</span> freq, amp, pan;</p>
+<p class="p11"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">Out</span>.ar(0, <span class="s2">SinOsc</span>.ar(freq, 0, amp))</p>
+<p class="p11"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>})</p>
+<p class="p11"><span class="Apple-tab-span">	</span>);</p>
+<p class="p12"><br></p>
+<p class="p11">b = c.new().freq_(440).amp_(a).play</p>
+<p class="p12"><br></p>
+<p class="p11">b.freq_(<span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([440, 550], [5], <span class="s4">\exp</span>)));</p>
+<p class="p12"><br></p>
+<p class="p11">b.amp_(0.1);</p>
 <p class="p11">b.amp_(a);</p>
-<p class="p7">// free the LFSaw</p>
-<p class="p8">a.free</p>
-<p class="p7">// free the synth</p>
-<p class="p8">b.free;</p>
+<p class="p12"><br></p>
+<p class="p11">b.freq_(z = <span class="s2">CtkControl</span>.lfo(<span class="s2">LFNoise1</span>, 1, 550, y = <span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([550, 330], [10]))))</p>
+<p class="p12"><br></p>
+<p class="p11">b.amp_(0.1);</p>
+<p class="p11">b.amp_(<span class="s2">CtkControl</span>.lfo(<span class="s2">LFNoise1</span>, 1, 0.1, <span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([0.1, 1.0], [2]))))</p>
+<p class="p11">// wait at least 2 seconds</p>
+<p class="p11">b.amp.high_(<span class="s2">CtkControl</span>.env(<span class="s2">Env</span>([1.0, 0.1], [10])))</p>
+<p class="p11">b.amp.high_(1)</p>
+<p class="p11">b.amp_(a);</p>
+<p class="p10">// free the LFSaw</p>
+<p class="p11">a.free</p>
+<p class="p10">// free the synth</p>
+<p class="p11">b.free;</p>
 </body>
 </html>
