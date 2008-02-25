@@ -423,8 +423,14 @@ CtkScore : CtkObj {
 	// SC2 it! create OSCscore, add buffers to the score, write it
 	write {arg path, duration, sampleRate = 44100, headerFormat = "AIFF", 
 			sampleFormat = "int16", options;
+		var tmpfile;
+		tmpfile = (thisProcess.platform.name == \windows).if({
+			"/windows/temp/trashme" 
+			}, {
+			"/tmp/trashme"
+			});
 		this.saveToFile;
-		score.recordNRT("/tmp/trashme", path, sampleRate: sampleRate, 
+		score.recordNRT(tmpfile, path, sampleRate: sampleRate, 
 			headerFormat: headerFormat,
 		 	sampleFormat: sampleFormat, options: options, duration: duration);
 		}
@@ -1309,6 +1315,7 @@ CtkBuffer : CtkObj {
 				var msg;
 				cond = cond ?? {Condition.new};
 				server.sendBundle(latency, bundle);
+				sync.if({server.sync(cond);});
 				// are there already messages to send? If yes... SYNC!, then send NOW
 				(messages.size > 0).if({
 					server.sync(cond);
@@ -1984,7 +1991,7 @@ CtkEvent : CtkObj {
 			condition.isKindOf(Env)
 			} {
 			^condition.releaseNode.isNil.if({
-				timer.now < condition.times.sum;
+				timer.now < (condition.times.sum + starttime);
 				}, {
 				(isReleasing || (releaseTime < condition.releaseTime))
 				})
