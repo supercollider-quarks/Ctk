@@ -1,6 +1,7 @@
 CtkObj {
 	classvar <>latency = 0.1;
 	var <objargs;
+	var <uniqueMethods;
 	
 	addTo {arg aCtkScore;
 		aCtkScore.add(this);
@@ -33,6 +34,20 @@ CtkObj {
 			this.addSetter(key);
 			})
 		^this;
+		}
+		
+	addUniqueMethod { arg selector, function;
+		var methodDict;
+		if (uniqueMethods.isNil, { uniqueMethods = IdentityDictionary.new });
+		uniqueMethods.put(selector, function);
+	}
+			
+	doesNotUnderstand {arg selector ... args;
+		(uniqueMethods[selector].notNil).if({
+			^uniqueMethods[selector].value(this, *args);
+			}, {
+			^DoesNotUnderstandError(this, selector, args).throw;
+			})
 		}
 	}
 
@@ -841,7 +856,7 @@ CtkNote : CtkNode {
 			
 	*new {arg starttime = 0.0, duration, addAction = 0, target = 1, server, synthdefname, noMaps;
 		server = server ?? {Server.default};
-		^super.newCopyArgs(Dictionary.new, addAction, target, server)
+		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server)
 			.initCN(starttime, duration, synthdefname, noMaps);
 		}
 				
@@ -1166,7 +1181,7 @@ CtkGroup : CtkNode {
 	var <endtime = nil, <duration, <isGroupPlaying = false, <>children;
 	
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
-		^super.newCopyArgs(Dictionary.new, addAction, target, server, node)
+		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
 			.init(starttime, duration);
 		}
 		
@@ -1259,7 +1274,7 @@ CtkBuffer : CtkObj {
 	var duration, <sampleRate, <starttime = 0.0;
 	
 	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server;
-		^this.newCopyArgs(Dictionary.new, bufnum, path, size, startFrame, numFrames, 
+		^this.newCopyArgs(Dictionary.new, nil, bufnum, path, size, startFrame, numFrames, 
 			numChannels, server).init;
 		}
 	
@@ -1476,7 +1491,7 @@ CtkControl : CtkObj {
 		
 	classvar ctkEnv, sddict; 
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
-		^this.newCopyArgs(Dictionary.new, server, numChans, bus, initVal, starttime).initThisClass;
+		^this.newCopyArgs(Dictionary.new, nil, server, numChans, bus, initVal, starttime).initThisClass;
 		}
 	
 	/* calling .play on an object tells the object it is being used in real-time
@@ -1708,7 +1723,7 @@ CtkControl : CtkObj {
 CtkAudio : CtkObj {
 	var <server, <bus, <numChans;
 	*new {arg bus, numChans = 1, server;
-		^this.newCopyArgs(Dictionary.new, server, bus, numChans).init;
+		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans).init;
 		}
 
 	// free the id for further use
@@ -1799,7 +1814,7 @@ CtkEvent : CtkObj {
 		score, <endtime, endtimeud, noFunc = false;
 	
 	*new {arg starttime = 0.0, condition, amp = 1, function, addAction = 0, target = 1, server;
-		^super.newCopyArgs(Dictionary.new, starttime, condition, function, amp, server,
+		^super.newCopyArgs(Dictionary.new, nil, starttime, condition, function, amp, server,
 			addActions[addAction]).initCE(target);
 		}
 		
