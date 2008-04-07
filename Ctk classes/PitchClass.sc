@@ -1,17 +1,18 @@
 /* For GUIDO objects - no quartertones yet */
 	
 PitchClass {
-	var <note, <acc, <octave, <pitch, <pitchclass, <keynum, <freq;
+	var <note, <acc, <octave, <pitch, <pitchclass, <keynum, <freq, <>alter;
 	classvar notenames, notenums, noteToScale, scaleToNote, accToSize, sizeToAcc, accToGuido;
 	// deal with transposition, notenames and PC classes here
 	// note and acc are symbols, octave is an integer, where middle c = c4
 
-	*new {arg pitch, octave = 4;
-		^super.new.init(pitch, octave);
+	*new {arg pitch, octave = 4, alter = 0;
+		^super.new.init(pitch, octave, alter);
 		}
 
 		
-	init {arg argpitch, argoctave;
+	init {arg argpitch, argoctave, argalter;
+		alter = argalter;
 		this.calcpitch(argpitch, argoctave);
 		}
 		
@@ -22,6 +23,7 @@ PitchClass {
 			octave = (thispitch.round*0.0833333333).floor - 1;
 			pitchnum = thispitch % 12;
 			(pitchnum == -0).if({pitchnum = 0});
+			(pitchnum == 0).if({octave = octave + 1});
 			pitch = notenums[pitchnum];
 			}, {
 			pitch = thispitch;
@@ -45,7 +47,7 @@ PitchClass {
 	guidoString {
 		var oct, gacc;
 		oct = octave - 3;
-		gacc = accToGuido[acc]
+		gacc = accToGuido[acc];
 		^note.asString++gacc++oct.asInteger;
 		}
 	// can be a PitchClass or float that represents a keynum (quartertones are okay this way)

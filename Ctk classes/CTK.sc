@@ -514,6 +514,14 @@ CtkProtoNotes {
 			})	
 		}
 	
+	load {arg aServer;
+		synthdefs.do({arg me; me.load(aServer)});
+		}
+		
+	send {arg aServer;
+		synthdefs.do({arg me; me.send(aServer)});	
+		}
+		
 	at {arg id;
 		^dict[id.asString]
 		}
@@ -602,7 +610,16 @@ CtkNoteObject {
 				})
 			}
 		}
-		
+	
+	// for loading directly to a specific server
+	load {arg aServer;
+		synthdef.load(aServer)
+		}
+
+	send {arg aServer;
+		synthdef.send(aServer)
+		}
+			
 	buildControls {
 		var kouts;
 		synthdef.load(server ?? {Server.default});
@@ -1722,7 +1739,7 @@ CtkControl : CtkObj {
 // not really needed... but it does most of the things that CtkControl does
 CtkAudio : CtkObj {
 	var <server, <bus, <numChans;
-	*new {arg bus, numChans = 1, server;
+	*new {arg numChans = 1, bus, server;
 		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans).init;
 		}
 

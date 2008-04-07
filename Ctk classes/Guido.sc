@@ -253,18 +253,22 @@ GuidoNote : GuidoEvent {
 	
 	init {
 		this.note_(note);
-//		note.isKindOf(Number).if({
-//			note = PitchClass(note);
-//			});
 		endtime = beat + duration;
 		}
 		
 	note_ {arg aPitchClass;
+		var rem;
 		aPitchClass.isKindOf(Number).if({
-			note = PitchClass(aPitchClass);
+			// check if there is an alteration... round to quarter-tones for now?
+			rem = (aPitchClass % 1.0).round(0.5);
+			aPitchClass = aPitchClass.trunc;
+			note = PitchClass(aPitchClass, alter: rem);
 			}, {
 			note = aPitchClass
-			})
+			});
+		(note.alter != 0).if({
+			marks = marks.add(GuidoArt(\alter, note.alter))
+			});
 		}
 		
 	// both return a new instance of GuidoNote
@@ -567,7 +571,7 @@ GuidoTempo : GuidoMark {
 \marcato
 \trem
 \grace
-
+\alter for quarter-tones
 for \trem and \grace, a note value can be passed in indicating that kind of note to draw:
 
 e.g. 32 = 32nd notes
@@ -577,7 +581,7 @@ e.g. 32 = 32nd notes
 GuidoArticulation : GuidoMark {
 	var tag, val;
 	*new {arg tag, val;
-		([\stacc, \accent, \ten, \marcato, \trem, \grace].indexOf(tag).notNil).if({
+		([\stacc, \accent, \ten, \marcato, \trem, \grace, \alter].indexOf(tag).notNil).if({
 			^super.newCopyArgs(tag, val);
 			}, {
 			"Tag not recognized as a GuidoArticulation".warn;
@@ -586,7 +590,7 @@ GuidoArticulation : GuidoMark {
 		}
 		
 	outputString {
-		([\trem, \grace].indexOf(tag).notNil && val.notNil).if({
+		([\trem, \grace, \alter].indexOf(tag).notNil && val.notNil).if({
 			^"\\"++tag.asString++"<"++val++">( ";		
 			}, {
 			^"\\"++tag.asString++"( ";
