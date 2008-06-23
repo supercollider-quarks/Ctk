@@ -742,7 +742,7 @@ CtkNode : CtkObj {
 		
 	set {arg time, key, value; 
 		var bund;
-		bund = [\n_set, this.node, key, value];
+		bund = [\n_set, this.node, key, value.asUGenInput];
 		this.handleMsg(time, bund);
 		}
 	
@@ -1007,7 +1007,7 @@ CtkNote : CtkNode {
 			(newValue.isArray || newValue.isKindOf(Env) || newValue.isKindOf(InterplEnv))
 			}{
 			newValue = newValue.asArray;
-			this.setn(nil, argname, newValue);
+			this.setn(nil, argname, newValue.asUGenInput);
 			}{
 			newValue.isKindOf(CtkControl)
 			}{
