@@ -113,7 +113,7 @@ a = [0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0];
 
 a.indexOfGreaterThan(0.5) - 1
 */
-		duration = newDuration * tuplet.reciprocal;
+		duration = newDuration * tuplet.notNil.if({tuplet.reciprocal}, {1});
 		(type.isNil and: {newDuration.isKindOf(SimpleNumber)}).if({
 //			"My type is nil!".postln;
 			idx = baseDurs.indexInBetween(newDuration).floor;
@@ -497,7 +497,7 @@ XMLEvent {
 XMLNote : XMLMusicObj {
 	var <>beat, <tuplet, <note, <pc;
 	
-	*new {arg aPitchClass, beat = 1.0, duration = 1.0, tuplet = 1.0;
+	*new {arg aPitchClass, beat = 1.0, duration = 1.0, tuplet;
 		^super.newCopyArgs(nil, nil, beat, tuplet).initXMLNote(aPitchClass, duration);
 		}
 		
@@ -528,7 +528,8 @@ XMLNote : XMLMusicObj {
 
 	appendToMeasure {arg tree, doc, divisions = 1;
 		var thisNote, thisType, idx, leftover;
-		var pitch, step, alter, octave, thisDuration, tmpDur;
+		var pitch, step, alter, octave, thisDuration, tmpDur, tupletTop, tupletBottom, timeMod,
+			actual, normal;
 		thisNote = doc.createElement("note");
 		pitch = doc.createElement("pitch");
 		step = doc.createElement("step");
@@ -548,6 +549,17 @@ XMLNote : XMLMusicObj {
 		thisNote.appendChild(thisDuration);
 		thisType = doc.createElement("type").appendChild(doc.createTextNode(type));
 		thisNote.appendChild(thisType);
+		tuplet.notNil.if({
+			#tupletTop, tupletBottom = tuplet.asFraction(768, false);
+			timeMod = doc.createElement("time-modification");
+			thisNote.appendChild(timeMod);
+			actual = doc.createElement("actual-notes");
+			timeMod.appendChild(actual);
+			actual.appendChild(doc.createTextNode(tupletTop.asString));
+			normal = doc.createElement("normal-notes");
+			timeMod.appendChild(normal);
+			normal.appendChild(doc.createTextNode(tupletBottom.asString));
+			});
 		tree.appendChild(thisNote);
 		}
 	
@@ -561,7 +573,7 @@ XMLMelody {
 XMLRest  : XMLMusicObj {
 	var <>beat, <tuplet;
 	
-	*new {arg beat = 1.0, duration = 1.0, tuplet = 1.0;
+	*new {arg beat = 1.0, duration = 1.0, tuplet;
 		^super.newCopyArgs(nil, nil, beat, tuplet).initXMLRest(duration);
 		}
 		
