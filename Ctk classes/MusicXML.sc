@@ -1,21 +1,74 @@
 XMLMusicObj {
-	classvar durToTypes, symToTypes, symToDur, baseDurs, accToAlter;
+	classvar durToTypes, symToTypes, symToDur, baseDurs, accToAlter, typeToBeam, durToDots;
 	var <duration, <type;
 	
 	*initClass {
 		/* incorporate dotted values */
 		durToTypes = IdentityDictionary[
 			0.25 -> "quarter",			
+			0.375 -> "quarter",			
+			0.4375 -> "quarter",			
 			0.125 -> "eighth",
+			0.1875 -> "eighth",
+			0.21875 -> "eighth",
 			0.0625 -> "16th",
+			0.09375 -> "16th",
+			0.109375 -> "16th",
 			0.03125 -> "32nd",
+			0.046875 -> "32nd",
+			0.0546875 -> "32nd",
 			0.015625 -> "64th",
+			0.0234375 -> "64th",
+			0.02734375 -> "64th",
 			0.0078125 -> "128th",
+			0.01171875 -> "128th",
+			0.013671875 -> "128th",
 			0.00390625 -> "256th",
 			0.5 -> "half",
+			0.75 -> "half",
+			0.875 -> "half",
 			1.0 -> "whole",
+			1.5 -> "whole",
+			1.75 -> "whole",
 			2.0 -> "breve",
-			4.0 -> "long"
+			3.0 -> "breve",
+			3.5 -> "breve",
+			4.0 -> "long",
+			6.0 -> "long",
+			7.0 -> "long"
+			];
+		durToDots = IdentityDictionary[
+			0.25 -> 0,			
+			0.375 -> 1,			
+			0.4375 -> 2,			
+			0.125 -> 0,
+			0.1875 -> 1,
+			0.21875 -> 2,
+			0.0625 -> 0,
+			0.09375 -> 1,
+			0.109375 -> 2,
+			0.03125 -> 0,
+			0.046875 -> 1,
+			0.0546875 -> 2,
+			0.015625 -> 0,
+			0.0234375 -> 1,
+			0.02734375 -> 2,
+			0.0078125 -> 0,
+			0.01171875 -> 1,
+			0.013671875 -> 2,
+			0.00390625 -> 0,
+			0.5 -> 0,
+			0.75 -> 1,
+			0.875 -> 2,
+			1.0 -> 0,
+			1.5 -> 1,
+			1.75 -> 2,
+			2.0 -> 0,
+			3.0 -> 1,
+			3.5 -> 2,
+			4.0 -> 0,
+			6.0 -> 1,
+			7.0 -> 2
 			];
 		symToTypes = IdentityDictionary[
 			\q -> "quarter",
@@ -81,7 +134,21 @@ XMLMusicObj {
 			\ld -> 6.0,
 			\ldd -> 7.0
 			];
-		baseDurs = [ 0.00390625, 0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4 ];
+		typeToBeam = Dictionary[
+			"quarter" -> 0,			
+			"eighth" -> 1,
+			"16th" -> 2,
+			"32nd" -> 3,
+			"64th" -> 4,
+			"128th" -> 5,
+			"256th" -> 6,
+			"half" -> 0,
+			"whole" -> 0,
+			"breve" -> 0,
+			"long" -> 0
+			];
+		baseDurs = 
+			[ 0.00390625, 0.0078125, 0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0 ];
 		accToAlter = IdentityDictionary[
 			\ffff -> -4,
 			\fff -> -3,
@@ -99,42 +166,74 @@ XMLMusicObj {
 		}
 		
 	duration_ {arg newDuration, tuplet;
-		var idx;
-		type = case
+		var idx, floatDur;
+		case
 			{newDuration.isKindOf(SimpleNumber)}
-			{durToTypes[newDuration.asFloat]}
+			{
+				type = durToTypes[newDuration.asFloat];
+				floatDur = newDuration;
+				this.dots_(durToDots[floatDur]);
+					
+			}
 			{newDuration.isKindOf(Symbol)}
-			{symToTypes[newDuration]}
+			{
+				type = symToTypes[newDuration];
+				floatDur = symToDur[newDuration];
+				this.dots_(newDuration.asString.size - 1);
+			}
 			{true}
 			{nil};
-		// need to find the basic value (then, dots, etc....)
-/*
-a = [0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0];
-
-a.indexOfGreaterThan(0.5) - 1
-*/
-		duration = newDuration * tuplet.notNil.if({tuplet.reciprocal}, {1});
 		(type.isNil and: {newDuration.isKindOf(SimpleNumber)}).if({
-//			"My type is nil!".postln;
-			idx = baseDurs.indexInBetween(newDuration).floor;
-			type = durToTypes[baseDurs[idx]]
+			// is there a tuplet to undo?
+			floatDur = newDuration * (tuplet.reciprocal);
+			type = durToTypes[floatDur];
 			});
-//		"Duration".postln;
-//		[type, duration].postln;
+		duration = floatDur * tuplet.notNil.if({tuplet.reciprocal}, {1});
+		this.beam = typeToBeam[type];
+		(this.beam > 0).if({this.beamType = Array.fill(this.beam, {\none})});
+		
 		}
 	
-	/* this isn't quite right - it should be a measure that is passed in - what if a note is 
-	held over from a measure? Multiple measures? We need to calculate all of that */
-	numBeats {arg anXMLMeter;
-		var thisDur, tmpDur;
-		anXMLMeter = anXMLMeter ?? {XMLMeter(4, 4)};
-		thisDur = duration.isKindOf(Symbol).if({symToDur[duration]}, {duration});
-		tmpDur = (thisDur * anXMLMeter.lower);
-		^(anXMLMeter.type != \compound).if({tmpDur}, {tmpDur / 3});
+
+	numBeats {arg anXMLPart;
+		var beatFloor, beatDur, remDur, beat, thisMeter, pctOfBeat, compoundScale, base, 
+			tmpDur, newDur, i = 0, test;
+		beat = this.beat;
+		beatFloor = beat.floor;
+		beatDur = anXMLPart.getBeatDurFromBeat(beatFloor);
+		// how much duration is left in the beat?
+		thisMeter = anXMLPart.getMeterFromBeat(beatFloor);
+		pctOfBeat = ((beat - beatFloor) > 0).if({
+			1 - (beat - beatFloor)
+			}, {
+			(beat + 1) - beatFloor
+			});
+		remDur = beatDur * pctOfBeat;
+		(duration > remDur).if({
+			tmpDur = duration - remDur;
+			base = remDur / beatDur;
+			while({
+				i = i + 1;
+				beatDur = anXMLPart.getBeatDurFromBeat(beatFloor + i);
+				(tmpDur > beatDur).if({
+					test = true;
+					base = base + 1;
+					tmpDur = tmpDur - beatDur;
+					}, {
+					test = false;
+					base = base + (tmpDur / beatDur);
+					});
+				test
+				});
+			^base;
+			}, {
+			^duration / beatDur;
+			});
+			
 		}
 	}
 
-// holds voices, and outputs the actual MusicXML file
+// holds parts, and outputs the actual MusicXML file
 
 XMLScore {
 	var <score, file, <doc;
@@ -147,12 +246,12 @@ XMLScore {
 		doc = DOMDocument.new;
 		}
 		
-	add {arg ... voices;
-		voices.do({arg aVoice;
-			aVoice.isKindOf(XMLVoice).if({
-				score = score.add(aVoice);
+	add {arg ... parts;
+		parts.do({arg aPart;
+			aPart.isKindOf(XMLPart).if({
+				score = score.add(aPart);
 				}, {
-				"XMLScores can only add an XMLVoice".warn
+				"XMLScores can only add an XMLPart".warn
 				})
 			});
 		}
@@ -190,18 +289,19 @@ XMLScore {
 /* build in some info type things - where is beat x? etc. 
 perhaps also a way to insert measures (so - offset what is already there, and shift data) */
 
-XMLVoice {
-	var <partName, <id, measures, <notes, <timeSigs, <keySigs, <clefs;
+XMLPart {
+	var <partName, <id, breakAcrossMeasures, <measures, <timeSigs, <keySigs, <clefs;
 	var <timeSigMeasures, <timeSigInstances, <keySigMeasures, <keySigInstances, 
-		<clefMeasures, <clefInstances, sortNeeded;
+		<clefMeasures, <clefInstances, sortNeeded; // <notes
 	var curMeter, curClef, curKey, <beatDurArray, <measureBeatArray;
 	var beatKeeper;
+	var <voices, <numVoices;
 	
-	*new {arg partName, id = 1, meter, key, clef;
-		^this.newCopyArgs(partName, id).initXMLVoice(meter, key, clef);
+	*new {arg partName, id = 1, meter, key, clef, breakAcrossMeasures = true;
+		^this.newCopyArgs(partName, id, breakAcrossMeasures).initXMLPart(meter, key, clef);
 		}
 		
-	initXMLVoice {arg meter, key, clef;
+	initXMLPart {arg meter, key, clef;
 		timeSigs = [];
 		keySigs = [];
 		clefs = [];
@@ -212,6 +312,8 @@ XMLVoice {
 		beatDurArray = [];
 		sortNeeded = true;
 		beatKeeper = BeatKeeper.new(1.0);
+		numVoices = 1;
+		voices = [XMLVoice.new(1, this)];
 		}
 	
 	now {
@@ -225,6 +327,7 @@ XMLVoice {
 	incNextBeat {
 		beatKeeper.now_(beatKeeper.now.ceil);
 		}
+		
 	/* perhaps add a 'shift' flag. If there is data after this, should it shift? Or, better yet
 	make an insert measure function */
 	
@@ -255,98 +358,83 @@ XMLVoice {
 			});	
 		}
 		
-	// you add notes to an XMLVoice, but when it is finally sent as output, it needs to be 
-	// measures (which contain attributes, XMLNotes and XMLRests)
-	sendToMeasures {
-		var notesCopy, curMeasure, curBeat, thisMeasure, thisMeter, thisKey, thisClef, thisNote, 
-			numBeats, thisBeat, endBeat, rest;
-		notes.sort({arg a, b; a.beat < b.beat});
-		notesCopy = this.fillWithRests(notes); //notes.deepCopy;//.reverse;
-		curMeasure = 1;
-		curBeat = 1;
-		// sort the attribute list
-		sortNeeded.if({this.sortVoiceAttributes});
-		#curMeter, curKey, curClef = this.getAttributes(curMeasure);
-		thisMeasure = XMLMeasure.new(curMeasure, curMeter, curClef, curKey, 1);
-		numBeats = curMeter.numBeats;
-		endBeat = numBeats + 1;
-		thisNote = notesCopy.pop;
-		// iterate over notes - get the needed one's, add rests! DO THIS!!!
-		thisNote.notNil.if({
-			while({
-				(thisNote.beat < thisMeasure.lastBeat).if({
-					thisMeasure.addNote(thisNote);
-					}, {
-					while({
-						measures = measures.add(thisMeasure);
-						curMeasure = curMeasure + 1;
-						#curMeter, curKey, curClef = this.getAttributes(curMeasure);
-						thisMeasure = XMLMeasure.new(curMeasure, curMeter, curClef, curKey,
-						 	thisMeasure.lastBeat);
-						(thisNote.beat >= thisMeasure.lastBeat)
-						});
-					thisMeasure.addNote(thisNote);
-					curBeat = thisNote.endBeat(curMeter);
-					});
-				thisNote = notesCopy.pop;
-				thisNote.notNil;
-				});
-			});
-		measures = measures.add(thisMeasure);
+	addVoice {arg showRests = true;
+		var newVoice;
+		numVoices = numVoices + 1;
+		newVoice = XMLVoice.new(numVoices, this);
+		voices = voices.add(newVoice); // add at the end... should have an index in the array of 
+								// numVoices - 1
+		^newVoice;
 		}
 	
-	fillWithRests {arg notes;
-		var tmp, idx = 0, rests, numBeats, beatDur;
-		var wholebeats, partialbeats;
-		rests = [];
-		// check if first note is in beat 1
-		(notes[0].beat > 1).if({
-			wholebeats = notes[0].beat.floor - 1;
-			wholebeats.do({arg i;
-				rests = rests.add(XMLRest(i + 1, this.getBeatDurFromBeat(i + 1)))
-				});
-			partialbeats = notes[0].beat - notes[0].beat.floor;
-			rests = rests.add(XMLRest(notes[0].beat.floor, partialbeats * 
-				this.getBeatDurFromBeat(notes[0].beat.floor)));
-			});
-		(notes.size - 1).do({arg i;
-			var note1, note2, dif;
-			note1 = notes[i];
-			note2 = notes[i + 1];
-			dif = note2.beat - note1.endBeat;
-			(dif > 0.000001).if({
-				// we need at least a rest! are these two notes within the same beat?
-				((note2.beat.floor - note1.endBeat.floor) <= 1).if({
-					beatDur = this.getBeatDurFromBeat(note1.endBeat.floor);
-					rests = rests.add(XMLRest(note1.endBeat, dif * beatDur));
-					}, {
-					beatDur = this.getBeatDurFromBeat(note1.endBeat.floor);
-					// first - fill this beat
-					rests = rests.add(
-						tmp = XMLRest(note1.endBeat, 
-							((note1.endBeat.floor + 1) - note1.endBeat) * beatDur));
-					// how many whole beats do we need?
-					(note2.beat - tmp.endBeat).floor.do({arg i;
-						var thisBeat;
-						thisBeat = note1.endBeat + i + 1;
-						beatDur = this.getBeatDurFromBeat(thisBeat);
-						rests = rests.add(XMLRest(thisBeat, beatDur));
-						});
-					((note2.beat - note2.beat.floor) > 0).if({
-						beatDur = this.getBeatDurFromBeat(note2.beat.floor);
-						rests = rests.add(
-							XMLRest(note2.beat.floor, 
-								(note2.beat - note2.beat.floor) * beatDur));
-						});
-					})
-				});
-			});
-		tmp = notes.deepCopy ++ rests;
-		tmp.sort({arg a, b; a.beat < b.beat});
-		^tmp.reverse;
+	voice1 {
+		^voices[0]
 		}
-			
-	sortVoiceAttributes {
+		
+	addToVoice {arg voice ... noteEvents;
+		var thisVoice, test, newStart, newEnd, testStart, testEnd;
+		// this Voice can be the instance of XMLVoice or the voice number
+		thisVoice = voice.isKindOf(XMLVoice).if({
+			voice
+			}, {
+			voices[voice - 1];
+			});
+		noteEvents.flat.do({arg me;
+			newStart = me.beat;
+			newEnd = me.endBeat(this);
+			thisVoice.add(me);
+			(me.beat >= beatKeeper.now).if({
+				beatKeeper.now_(me.beat);
+				beatKeeper.wait(me.duration, this.getBeatDurFromBeat(me.beat));
+				});
+			});
+		}	
+	
+	// probably the most general case... add to voice 1
+	add {arg ... noteEvents;
+		this.addToVoice(1, noteEvents);
+		}
+		
+	setupMeasures {arg endBeat;
+		var voiceEnd, tmp, curMeasureNumber, curNumBeats, curMeter, curKey, curClef;
+		var thism; // for debug
+		endBeat = endBeat ?? {
+			voiceEnd = 0;
+			voices.do({arg thisVoice;
+				tmp = thisVoice.getLastBeat;
+				(tmp > voiceEnd).if({voiceEnd = tmp});
+				});
+			(voiceEnd > this.now).if(voiceEnd, this.now); 
+			};
+		this.fillMeasureBeatArray;
+		// create measures up to endBeat
+		tmp = 1;
+		curMeasureNumber = 1;
+		while({
+			#curMeter, curKey, curClef = this.getAttributes(curMeasureNumber);
+			curNumBeats = curMeter.numBeats;
+			measures = measures.add(
+				thism = XMLMeasure(curMeasureNumber, curMeter, curClef, curKey, tmp));
+			tmp = tmp + curNumBeats;
+			curMeasureNumber = curMeasureNumber + 1;
+			tmp <= endBeat;
+			});
+		}
+		
+	/* sendToMeasures should go through the voices, and place notes into measures. Then! 
+	tell the measures to fill in rests of forwards */
+	
+	sendToMeasures {
+		// fill with rests here... let the other function break them up as needed */
+		this.setupMeasures;
+		// this fills the measures with note and rest / forward data... 
+		// voices can access the measures array
+		voices.do({arg thisVoice, i; 
+			thisVoice.fillMeasures(this, i)
+			});
+		}
+	
+	sortPartAttributes {
 		timeSigs.sort({arg a, b; (a[0] == b[0]).if({
 				"It appears that measure " ++ a[0] ++ " has two time signatures assigned to it... things probably won't look right!".warn;
 				});
@@ -392,24 +480,13 @@ XMLVoice {
 		^[thisMeter, thisKey, thisClef];
 		} 
 	
-		
-	add {arg ... noteEvents;
-		noteEvents.do({arg me;
-			notes = notes.add(me);
-			(me.beat >= beatKeeper.now).if({
-				beatKeeper.now_(me.beat);
-				beatKeeper.wait(me.duration, this.getBeatDurFromBeat(me.beat));
-				})
-			});
-		}
-		
 	addToDoc {arg doc, scorePartwise;
-		var part, attribute, note;
+		var partElement, attribute, note;
 		scorePartwise.appendChild(
-			part = doc.createElement("part").setAttribute("id", "P"++id));
+			partElement = doc.createElement("part").setAttribute("id", "P"++id));
 		this.sendToMeasures;
 		measures.do({arg measure;
-			measure.appendAttributes(doc, part)
+			measure.appendAttributes(doc, partElement, this)
 			});
 		}
 	
@@ -418,7 +495,7 @@ XMLVoice {
 	// fist element is a 0th measure, that really doesn't exist. makes indexing easier.
 	fillMeasureBeatArray {
 		var idx;
-		sortNeeded.if({this.sortVoiceAttributes});
+		sortNeeded.if({this.sortPartAttributes});
 		measureBeatArray = (timeSigMeasures.maxItem + 1).collect({arg curMeasure;
 			curMeasure = curMeasure;
 			idx = timeSigMeasures.indexInBetween(curMeasure).floor;
@@ -456,14 +533,14 @@ XMLVoice {
 		meter.upper.isKindOf(Array).if({
 			beatDurInMeasure = meter.upper[thisBeat - 1];
 			}, {
-			beatDurInMeasure = (meter.type == \compound).if({3}, {1}); //meter.upper;
+			beatDurInMeasure = meter.divisor; // (meter.type == \compound).if({3}, {1}); //meter.upper;
 			});
 		^meter.lower.reciprocal * beatDurInMeasure;
 		}
 
 	getBeatDur {arg beat;
 		var beatDurArraySize;
-		sortNeeded.if({this.sortVoiceAttributes});
+		sortNeeded.if({this.sortPartAttributes});
 		^((beat - 1) < beatDurArraySize = beatDurArray.size).if({
 			beatDurArray[beat - 1]
 			}, {
@@ -487,6 +564,142 @@ XMLVoice {
 		measure = this.getMeasureFromBeat(beat);
 		^this.getMeterForMeasure(measure[0]);
 		}
+		
+	getDurationBetweenBeats {arg beat1, beat2;
+		var dif, beg, mid, end, b1floor, b2floor, dursum, beatsRem;
+		b1floor = beat1.floor;
+		b2floor = beat2.floor;
+		// does this span more then one beat?
+		(((b2floor - b1floor) > 0) and: {b2floor - beat2 > 0}).if({
+			beg = b1floor; // the first beat to look for
+			dursum = ((beat1 - b1floor) > 0).if({
+				this.getBeatDurFromBeat(b1floor) * ((beat1 - b1floor));
+				}, {
+				this.getBeatDurFromBeat(b1floor)});
+			dif = beat2 - b2floor;
+			dursum = dursum + (this.getBeatDurFromBeat(b2floor) * dif);
+			// complete beats to fill
+			beatsRem = Array.series(b2floor-b1floor-1, b1floor, 1);
+			beatsRem.do({arg me;
+				dursum = dursum + this.getBeatDurFromBeat(me);
+				});
+			^dursum;
+			}, {
+			// same beat! just need to figure out the duration based on a single beats duration
+			dif = beat2 - beat1;
+			^(this.getBeatDurFromBeat(beat1.floor) * dif);
+			})
+		}
+}
+
+// voice numbers should be stored here... index at 1
+// can set things like stemDir, rest offsets, etc.
+XMLVoice {
+	var <voiceNum, <part, <showRests, <notes, <rests, sorted;
+	
+	*new {arg voiceNum, part, showRests = true;
+		^super.newCopyArgs(voiceNum, part, showRests).initXMLVoice;
+		}
+		
+	initXMLVoice {
+		notes = [];
+		rests = [];
+		sorted = false;
+		}
+		
+	add {arg ... newNotes;
+		// check for overlapping notes... post a warning and DON'T add the notes
+		notes = notes ++ newNotes; // ???
+		sorted.if({sorted = false});
+		}
+	
+	sort {
+		sorted.not.if({
+			notes.sort({arg a, b; a.beat < b.beat});
+			});
+		sorted = true;
+		}
+		
+	getLastBeat {
+		this.sort;
+		(notes.size > 0).if({
+			^notes[notes.size-1].endBeat(part);
+			}, {
+			^1.0
+			});
+		}
+
+	// sort notes in a voice, access the measures in a part, and fill with notes.
+	fillMeasures {arg part, voiceIdx;
+		var theseNotes, curNote, curMeasure, curMeasureIdx, curBeat, mStart, mEnd, numMeasures;
+		var newDur, remain, newNote, restsToAdd;
+		theseNotes = notes.copy;
+		curMeasureIdx = 0;
+		numMeasures = part.measures.size;
+		curMeasure = part.measures[curMeasureIdx];
+		mStart = curMeasure.firstBeat;
+		mEnd = curMeasure.lastBeat;
+		restsToAdd = [];
+		theseNotes.sort({arg a, b; a.beat < b.beat});
+		(theseNotes.size - 1).do({arg i;
+			var note1, note2, note1EndBeat, noteDur;
+			note1 = theseNotes[i];
+			note2 = theseNotes[i + 1];
+			note1EndBeat = note1.endBeat(part).round(0.0001);
+			(note1EndBeat < note2.beat).if({
+				noteDur = part.getDurationBetweenBeats(note1EndBeat, note2.beat).round(0.0001);
+				(noteDur > 0.0001).if({
+					restsToAdd = restsToAdd.add(XMLRest(note1EndBeat, noteDur.round(0.00001)))
+					})
+				});
+			});
+		theseNotes = theseNotes ++ restsToAdd;
+		theseNotes.sort({arg a, b; a.beat < b.beat});		
+		// this also needs to be a while loop! add to theseNotes as needed
+		while({
+			curNote = (theseNotes.size > 0).if({
+				theseNotes.removeAt(0);
+				}, {
+				nil
+				});
+			curNote.notNil;
+			}, {	
+			while({
+				curNote.beat >= mEnd
+				}, {
+				curMeasureIdx = curMeasureIdx + 1;
+				numMeasures = part.measures.size;
+				curMeasure = part.measures[curMeasureIdx];
+				mStart = curMeasure.firstBeat;
+				mEnd = curMeasure.lastBeat;
+				});
+			// does this note extend past the end of the measure?
+			(curNote.endBeat(part) > mEnd).if({
+				newDur = part.getDurationBetweenBeats(curNote.beat, curMeasure.lastBeat);
+				newDur = newDur.quantize(0.0001);
+				remain = curNote.duration - newDur;
+				(remain > 0.0001).if({
+					remain = remain.round(0.00001);
+					newNote = XMLNote.new(curNote.pc, curMeasure.lastBeat, remain, 
+							curNote.tuplet)
+						.tieStop_(true)
+						.tieStart_(curNote.tieStart);
+					curNote.duration_(newDur).tieStart_(true);
+					theseNotes.addFirst(newNote);
+					curMeasure.addNote(voiceIdx, curNote);
+					}, {
+					curMeasure.addNote(voiceIdx, curNote);
+					})
+				}, {
+				(curMeasure.voices.size >= voiceIdx).if({
+					(voiceIdx - (curMeasure.voices.size - 1)).do({
+						curMeasure.voices = curMeasure.voices.add([]);
+						})
+					});
+				curMeasure.addNote(voiceIdx, curNote);
+				})
+			});
+		}
 }
 
 XMLEvent {
@@ -495,7 +708,12 @@ XMLEvent {
 }
 
 XMLNote : XMLMusicObj {
-	var <>beat, <tuplet, <note, <pc;
+	var <>beat, <tuplet, <note, <pc, <thisNote;
+	// beam is an array of beam elements, beamType is \begin, \continue, \end or \none
+	// beamType is set in XMLMeasure, beam is set in duration_
+	// stem is \up, \down, \none, \double
+	var <>beam, <>beamType, <>stem, <>backup, <>forward, <>voiceNum, <tieStop, <tieStart, 
+		<notations, <>dots = 0, <>chord;
 	
 	*new {arg aPitchClass, beat = 1.0, duration = 1.0, tuplet;
 		^super.newCopyArgs(nil, nil, beat, tuplet).initXMLNote(aPitchClass, duration);
@@ -504,13 +722,10 @@ XMLNote : XMLMusicObj {
 	initXMLNote {arg argAPitchClass, argDuration;
 		var tmp;
 		this.note_(argAPitchClass);
-		// I don't like this - find a way to save the symbol 
-		tmp = argDuration.isKindOf(Symbol).if({
-			symToDur[argDuration]
-			}, {
-			argDuration
-			});
-		this.duration_(tmp, tuplet);
+		this.duration_(argDuration, tuplet);
+		tieStop = tieStart = false;
+		notations = [];
+		chord = false;
 		}
 		
 	note_ {arg aPitchClass;
@@ -519,17 +734,50 @@ XMLNote : XMLMusicObj {
 	
 	beatsInMeter {arg beat = 1, anXMLMeter;
 		anXMLMeter = anXMLMeter ?? {XMLMeter(4, 4)};
-		^(duration / anXMLMeter.beatDur(beat))
+		^(duration / anXMLMeter.beatDur(beat));
 		}
 		
-	endBeat {arg anXMLMeter;
-		^beat + this.numBeats(anXMLMeter);
+	endBeat {arg anXMLPart;
+		^(beat + this.numBeats(anXMLPart)).round(0.00001);
+		}
+	
+	tieStop_ {arg bool;
+		tieStop = bool;
+		tieStop.if({
+			notations = notations.add(\tieStop)
+			}, {
+			notations.remove(\tieStop);
+			})
+		}
+
+	tieStart_ {arg bool;
+		tieStart = bool;
+		tieStart.if({
+			notations = notations.add(\tieStart)
+			}, {
+			notations.remove(\tieStart);
+			})
 		}
 
 	appendToMeasure {arg tree, doc, divisions = 1;
-		var thisNote, thisType, idx, leftover;
+		//var thisNote, 
+		var thisType, idx, leftover, bu, budur, for, fordur, thisVoice;
 		var pitch, step, alter, octave, thisDuration, tmpDur, tupletTop, tupletBottom, timeMod,
-			actual, normal;
+			actual, normal, thisNotations;
+		backup.notNil.if({
+			bu = doc.createElement("backup");
+			budur = doc.createElement("duration").appendChild(doc.createTextNode(
+				((backup * divisions).round * 4).asString));
+			bu.appendChild(budur);
+			tree.appendChild(bu);
+			});
+		forward.notNil.if({
+			for = doc.createElement("forward");
+			fordur = doc.createElement("duration").appendChild(doc.createTextNode(
+				((forward * divisions).round * 4).asString));
+			for.appendChild(fordur);
+			tree.appendChild(for);
+			});
 		thisNote = doc.createElement("note");
 		pitch = doc.createElement("pitch");
 		step = doc.createElement("step");
@@ -547,9 +795,36 @@ XMLNote : XMLMusicObj {
 				doc.createTextNode(
 					((tmpDur * divisions).round * 4).asString));
 		thisNote.appendChild(thisDuration);
+		tieStop.if({
+			thisNote.appendChild(
+				doc.createElement("tie").setAttribute("type", "stop")
+				)
+			});
+		tieStart.if({
+			thisNote.appendChild(
+				doc.createElement("tie").setAttribute("type", "start"))
+			});
+		voiceNum.notNil.if({
+			thisVoice = doc.createElement("voice")
+				.appendChild(doc.createTextNode(voiceNum.asString));
+			thisNote.appendChild(thisVoice);
+			});
 		thisType = doc.createElement("type").appendChild(doc.createTextNode(type));
 		thisNote.appendChild(thisType);
-		tuplet.notNil.if({
+		dots.do({
+			thisNote.appendChild(doc.createElement("dot"));
+			});
+		stem.notNil.if({
+			thisNote.appendChild(
+				doc.createElement("stem").appendChild(doc.createTextNode(stem.asString));
+				)
+			});
+		beam.do({arg i;
+			thisNote.appendChild(
+				doc.createElement("beam").setAttribute("number", (i+1).asString)
+					.appendChild(doc.createTextNode(beamType[i].asString)));
+			});
+		(tuplet.notNil and: {tuplet != 1.0}).if({
 			#tupletTop, tupletBottom = tuplet.asFraction(768, false);
 			timeMod = doc.createElement("time-modification");
 			thisNote.appendChild(timeMod);
@@ -559,6 +834,20 @@ XMLNote : XMLMusicObj {
 			normal = doc.createElement("normal-notes");
 			timeMod.appendChild(normal);
 			normal.appendChild(doc.createTextNode(tupletBottom.asString));
+			});
+		(notations.size > 0).if({
+			thisNote.appendChild(thisNotations = doc.createElement("notations"));
+			notations.do({arg me;
+				case
+					{me == \tieStop}
+					{thisNotations.appendChild(
+						doc.createElement("tied").setAttribute("type", "stop"))}
+					{me == \tieStart}
+					{thisNotations.appendChild(
+						doc.createElement("tied").setAttribute("type", "start"))}
+					{true}
+					{me.postln}
+				});
 			});
 		tree.appendChild(thisNote);
 		}
@@ -570,30 +859,41 @@ XMLMelody {
 
 }
 
-XMLRest  : XMLMusicObj {
-	var <>beat, <tuplet;
+XMLRest : XMLMusicObj {
+	var <>beat, <tuplet, <thisNote;
+	var <>beam, <>beamType, <>dots, <>pc, <>voiceNum, <>backup, <>forward, <>stem;
 	
-	*new {arg beat = 1.0, duration = 1.0, tuplet;
+	*new {arg beat = 1.0, duration = 1.0, tuplet = 1.0;
 		^super.newCopyArgs(nil, nil, beat, tuplet).initXMLRest(duration);
 		}
 		
 	initXMLRest {arg argDuration;
 		var tmp;
-		tmp = argDuration.isKindOf(Symbol).if({
-			symToDur[argDuration]
-			}, {
-			argDuration
-			});
-		this.duration_(tmp, tuplet);
+		this.duration_(argDuration, tuplet);
+		pc = PitchClass(0);
 		}
 
-	endBeat {arg anXMLMeter;
-		^beat + this.numBeats(anXMLMeter);
+	endBeat {arg anXMLPart;
+		^(beat + this.numBeats(anXMLPart)).round(0.00001);
 		}
 		
 	appendToMeasure {arg tree, doc, divisions = 1;
-		var thisNote;
-		var pitch, step, alter, octave, thisDuration, tmpDur;
+		var pitch, step, alter, octave, thisDuration, tmpDur, bu, budur, for, fordur, 
+			thisVoice;
+		backup.notNil.if({
+			bu = doc.createElement("backup");
+			budur = doc.createElement("duration").appendChild(doc.createTextNode(
+				((backup * divisions).round * 4).asString));
+			bu.appendChild(budur);
+			tree.appendChild(bu);
+			});
+		forward.notNil.if({
+			for = doc.createElement("forward");
+			fordur = doc.createElement("duration").appendChild(doc.createTextNode(
+				((forward * divisions).round * 4).asString));
+			for.appendChild(fordur);
+			tree.appendChild(for);
+			});
 		thisNote = doc.createElement("note");
 		tree.appendChild(thisNote);
 		thisNote.appendChild(doc.createElement("rest"));
@@ -602,13 +902,18 @@ XMLRest  : XMLMusicObj {
 				doc.createTextNode(
 					((tmpDur * divisions).round * 4).asString));
 		thisNote.appendChild(thisDuration);
+		voiceNum.notNil.if({
+			thisVoice = doc.createElement("voice")
+				.appendChild(doc.createTextNode(voiceNum.asString));
+			thisNote.appendChild(thisVoice);
+			});
 		tree.appendChild(thisNote);
 		}
 
 }
 
 XMLMeter {
-	var <>upper, <>lower, <type, <division;
+	var <>upper, <>lower, <type, <division, <divisor;
 	// numBeats is going to be the important one here!
 	var <numBeats, <beatLength, <measureLength;
 	
@@ -619,11 +924,14 @@ XMLMeter {
 	initXMLMeter {
 		upper.isKindOf(Array).if({
 			numBeats = upper.size;
+			divisor = 1;
 			}, {
 			(type == \compound).if({
 				numBeats = upper / 3;
+				divisor = 3;
 				}, {
 				numBeats = upper;
+				divisor = 1;
 				});
 			});
 		}
@@ -637,11 +945,7 @@ XMLMeter {
 				^nil;
 				})
 			}, {
-			(type == \compound).if({
-				^lower.reciprocal * 3;
-				}, {
-				^lower.reciprocal
-				})
+			^lower.reciprocal * divisor;
 			});
 		}
 		
@@ -790,35 +1094,44 @@ XMLKey {
 
 }
 
-/* user probably won't see XMLMeasures. XMLVoice will create these */
-XMLMeasure {
-	var <measureNumber, <meter, <clef, <key, <firstBeat, <notes, <>divisions = 240, <key, <time,
-		<lastBeat, <numBeats;
+/* user probably won't see XMLMeasures. XMLPart will create these */
+XMLMeasure : XMLMusicObj {
+	// no need for notes anymore... they are stored in voices' arrays
+	var <measureNumber, <meter, <clef, <key, <firstBeat,/*<notes,*/<>divisions = 240, <key, <time,
+		<lastBeat, <numBeats, <>voiceNum = 1, <>voices;
 	
 	*new {arg measureNumber, meter, clef, key, firstBeat = 1 ... notes;
-		^super.newCopyArgs(measureNumber, meter, clef, key, firstBeat, notes).initXMLMeasure;
+		^super.newCopyArgs(nil, nil, measureNumber, meter, clef, key, firstBeat, 
+			notes).initXMLMeasure;
 		}
 		
 	initXMLMeasure {
 		numBeats = meter.numBeats;
 		// this beat doesn't exist in this measure .. it is the first beat of the next measure
 		lastBeat = firstBeat + numBeats;
+		voices = [[]]; 
 		}
 	
-	addNote {arg ... newNotes;
-		notes = notes ++ newNotes;
+	addNote {arg voiceIdx ... newNotes;
+		(voices.size <= voiceIdx).if({
+			(voices.size - (voiceIdx - 1)).do({
+				voices = voices.add([])
+				})
+			});
+		voices[voiceIdx] = voices[voiceIdx] ++ newNotes;
 		}
-		
-	appendAttributes {arg doc, part;
-		var measure, tree, thesedurs;
-//		notes.removeAllSuchThat({arg me; me.duration < 0.00001});
-		thesedurs = notes.collect({arg me; me.duration});
+
+	appendAttributes {arg doc, partElement, part;
+		var measure, tree, thesedurs, notesFlat, notesFlatSize, tmpNotes, myBeats, beatSort, tmp, 
+			myDur, dif, lastPct, fillBeats, curNote, lastNoteEnd, tmpRest;
+		myDur = 0;
+		notesFlat = voices.flat;
+		thesedurs = notesFlat.collect({arg me; me.duration});
 		thesedurs = thesedurs.select({arg me; me > 0});
-		thesedurs = thesedurs.collect({arg me; var tmp; tmp = me.asFraction(768, false); tmp[1]});
-		thesedurs.postln;
+		thesedurs = thesedurs.collect({arg me; tmp = me.asFraction(768, false); tmp[1]});
 		thesedurs.removeAllSuchThat({arg me, i; me < 0});
-		divisions = thesedurs.reduce(\lcm);
-		
+		divisions = (thesedurs.size > 1).if({thesedurs.reduce(\lcm)}, {thesedurs[0] ?? {1}});
+		partElement.appendChild(doc.createComment("========== Data for Measure "++measureNumber ));
 		measure = doc.createElement("measure").setAttribute("number", measureNumber.asString);
 		measure.appendChild(tree = doc.createElement("attributes"));
 		tree.appendChild(
@@ -828,21 +1141,171 @@ XMLMeasure {
 		meter.appendAttributes(tree, doc);
 		clef.appendAttributes(tree, doc);
 		measure.appendChild(tree);
-		
-
-		notes.flat.do({arg me;
-			(me.duration > 0).if({
-				me.appendToMeasure(measure, doc, thesedurs.maxItem);
+		notesFlatSize = notesFlat.size;
+		myBeats = Array.series(numBeats, lastBeat - numBeats, 1.0);
+		myBeats.do({arg thisBeat; myDur = myDur + part.getBeatDurFromBeat(thisBeat)});
+		beatSort = Array.fill(numBeats, {[]});
+		notesFlat.do({arg me;
+			var thisBeat;
+			thisBeat = me.beat.floor.asFloat;
+			myBeats.indexOf(thisBeat);
+			beatSort[myBeats.indexOf(thisBeat)] = 
+				beatSort[myBeats.indexOf(thisBeat)].add(me);
+			});
+		voices.do({arg me, i;
+			(me.size > 0).if({	
+				(me[0].beat != myBeats[0]).if({
+					((dif = me[0].beat - myBeats[0]) > 1.0).if({
+						lastPct = dif - dif.floor;
+						// figure out which beats are needed
+						dif.floor.do({arg i;
+							tmp = myBeats[i];
+							me = me.add(XMLRest(tmp, part.getBeatDurFromBeat(tmp)));
+							});
+						(lastPct > 0).if({
+							tmp = myBeats[i];
+							me = me.add(XMLRest(tmp, 
+								part.getBeatDurFromBeat(tmp) * lastPct));
+							});
+						}, {
+						me = me.addFirst(
+							XMLRest(myBeats[0], part.getBeatDurFromBeat(myBeats[0]) * dif,
+								me[0].tuplet));
+						})
+					});
+				});
+			me.sort({arg a, b; a.beat < b.beat});
+			voices[i] = me;
+			});
+		(voices.size > 0).if({
+			voices.do({arg thisVoice, i;
+				thisVoice.do({arg thisNote, j;
+					thisNote.voiceNum_(i+1);
+					((i != 0) and: {j == 0}).if({
+						thisNote.backup_(myDur);
+						})
+					})
 				})
 			});
+		this.beamToBeat;
+		voices.do({arg thisVoice, i;
+			var test = 0;
+			thisVoice.do({arg thisNote;
+				curNote = thisNote;
+				(thisNote.duration > 0).if({
+					thisNote.appendToMeasure(measure, doc, thesedurs.maxItem);
+					})
+				});
+			/*
+			(curNote.notNil and: {(lastNoteEnd = curNote.endBeat(part)) < lastBeat}).if({
+				tmp = lastNoteEnd;
+				// check first if a partial beat needs to be filled
+				((lastNoteEnd - lastNoteEnd.floor) > 0).if({
+					/* THIS ROUND IS A KLUDGE!!! */
+					tmpRest = XMLRest(lastNoteEnd, 
+						(part.getBeatDurFromBeat(lastNoteEnd.floor) *
+							(lastNoteEnd - lastNoteEnd.floor)).round(0.00001),
+						curNote.tuplet
+						).voiceNum_(i + 1);
+					tmpRest.appendToMeasure(measure, doc, thesedurs.maxItem);
+					tmp = tmpRest.endBeat(part);
+					});
+				while({
+					((tmp < (lastBeat - 0.001)) and: {test < 100});
+					}, {
+					tmpRest = XMLRest(tmp, part.getBeatDurFromBeat(tmp)).voiceNum_(i+1);
+					tmpRest.appendToMeasure(measure, doc, thesedurs.maxItem);
+					tmp = tmpRest.endBeat(part);
+					test = test + 1;
+					}); 
+				})
+			*/ 
+			});
 		// append to the part
-		part.appendChild(measure);
+		partElement.appendChild(measure);
 		}
+
+	beamToBeat {
+		var beats, curBeat, curBeams, thisBeam, voiceSize, lastNote, extras;
+		// work through each beat of the measure, and connect the appropriate beams
+		voices.do({arg thisVoice;
+			voiceSize = thisVoice.size;
+			(voiceSize > 1).if({
+				curBeams = 0;
+				thisVoice.do({arg thisNote, i;
+					// are they in the same beat???
+					(curBeat == thisNote.beat.floor).if({
+						thisBeam = thisNote.beam;
+						// check on the situation!
+						(thisBeam > 0).if({
+							// if curBeams is > 0, then beams have already started
+							case
+								{curBeams == 0}
+								{thisNote.beamType_(Array.fill(thisBeam, {\begin}))}
+								{curBeams < thisBeam}
+								// need to begin some, continue others
+								{thisNote.beamType_(Array.fill(thisBeam, {\continue}));
+								extras = thisBeam - lastNote.beam;
+								extras.do({arg i; 
+									thisNote.beamType[thisBeam + i - 1] = \begin
+									})}
+								{curBeams > thisBeam}
+								// need to end some, continue others
+								{thisNote.beamType_(Array.fill(thisBeam, {\continue}));
+								extras = lastNote.beam - thisBeam;
+								extras.do({arg i; lastNote.beamType[thisBeam + i] = \end})
+								}
+								{curBeams == thisBeam}
+								{thisNote.beamType_(Array.fill(thisBeam, {\continue}))}
+								{true}
+								{thisNote.beamType_(Array.fill(thisBeam, {\wtf}))};
+							curBeams = thisBeam;
+							}, {
+							(lastNote.notNil and: {lastNote.beam > 0}).if({
+								lastNote.beamType_(Array.fill(lastNote.beam, {\end}))
+								});
+							})
+						}, {
+						curBeams = 0;
+						(thisNote.beam > 0).if({
+							curBeams = thisNote.beam;
+							thisNote.beamType_(Array.fill(curBeams, {\begin}))
+							});
+						(lastNote.notNil and: {lastNote.beam > 0}).if({
+							lastNote.beamType.do({arg me, i;
+								case
+									{me == \begin}
+									{lastNote.beamType[i] = \none}
+									{me == \continue}
+									{lastNote.beamType[i] = \end}
+									{true}
+									{"no idea".postln;}
+								})
+							});	
+						});				
+					curBeat = thisNote.beat.floor;
+					lastNote = thisNote;
+					});
+				});
+			(lastNote.notNil and: {lastNote.beam > 0}).if({
+				lastNote.beamType_(Array.fill(lastNote.beam, {\end}))
+				});
+			})
+
+		}
+
+}
+
+// just a wrapper for multiple XMLNotes with the same beat and duration
+XMLChord {
 
 
 }
 
-XMLChord {
-
-
+XMLTempo {
+	var <>bpm;
+	
+	*new {arg bpm = 60;
+		^super.newCopyArgs(bpm);
+		}
 }

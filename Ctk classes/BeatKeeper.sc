@@ -16,7 +16,7 @@ BeatKeeper {
 		}
 	
 	// by default, round to the nearest quarter beat
-	roundNow {arg tolerance = 0.0001, base = 0.25;
+	roundNow {arg tolerance = 0.001, base = 0.25;
 		var tmp, diff;
 		tmp = now.round(base);
 		diff = (now - tmp).abs;

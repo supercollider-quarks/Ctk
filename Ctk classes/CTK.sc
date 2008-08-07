@@ -1743,6 +1743,10 @@ CtkAudio : CtkObj {
 		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans).init;
 		}
 
+	*play {arg numChans = 1, bus, server;
+		^this.new(numChans, bus, server);
+		}
+		
 	// free the id for further use
 	free {
 		server.audioBusAllocator.free(bus);
