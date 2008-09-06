@@ -50,6 +50,17 @@ PitchClass {
 		gacc = accToGuido[acc];
 		^note.asString++gacc++oct.asInteger;
 		}
+		
+	lilyString {
+		var oct, octString, lacc;
+		oct = octave - 3;
+		octString = "";
+		lacc = (acc != \n).if({acc.asString}, {""});
+		case 
+			{oct > 0} {oct.do({octString = octString ++ "'"})}
+			{oct < 0} {oct.abs.do({octString = octString ++ ","})};		^note.asString++lacc++octString;
+		}
+		
 	// can be a PitchClass or float that represents a keynum (quartertones are okay this way)
 	invert {arg center;
 		var change;
@@ -484,7 +495,8 @@ PitchClass {
 			\ss -> "##",
 			\sss -> "###",
 			\ssss -> "####"
-			];
+			];	
+
 		}
 }
 
@@ -715,7 +727,20 @@ PitchCollection {
 		// to the next octave at C with the round
 		^PitchClass.new((member.note ++ member.acc), (keynum.round / 12).floor - 1);
 		}
-		
+	
+	at {arg idx;
+		^pitchCollection[idx]
+		}
+	
+	copySeries {arg first, second, last;
+		^this.class.new(pitchCollection.copySeries(first, second, last), tonic, octaveSize)
+		}
+	
+	do {arg func;
+		pitchCollection.do({arg me, i;
+			func.value(me, i);
+			})
+		}
 	choose {
 		^pitchCollection.choose;
 		}

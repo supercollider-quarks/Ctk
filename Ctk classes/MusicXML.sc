@@ -170,7 +170,7 @@ XMLMusicObj {
 		case
 			{newDuration.isKindOf(SimpleNumber)}
 			{
-				type = durToTypes[newDuration.asFloat];
+				type = durToTypes[newDuration.asFloat.round(0.0001)];
 				floatDur = newDuration;
 				this.dots_(durToDots[floatDur]);
 					

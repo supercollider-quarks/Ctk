@@ -251,7 +251,7 @@ CtkScore : CtkObj {
 							{argval.isScored.not or: {
 								argval.isARelease}}}
 						{
-							argval.starttime_(time + thisnote.starttime);
+							argval.setStarttime(time + thisnote.starttime);
 							tmpdur = thisnote.endtime - time - thisnote.starttime;
 							(argval.duration.isNil or: {argval.duration > tmpdur}).if({
 								argval.duration_(tmpdur);
@@ -458,7 +458,7 @@ CtkScore : CtkObj {
 		var items;
 		// all but buffers
 		items = notes ++ groups ++ messages ++ controls ++ ctkevents ++ others;		items.do({arg me;
-			me.starttime_(me.starttime + duration);
+			me.setStarttime(me.starttime + duration);
 			});
 		endtime = endtime + duration;
 		}
@@ -682,7 +682,7 @@ CtkNode : CtkObj {
 	classvar addActions, <nodes, <servers, <resps, cmd, <groups;
 
 	var <addAction, <target, <>server;
-	var >node, <>messages, <>starttime, <>willFree = false;
+	var >node, <>messages, <starttime, <>willFree = false;
 	var <isPaused = false, <>releases;
 
 	node {
@@ -695,6 +695,10 @@ CtkNode : CtkObj {
 		thisidx = servers.indexOf(server);
 		nodes[thisidx] = nodes[thisidx].add(node);
 		group.notNil.if({group.children = group.children.add(node)});
+		}
+		
+	setStarttime {arg newStarttime;
+		starttime = newStarttime;
 		}
 		
 	addServer {arg group;
@@ -882,7 +886,7 @@ CtkNote : CtkNode {
 		newStarttime = newStarttime ?? {starttime};
 		newNote = this.deepCopy;
 		newNote.server_(server);
-		newNote.starttime_(newStarttime);
+		newNote.setStarttime(newStarttime);
 		newNote.messages = Array.new;
 		newNote.node_(nil); 
 		newNote.args_(args.deepCopy);
@@ -906,15 +910,15 @@ CtkNote : CtkNode {
 		automations = [];
 		}
 	
-	starttime_ {arg newstart;
+	setStarttime {arg newstart;
 		starttime = newstart;
-		releases.do({arg me; me.starttime_(newstart)});
+		releases.do({arg me; me.setStarttime(newstart)});
 		(duration.notNil && (duration != inf)).if({
 			endtime = starttime + duration;
 			})
 		}
 	
-	duration_ {arg newdur;
+	setDuration {arg newdur;
 		duration = newdur;
 		releases.do({arg me;
 			(me.duration > newdur).if({
@@ -994,7 +998,7 @@ CtkNote : CtkNode {
 				// then make it a release;
 				releases = releases.add(aValue);
 				aValue.isARelease = true;
-				aValue.starttime_(starttime);
+				aValue.setStarttime(starttime);
 				(aValue.duration.notNil and: 
 					{duration.notNil and: {aValue.duration > duration}}).if({
 						aValue.duration_(duration);
@@ -1527,15 +1531,15 @@ CtkControl : CtkObj {
 		ctkNote = nil;
 		}
 			
-	starttime_ {arg newStarttime;
+	setStarttime {arg newStarttime;
 		starttime = newStarttime;
 		starttime.notNil.if({
 			ctkNote.notNil.if({
-				ctkNote.starttime_(newStarttime);
+				ctkNote.setStarttime(newStarttime);
 				});
 			[freq, phase, high, low].do({arg me;
 				me.isKindOf(CtkControl).if({
-					me.starttime_(newStarttime);
+					me.setStarttime(newStarttime);
 				});
 			});
 		})
@@ -1921,7 +1925,7 @@ CtkEvent : CtkObj {
 		notes.asArray.do({arg me;
 			((me.starttime == 0.0) or: {me.starttime.isNil}).if({
 				isPlaying.if({
-					isRecording.if({score.add(me.copy.starttime_(timer.now))});
+					isRecording.if({score.add(me.copy.setStarttime(timer.now))});
 					me.play(group);
 					})
 				}, {
@@ -2077,7 +2081,7 @@ CtkEvent : CtkObj {
 		this.setup;
 		group.node;
 		[group, envbus, envsynth].do({arg me; 
-			me.notNil.if({me.starttime_(starttime);
+			me.notNil.if({me.setStarttime(starttime);
 			score.add(me)
 			})
 		});
@@ -2086,9 +2090,9 @@ CtkEvent : CtkObj {
 			function.value(this, group, envbus, inc, server);
 			notes.asArray.do({arg me;
 				me.starttime.isNil.if({
-					me.starttime_(curtime)
+					me.setStarttime(curtime)
 					}, {
-					me.starttime_(me.starttime + curtime);
+					me.setStarttime(me.starttime + curtime);
 					});
 				score.add(me);
 				});
@@ -2133,7 +2137,7 @@ CtkEvent : CtkObj {
 // messages are OSC messages. Will probably be only used internally
 
 CtkMsg : CtkObj{
-	var <>starttime, <duration, <endtime, <messages, <target = 0, <>bufflag = false;
+	var <starttime, <duration, <endtime, <messages, <target = 0, <>bufflag = false;
 	var <>server;
 	
 	*new {arg server, starttime ... messages;
@@ -2146,6 +2150,10 @@ CtkMsg : CtkObj{
 		starttime = argStarttime;
 		}
 	
+	setStarttime {arg newStarttime;
+		starttime = newStarttime;
+		}
+		
 	addMessage {arg ... newMessages;
 		messages = messages ++ newMessages;
 		}
