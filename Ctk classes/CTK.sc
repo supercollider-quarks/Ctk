@@ -147,6 +147,11 @@ CtkScore : CtkObj {
 			(endtime < event.endtime).if({
 				endtime = event.endtime
 				})
+			}, {
+			// if an event only has a starttime, use that
+			(endtime < event.starttime).if({
+				endtime = event.starttime;
+				})
 			});	
 	}
 	

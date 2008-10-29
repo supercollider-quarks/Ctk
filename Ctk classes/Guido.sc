@@ -63,15 +63,14 @@ key can be an integer. 0 is no sharps or flats, -2 is 2 flats, 3 is 3 sharps OR:
 
 
 GuidoVoice {
-	var <>id, <instr, <>events, <>clef, <>key, <>timesig, <>stemdir, <>staffid, <>beamToBeat;
+	var <>id, <instr, <>events, <>clef, <>key, <>timesig, <>stemdir, <>staffid;
 	classvar keyConvert;
 	// GuidoVoice Objects will be an array Array of GuidoEvents
-	*new {arg id, instr, events, clef = "treble", key = 0, timesig, stemdir = \stemsAuto, staffid,
-			beamToBeat = false;
+	*new {arg id, instr, events, clef = "treble", key = 0, timesig, stemdir = \stemsAuto, staffid;
 		staffid = staffid ? id;
 		timesig = timesig ? GuidoTimeSig([[1, [4, 4]]]);
 		events = events ? [];
-		^super.newCopyArgs(id, instr, events, clef, key, timesig, stemdir, staffid, beamToBeat);
+		^super.newCopyArgs(id, instr, events, clef, key, timesig, stemdir, staffid);
 		}
 	
 	// add anEvent or an array of events
@@ -81,18 +80,18 @@ GuidoVoice {
 				anEvent.isKindOf(Array)
 			} {
 				anEvent.do({arg me; events = events.add(me)})
-			} {
+			} /*{
 				anEvent.isKindOf(GuidoMelody)
 			} {
 				anEvent.notes.do({arg me; events = events.add(me)})
-			} {
+			}*/ {
 				true
 			} {
 				events = events.add(anEvent);
 			};
 		}
 
-	sort {
+/*	sort {
 		events = events.sort({arg a, b; a.beat < b.beat});
 		}
 					
@@ -159,7 +158,7 @@ GuidoVoice {
 	beatBeaming {
 	
 		}
-		
+*/		
 	output {arg file;
 		var string, eventstring, initMeter, currentMeter, currentMeasure, theseevents;
 		file.write("[\n");
@@ -179,12 +178,13 @@ GuidoVoice {
 		initMeter = currentMeter = timesig.meterAt(currentMeasure);
 		file.write("\\meter<\""++initMeter[0]++"/"++initMeter[1]++"\"> ");
 		file.write("\\"++stemdir.asString++" ");
-		// fill in rests
+/*		// fill in rests
 		this.fillWithRests;
 		this.formatToMeasures;
 		beamToBeat.if({
 			this.beatBeaming
 			});
+*/
 		events.do{arg me; me.output(file)};
 		file.write("]\n");
 		}
@@ -227,33 +227,28 @@ GuidoVoice {
 	}
 
 GuidoEvent {
-	output {arg file;
+	output {arg file, beatComment = 0.0;
 		var string;
-		string = this.outputString;
+		string = this.outputString(beatComment);
 		file.write(string);
 		string.postln;
 		}
 		
 	calcRhyDur {arg duration;
-		^(duration / 4).asFraction(64, false);
+		^(duration).asFraction(64, false);
 		}
 	}
 
 // aPitchClass should be an instance of PitchClass or an integer keynum
 GuidoNote : GuidoEvent {
-	var <note, <>beat, <>duration, <>marks, <endtime;
-	*new {arg aPitchClass = 60, beat = 1.0, duration = 1.0, marks;
-		(beat >= 1).if({
-			^super.newCopyArgs(aPitchClass, beat, duration, marks.asArray).init;
-			}, {
-			"Note events must start at beat 1 or higher".warn;
-			^nil
-			})
+	var <note, <>duration, <>marks;
+	*new {arg aPitchClass = 60, duration = 0.25, marks;
+		^super.newCopyArgs(aPitchClass, duration, marks.asArray).init;
 	}
 	
 	init {
 		this.note_(note);
-		endtime = beat + duration;
+//		endtime = beat + duration;
 		}
 		
 	note_ {arg aPitchClass;
@@ -270,7 +265,7 @@ GuidoNote : GuidoEvent {
 			marks = marks.add(GuidoArt(\alter, note.alter))
 			});
 		}
-		
+/*		
 	// both return a new instance of GuidoNote
 	// interval can be PitchInterval or +-integer
 	transpose {arg interval, dir;
@@ -286,8 +281,8 @@ GuidoNote : GuidoEvent {
 	scaleDur {arg timeScale;
 		^this.class.new(note, beat, duration * timeScale, marks);
 		}
-		
-	outputString {
+*/	
+	outputString {arg beatComment = 0.0;
 		var string, markstring, articulation = 0;
 		var rhythm = this.calcRhyDur(duration);
 		markstring = "";
@@ -298,13 +293,13 @@ GuidoNote : GuidoEvent {
 				})
 			});
 		string = markstring ++ note.guidoString++"*"++rhythm[0]++"/"++rhythm[1];		articulation.do({string = string ++" )"});
-		^"\t"++string ++" \t%% "++ beat ++ "\n";
+		^"\t"++string ++" \t%% "++ beatComment ++ "\n";
 		}
 	}
 
 // mostly just an array of GuidoNotes... but easy to transpose and invert the whole things
 // augment and diminute
-
+/*
 GuidoMelody : GuidoEvent {
 	var <>notes;
 	
@@ -381,20 +376,20 @@ GuidoMelody : GuidoEvent {
 		^this.class.new(thesenotes);
 		}
 	}
-	
+*/
 // No need to actually create GuidoRests on your own.. they will be created for you when a 
 // GuidoVoice is written out
 
 GuidoRest : GuidoEvent {
-	var <>beat, <>duration;
-	*new {arg beat = 1, duration = 1;
-		^super.newCopyArgs(beat, duration);
+	var <>duration;
+	*new {arg duration = 0.25;
+		^super.newCopyArgs(duration);
 		}
 		
-	outputString {
+	outputString {arg beatComment = 0.0;
 		var rhythm;
 		rhythm = this.calcRhyDur(duration);
-		^"\t_"++"*"++rhythm[0]++"/"++rhythm[1]++" \t%% "++beat++"\n"
+		^"\t_"++"*"++rhythm[0]++"/"++rhythm[1]++" \t%% "++beatComment++"\n"
 		}
 	}
 	
@@ -415,18 +410,13 @@ GuidoMeter : GuidoEvent {
 
 
 GuidoChord : GuidoEvent {
-	var <>note, <>beat, <>duration, <>marks;
+	var <>note, <>duration, <>marks;
 	
-	*new {arg aPitchClassArray, beat = 1.0, duration = 1.0, marks;
-		(beat >= 1).if({
-			^super.newCopyArgs(aPitchClassArray, beat, duration, marks.asArray)
-			}, {
-			"Note events must start at beat 1 or higher".warn;
-			^nil
-			})
+	*new {arg aPitchClassArray, duration = 1.0, marks;
+		^super.newCopyArgs(aPitchClassArray, duration, marks.asArray)
 		}
 		
-	outputString {
+	outputString {arg beatComment = 0.0;
 		var string, markstring, notestring, numnotes, articulation = 0;
 		var rhythm = this.calcRhyDur(duration);
 		marks.do({arg me; me.isKindOf(GuidoArticulation).if({articulation = articulation + 1})});
@@ -445,7 +435,7 @@ GuidoChord : GuidoEvent {
 			marks.do{arg me; markstring = markstring ++ me.outputString}});
 		string = markstring ++ notestring;
 		articulation.do({string = string ++" )"});
-		^"\t"++string ++ "\t%% "++beat++"\n";
+		^"\t"++string ++ "\t%% "++beatComment++"\n";
 		
 		}
 	}
@@ -462,8 +452,8 @@ GuidoChord : GuidoEvent {
 GuidoSpanner : GuidoEvent {
 	var <>arrGuidoNotes, <>beat, <>spanner;
 	
-	*new {arg arrGuidoNotes, beat, spanner;
-		^super.newCopyArgs(arrGuidoNotes, beat, spanner);
+	*new {arg arrGuidoNotes, spanner;
+		^super.newCopyArgs(arrGuidoNotes, spanner);
 		}
 		
 	outputString {
@@ -710,3 +700,4 @@ GuidoTime {
 	
 		
 }
+
