@@ -1308,7 +1308,7 @@ CtkBuffer : CtkObj {
 		^this.new(path, size, startFrame, server: server)
 		}
 		
-	*playbuf {arg path, startFrame = 0, numFrames = 0, server;
+	*playbuf {arg path, startFrame = 0, numFrames, server;
 		^this.new(path, startFrame: startFrame, numFrames: numFrames, server: server)
 		}
 		
@@ -1327,6 +1327,9 @@ CtkBuffer : CtkObj {
 			numChannels = sf.numChannels;
 			duration = sf.duration;
 			sampleRate = sf.sampleRate;
+			numFrames.isNil.if({
+				numFrames = sf.numFrames;
+				});
 			sf.close;
 			});
 		case { // path, not size - load file with b_allocRead
