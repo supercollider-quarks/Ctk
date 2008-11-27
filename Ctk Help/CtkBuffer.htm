@@ -5,23 +5,22 @@
 <meta http-equiv="Content-Style-Type" content="text/css">
 <title></title>
 <meta name="Generator" content="Cocoa HTML Writer">
-<meta name="CocoaVersion" content="949">
+<meta name="CocoaVersion" content="949.35">
 <style type="text/css">
 p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
 p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
 p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
-p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #a91616}
-p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; color: #000000}
-p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #0014bc}
-p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #606060}
-p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #bf0000}
+p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #961e1e}
+p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #001cb9}
+p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #606060}
+p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #a91616}
 span.s1 {font: 18.0px Helvetica}
-span.s2 {color: #0014bc}
+span.s2 {color: #001cb9}
 span.s3 {color: #000000}
 span.s4 {color: #606060}
-span.s5 {color: #a91616}
-span.s6 {color: #307109}
+span.s5 {color: #961e1e}
+span.s6 {color: #426f0e}
 span.Apple-tab-span {white-space:pre}
 </style>
 </head>
@@ -60,6 +59,8 @@ span.Apple-tab-span {white-space:pre}
 <p class="p1"><b><span class="Apple-converted-space"> </span>*diskin(path, size, startFrame, server) </b>- create a CtkBuffer suitable for DiskIn usage. size defaults to 32768.</p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>*playbuf(path, startFrame, numFrames, server) </b>- create a CtkBuffer suitable for PlayBuf usage.</p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>*buffer(size, numChannels, server) </b>- create a CtkBuffer of empty size and numChannels.</p>
+<p class="p1"><b><span class="Apple-converted-space"> </span>*env(size, env, wavetable, server) </b>- createa a CtkBuffer of size, filled with values from Env. 'wavetable' is a</p>
+<p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>flag where 0 (the default) fills the CtkBuffer with a Signal, if 1 then a Wavetable is used.<span class="Apple-converted-space"> </span></p>
 <p class="p2"><span class="Apple-converted-space"> </span></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>load(time, sync)</b> - for real-time uses, load the file to the server in 'time' seconds. time defaults to 0.0. sync</p>
 <p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>defaults to false. If true, a messages will post to let you know the buffer has been allocated. If other<span class="Apple-converted-space"> </span></p>
@@ -238,14 +239,14 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3">a.free;</p>
 <p class="p2"><br></p>
 <p class="p2"><br></p>
-<p class="p6"><b><span class="Apple-converted-space"> </span>Uses with CtkScore</b></p>
+<p class="p1"><b><span class="Apple-converted-space"> </span>Uses with CtkScore</b></p>
 <p class="p2"><br></p>
 <p class="p3">(</p>
 <p class="p3"><span class="s2">var</span> play, buf, score, playfun;</p>
 <p class="p4"><br></p>
 <p class="p3">score = <span class="s2">CtkScore</span>.new;</p>
 <p class="p4"><br></p>
-<p class="p7"><span class="s3">play = </span>CtkNoteObject<span class="s3">(</span></p>
+<p class="p6"><span class="s3">play = </span>CtkNoteObject<span class="s3">(</span></p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="s2">SynthDef</span>(<span class="s6">\play</span>, {<span class="s2">arg</span> buffer, rate = 1, dur, start;</p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">OffsetOut</span>.ar(0,<span class="Apple-converted-space"> </span></p>
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span><span class="s2">Pan2</span>.ar(</p>
@@ -257,7 +258,7 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3"><span class="Apple-tab-span">	</span><span class="Apple-tab-span">	</span>})</p>
 <p class="p3"><span class="Apple-tab-span">	</span>);</p>
 <p class="p4"><span class="Apple-tab-span">	</span></p>
-<p class="p8"><span class="s3">buf = </span><span class="s2">CtkBuffer</span><span class="s3">(</span>"sounds/a11wlk01-44_1.aiff"<span class="s3">).addTo(score);</span></p>
+<p class="p7"><span class="s3">buf = </span><span class="s2">CtkBuffer</span><span class="s3">(</span>"sounds/a11wlk01-44_1.aiff"<span class="s3">).addTo(score);</span></p>
 <p class="p4"><br></p>
 <p class="p5">//CtkBuffer(size: 1024).set(0.0, 0, Array.fill(1024, {-1.0.rrand(1.0)})).zero(1).addTo(score);</p>
 <p class="p4"><br></p>
@@ -281,7 +282,7 @@ span.Apple-tab-span {white-space:pre}
 <p class="p3">playfun.value(0, 20, <span class="s2">Env</span>([0.5, 2.0, 1.0], [0.2, 0.8], [3, -5]));</p>
 <p class="p4"><br></p>
 <p class="p5">// uncomment to play the score</p>
-<p class="p9">//[score.notes, score.groups, score.controls, score.messages].postln;</p>
+<p class="p8">//[score.notes, score.groups, score.controls, score.messages].postln;</p>
 <p class="p3">score.play</p>
 <p class="p5">// uncomment to save the score</p>
 <p class="p5">//score.saveToFile("~/Desktop/test.sc".standardizePath);</p>

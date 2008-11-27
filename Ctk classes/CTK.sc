@@ -1,5 +1,5 @@
 CtkObj {
-	classvar <>latency = 0.1;
+	classvar <>latency = 0.1, <cond;
 	var <objargs;
 	var <uniqueMethods;
 	
@@ -48,6 +48,10 @@ CtkObj {
 			}, {
 			^DoesNotUnderstandError(this, selector, args).throw;
 			})
+		}
+	
+	*initClass {
+		cond = Condition.new;
 		}
 	}
 
@@ -372,11 +376,11 @@ CtkScore : CtkObj {
 		server = server ?? {Server.default};
 		server.boot;
 		server.waitForBoot({
-			var cond;
-			cond = Condition.new;
+//			var cond;
+//			cond = Condition.new;
 			score = Score.new;
 			Routine.run({
-				this.loadBuffers(server, clock, quant, cond);
+				this.loadBuffers(server, clock, quant);
 				this.prepareObjects(true);
 				this.groupTogether;
 				this.objectsToOSC;
@@ -423,7 +427,7 @@ CtkScore : CtkObj {
 		oscready = true;	
 		}
 		
-	loadBuffers {arg server, clock, quant, cond;
+	loadBuffers {arg server, clock, quant;
 		(buffers.size > 0).if({
 			server.sync(cond, 
 				Array.fill(buffers.size, {arg i;
@@ -434,7 +438,10 @@ CtkScore : CtkObj {
 				this.add(CtkMsg(server, endtime, me.freeBundle));
 				(me.closeBundle.notNil).if({
 					this.add(CtkMsg(server, endtime, me.closeBundle));
-					})
+					});
+				me.messages.do({arg thisMsg;
+					this.add(thisMsg);
+					});
 				});
 			"Buffer loaded!".postln;
 			});
@@ -1295,9 +1302,9 @@ CtkGroup : CtkNode {
 // the CtkBuffer will be considered live.
 
 CtkBuffer : CtkObj {
-	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, <bundle, 
+	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, bundle, 
 		<freeBundle, <closeBundle, <messages, <isPlaying = false, <isOpen = false;
-	var duration, <sampleRate, <starttime = 0.0;
+	var duration, <sampleRate, <starttime = 0.0, completion;
 	
 	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server;
 		^this.newCopyArgs(Dictionary.new, nil, bufnum, path, size, startFrame, numFrames, 
@@ -1315,12 +1322,17 @@ CtkBuffer : CtkObj {
 	*buffer {arg size, numChannels, server;
 		^this.new(size: size, numChannels: numChannels, server: server)
 		}
+		
+	*env {arg size, env, wavetable = 0, server;
+		^this.new(size: size, numChannels: 1, server: server).fillWithEnv(0.0, env, wavetable);
+		}
 
 	init {
 		var sf, nFrames;
 		server = server ?? {Server.default};
 		bufnum = bufnum ?? {server.bufferAllocator.alloc(1)};
 		messages = [];
+//		complettion = [];
 		path.notNil.if({
 			sf = SoundFile.new(path);
 			sf.openRead;
@@ -1353,12 +1365,12 @@ CtkBuffer : CtkObj {
 		freeBundle = [\b_free, bufnum];
 		}
 	
-	load {arg time = 0.0, sync = true, cond, onComplete;
+	load {arg time = 0.0, sync = true, onComplete;
 		SystemClock.sched(time, {
 			Routine.run({
 				var msg;
-				cond = cond ?? {Condition.new};
-				server.sendBundle(latency, bundle);
+//				cond = cond ?? {Condition.new};
+				server.sendBundle(latency, bundle.postln);
 				sync.if({server.sync(cond);});
 				// are there already messages to send? If yes... SYNC!, then send NOW
 				(messages.size > 0).if({
@@ -1381,6 +1393,13 @@ CtkBuffer : CtkObj {
 			});
 		} 
 	
+	bundle {
+		completion.notNil.if({
+			bundle = bundle.add(completion);
+			});
+		^bundle;
+		}
+		
 	free {arg time = 0.0;
 		closeBundle.notNil.if({
 			SystemClock.sched(time, {
@@ -1482,7 +1501,7 @@ CtkBuffer : CtkObj {
 			}, {
 			env.asSignal(size)
 			});
-		this.set(time = 0.0, 0, env);
+		this.set(time, 0, env);
 		}
 
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
@@ -1490,7 +1509,11 @@ CtkBuffer : CtkObj {
 		isPlaying.if({
 			SystemClock.sched(time, {server.sendBundle(latency, bund)})
 			}, {
-			messages = messages.add(CtkMsg(server, time ?? {0.0}, bund))
+			(time == 0.0).if({
+				completion = bund;
+				}, {
+				messages = messages.add(CtkMsg(server, time ?? {0.0}, bund))
+				})
 			});
 		}
 	
@@ -1557,7 +1580,7 @@ CtkControl : CtkObj {
 		duration = newDuration;
 		duration.notNil.if({
 			ctkNote.notNil.if({
-				ctkNote.duration_(duration)
+				ctkNote.setDuration(duration)
 				});
 			[freq, phase, high, low].do({arg me;
 				(me.isKindOf(CtkControl) and: {me.isEnv.not}).if({
@@ -1716,6 +1739,10 @@ CtkControl : CtkObj {
 		initValue = val;
 		^this;
 		}
+		
+	+ {arg offset;
+		^this.new(1, bus + offset, server);
+		}
 	
 	asUGenInput {^bus}
 	
@@ -1769,6 +1796,10 @@ CtkAudio : CtkObj {
 		bus = bus ?? {server.audioBusAllocator.alloc(numChans)};
 		}
 		
+	+ {arg offset;
+		^this.new(1, bus + offset, server);
+		}
+		
 	asUGenInput {^bus}
 	}
 	
@@ -1787,23 +1818,32 @@ need to create a clock like object that will wait in tasks, advance time in .wri
 /* CtkTimer needs to be a TempoClock when played, a timekeeper when used for NRT */
 
 CtkTimer {
-	var starttime, <curtime, <clock, ttempo, rtempo, isPlaying = false, <next = nil;
+	var starttime, <curtime, <clock, <tempo, rtempo, isPlaying = false, <next = nil;
 	
 	*new {arg starttime = 0.0;
-		^super.newCopyArgs(starttime, starttime);
+		^super.newCopyArgs(starttime, starttime).initCtkTimer;
 		}
 	
-	play {arg tempo = 1;
+	initCtkTimer {
+		this.tempo_(1);
+		}
+		
+	play {
 		isPlaying.not.if({
 			clock = TempoClock.new;
-			clock.tempo_(ttempo = tempo);
-			rtempo = ttempo.reciprocal;
+			clock.tempo_(tempo);
+			rtempo = tempo.reciprocal;
 			isPlaying = true;
 			}, {
 			"This CtkClock is already playing".warn
 			});
 		}
 	
+	tempo_ {arg newTempo;
+		tempo = newTempo;
+		rtempo = newTempo.reciprocal
+		}
+		
 	beats {
 		^this.curtime;
 		}
@@ -1827,14 +1867,14 @@ CtkTimer {
 		isPlaying.if({
 			(inval*rtempo).yield;
 			}, {
-			curtime = curtime + inval
+			curtime = curtime + (inval*rtempo)
 			});
 		}
 		
 	next_ {arg inval;
 		next = inval;
 		isPlaying.not.if({
-			curtime = curtime + inval;
+			curtime = curtime + (inval*rtempo);
 			})
 		}
 	}
@@ -1844,7 +1884,7 @@ CtkEvent : CtkObj {
 	var starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
 	var isPlaying = false, isReleasing = false, releaseTime = 0.0, <timer, clock, 
 		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, envbus, playinit, notes, 
-		score, <endtime, endtimeud, noFunc = false;
+		score, <endtime, endtimeud, noFunc = false, eventDur;
 	
 	*new {arg starttime = 0.0, condition, amp = 1, function, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, starttime, condition, function, amp, server,
@@ -1952,7 +1992,7 @@ CtkEvent : CtkObj {
 		}
 		
 	setup {
-		var thisdur;
+//		var thisdur;
 		group.notNil.if({group.free});
 		envbus.notNil.if({envbus.free});
 		clock = timer.clock;
@@ -1960,8 +2000,8 @@ CtkEvent : CtkObj {
 		condition.isKindOf(Env).if({
 			envbus = CtkControl.new(initVal: condition.levels[0], starttime: starttime, 
 				server: server);
-			thisdur = condition.releaseNode.isNil.if({condition.times.sum}, {nil});
-			envsynth = envsd.new(duration: thisdur, target: group, server: server)
+			eventDur = condition.releaseNode.isNil.if({condition.times.sum}, {nil});
+			envsynth = envsd.new(duration: eventDur, target: group, server: server)
 				.outbus_(envbus.bus).evenv_(condition).amp_(amp);
 			}, {
 			envbus = CtkControl.new(1, amp, starttime, server: server);
@@ -2071,7 +2111,7 @@ CtkEvent : CtkObj {
 	// the CtkScore ... or WOW! I THINK IT WILL JUST WORK!)
 	
 	score {arg sustime = 0;
-		var curtime,idx;
+		var curtime,idx, eventEnd;
 		// check first to make sure the condition, if it is an Env, has a definite duration
 		condition.isKindOf(Env).if({
 			condition.releaseNode.notNil.if({
@@ -2093,6 +2133,7 @@ CtkEvent : CtkObj {
 			score.add(me)
 			})
 		});
+		eventEnd = starttime + eventDur;
 		while({
 			curtime = timer.curtime;
 			function.value(this, group, envbus, inc, server);
@@ -2102,7 +2143,14 @@ CtkEvent : CtkObj {
 					}, {
 					me.setStarttime(me.starttime + curtime);
 					});
-				score.add(me);
+				(me.endtime > eventEnd).if({
+					me.setDuration(eventEnd - me.starttime)
+					});
+				(me.starttime > eventEnd).if({
+					score.notes.remove(me)
+					}, {
+					score.add(me)
+					});
 				});
 			notes = [];
 			inc = inc + by;

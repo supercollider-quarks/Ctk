@@ -7,11 +7,11 @@ PitchClass {
 	// note and acc are symbols, octave is an integer, where middle c = c4
 
 	*new {arg pitch, octave = 4, alter = 0;
-		^super.new.init(pitch, octave, alter);
+		^super.new.initPC(pitch, octave, alter);
 		}
 
 		
-	init {arg argpitch, argoctave, argalter;
+	initPC {arg argpitch, argoctave, argalter;
 		alter = argalter;
 		this.calcpitch(argpitch, argoctave);
 		}
@@ -36,8 +36,14 @@ PitchClass {
 			);
 		pitch = pitch.asSymbol;
 		pitchclass = notenames[pitch];
-		keynum = pitchclass + (12 * (1 + octave));
-		freq = keynum.midicps;
+		["PitchClass", pitchclass];
+		(pitchclass > 0).if({
+			keynum = pitchclass + (12 * (1 + octave));
+			freq = keynum.midicps;
+			}, {
+			keynum = 0;
+			freq = 0;
+			});
 		}
 	
 	pitch_ {arg newpitch, newoctave;
@@ -46,9 +52,13 @@ PitchClass {
 		
 	guidoString {
 		var oct, gacc;
-		oct = octave - 3;
+		oct = (octave - 3).asInteger;
 		gacc = accToGuido[acc];
-		^note.asString++gacc++oct.asInteger;
+		(note == \r).if({
+			note = "_";
+			oct = "";
+			});
+		^note.asString++gacc++oct;
 		}
 		
 	lilyString {
@@ -57,6 +67,7 @@ PitchClass {
 		octString = "";
 		lacc = (acc != \n).if({acc.asString}, {""});
 		case 
+			{note == \r} {nil}
 			{oct > 0} {oct.do({octString = octString ++ "'"})}
 			{oct < 0} {oct.abs.do({octString = octString ++ ","})};		^note.asString++lacc++octString;
 		}
@@ -451,11 +462,13 @@ PitchClass {
 //			\bqf -> 10.5,
 			\ass -> 11,
 			\bn -> 11,
-			\cf -> 11 
+			\cf -> 11,
 //			\bqs -> 11.5,
 //			\cqf -> 11.5
+			\rn -> -1
 			];
 		notenums = Dictionary[
+			-1 -> \rn,
 			0 -> \cn,
 //			0.5 -> [\c, \qs],
 			1 -> \cs,
