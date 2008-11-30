@@ -2111,7 +2111,7 @@ CtkEvent : CtkObj {
 	// the CtkScore ... or WOW! I THINK IT WILL JUST WORK!)
 	
 	score {arg sustime = 0;
-		var curtime,idx, eventEnd;
+		var curtime, idx, eventEnd;
 		// check first to make sure the condition, if it is an Env, has a definite duration
 		condition.isKindOf(Env).if({
 			condition.releaseNode.notNil.if({
@@ -2133,7 +2133,7 @@ CtkEvent : CtkObj {
 			score.add(me)
 			})
 		});
-		eventEnd = starttime + eventDur;
+		eventEnd = eventDur.notNil.if({starttime + eventDur});
 		while({
 			curtime = timer.curtime;
 			function.value(this, group, envbus, inc, server);
@@ -2143,14 +2143,18 @@ CtkEvent : CtkObj {
 					}, {
 					me.setStarttime(me.starttime + curtime);
 					});
-				(me.endtime > eventEnd).if({
-					me.setDuration(eventEnd - me.starttime)
-					});
-				(me.starttime > eventEnd).if({
-					score.notes.remove(me)
+				eventEnd.notNil.if({
+					(me.endtime > eventEnd).if({
+						me.setDuration(eventEnd - me.starttime)
+						});
+					(me.starttime > eventEnd).if({
+						score.notes.remove(me)
+						}, {
+						score.add(me)
+						});
 					}, {
 					score.add(me)
-					});
+					})
 				});
 			notes = [];
 			inc = inc + by;

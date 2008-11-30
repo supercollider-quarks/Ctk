@@ -1,5 +1,43 @@
-GuidoScore {
-	// score will be an Dictionary of GuidoVoice objects
+GuidoObj {
+	classvar keyConvert;
+	
+	*initClass {
+		keyConvert = Dictionary[
+			\c -> -3,
+			\C -> 0,
+			\cs -> 4,
+			\Cs -> 7,
+			\df -> -8,
+			\Df -> -5,
+			\d -> -1,
+			\D -> 2,
+			\ds -> 8,
+			\e -> 1,
+			\E -> 4,
+			\f -> -4,
+			\F -> -1,
+			\fs -> 3,
+			\Fs -> 6,
+			\Gf -> -6,
+			\g -> -2,
+			\G -> 1,
+			\gs -> 5,
+			\Gs -> 8,
+			\af -> -7,
+			\Af -> -4,
+			\a -> 0,
+			\A -> 3,
+			\bf -> -5,
+			\Bf -> -2,
+			\b -> 2,
+			\B -> 5,
+			\Cf -> -7 
+			]
+		}
+	}
+
+GuidoScore : GuidoObj {
+	// score will be an Dictionary of GuidoPart objects
 	var <>score, file;
 	*new {
 		^super.new.init;
@@ -11,11 +49,11 @@ GuidoScore {
 	
 	// add a voice to the score
 	add {arg aVoice;
-		aVoice.isKindOf(GuidoVoice).if({
+		aVoice.isKindOf(GuidoPart).if({
 			//score = score.add(aVoice.id -> aVoice)
 			score = score.add(aVoice);
 			}, {
-			"GuidoScore can only add GuidoVoices".warn;
+			"GuidoScore can only add GuidoParts".warn;
 			})
 		}
 		
@@ -30,12 +68,13 @@ GuidoScore {
 		var string, eventstring;
 		file = File.new(pathname, mode);
 		file.write("%% SuperCollider output from " ++ Date.localtime ++ "\n");
+		file.write("%% Comments (%) after musical objects denote measure, beat (if supplied) \n");
 		file.write("{\n");
-		score.do{arg me, i; 
+		score.do({arg me, i; 
 			file.write("%%Voice" ++ i ++ "\n");
 			me.output(file); 
 			(i != (score.size - 1)).if({file.write(",")});
-			};
+			});
 		file.write("}");
 		file.close;
 		}
@@ -43,193 +82,66 @@ GuidoScore {
 
 /* 
 
-each GuidoVoice must have a unique id. More then one GuidoVoice can exist on a staff (in other words, two GuidoVoices with different id can share a staffid. To differentiate two lines on one staff, you may want to specify one \stemsUp and the other \stemsDown
+each GuidoPart must have a unique id. More then one GuidoPart can exist on a staff (in other words, two GuidoParts with different id can share a staffid. To differentiate two lines on one staff, you may want to specify one \stemsUp and the other \stemsDown
 
-clef is \g, \f or \c 
-optionally, you can specify a line to place the note indication of the clef on (1 bottom, 5 top)
-\g2 is standard treble
-\c3 is standard alto
-\c4 is tenor
 
-double clefs are allowed
-\gg
-
-and these are also valid: \treble, \bass, \alto and \tenor
 
 key can be an integer. 0 is no sharps or flats, -2 is 2 flats, 3 is 3 sharps OR:
 	\ef - E Flat minor - where lowercase indicates minot
 	\Fs - F sharp major - where upper case indicates major
 */
 
-
-GuidoVoice {
-	var <>id, <instr, <>events, <>clef, <>key, <>timesig, <>stemdir, <>staffid;
-	classvar keyConvert;
-	// GuidoVoice Objects will be an array Array of GuidoEvents
-	*new {arg id, instr, events, clef = "treble", key = 0, timesig, stemdir = \stemsAuto, staffid;
-		staffid = staffid ? id;
-		timesig = timesig ? GuidoTimeSig([[1, [4, 4]]]);
+GuidoPart : GuidoObj {
+	var <>id, <instr, <>events, <>stemdir, <>staffid, <>clef, <>key, <>timeSig;
+	// GuidoPart Objects will be an array Array of GuidoEvents
+	*new {arg id, instr, events, clef, key, timeSig, stemdir = \stemsAuto, staffid;
+		staffid = staffid ?? {id};
 		events = events ? [];
-		^super.newCopyArgs(id, instr, events, clef, key, timesig, stemdir, staffid);
+		^super.newCopyArgs(id, instr, events, stemdir, staffid).initGuidoPart(clef, key, timeSig);
+		}
+		
+	initGuidoPart {arg argClef, argKey, argTimeSig;
+		timeSig = argTimeSig ?? {GuidoTimeSig(4, 4).measure_(1)};
+		key = argKey ?? {GuidoKeySig(0).measure_(1)};
+		clef = argClef ?? {GuidoClef(\g).measure_(1)};
+		[timeSig, key, clef].do({arg me;
+			events = events.addFirst(me);
+			})
 		}
 	
 	// add anEvent or an array of events
-	add {arg anEvent;
-		case
-			{
-				anEvent.isKindOf(Array)
-			} {
-				anEvent.do({arg me; events = events.add(me)})
-			} /*{
-				anEvent.isKindOf(GuidoMelody)
-			} {
-				anEvent.notes.do({arg me; events = events.add(me)})
-			}*/ {
-				true
-			} {
-				events = events.add(anEvent);
-			};
+	add {arg ... anEvent;
+		anEvent.flat.do({arg thisEv;
+			thisEv.isKindOf(GuidoEvent).if({
+				events = events.add(thisEv)
+				}, {
+				"It appears you are trying to add a non-GuidoEvent to a GuidoPart or GuidoPart".warn;
+				});
+			})
 		}
 
-/*	sort {
-		events = events.sort({arg a, b; a.beat < b.beat});
-		}
-					
-	fillWithRests {
-		var curbeat, lastbeat, eventcopy;
-		curbeat = 1.0;
-		eventcopy = events.copy;
-		// check for gaps... fill with rests
-		eventcopy.do{arg me;
-			(me.beat > (curbeat + 0.02)).if({
-				this.add(GuidoRest(curbeat, (me.beat - curbeat)));
-				}, {
-				(me.beat < curbeat).if({
-					("This voice appears to have overlapping events. Voices can't overlap, though two voices may have the same staffid. Beat: " ++ me.beat ++ " curbeat: " ++ curbeat).warn
-					})
-				});
-			curbeat = me.beat + me.duration;
-			};
-		this.sort;
-		}
-	
-	formatToMeasures {
-		var beatsPerMeasure, check, firstdur, numFullMeasNotes, lastdur, curbeat, notearray;
-		beatsPerMeasure = timesig.numBeatsAt(1);
-		events.copy.do({arg me;
-			check = (((me.beat - 1) % beatsPerMeasure) + me.duration) > beatsPerMeasure;
-			check.if({
-				curbeat = me.beat;
-				events.remove(me);
-				firstdur = beatsPerMeasure - ((me.beat - 1) % beatsPerMeasure);
-				(me.isKindOf(GuidoNote) || me.isKindOf(GuidoChord)).if({
-					notearray = [];
-					notearray = notearray.add(me.class.new(me.note, curbeat, firstdur));
-					curbeat = curbeat + firstdur;
-					numFullMeasNotes = ((me.duration - firstdur) / beatsPerMeasure).floor;
-					numFullMeasNotes.do({arg i;
-						notearray = notearray.add(me.class.new(me.note, curbeat, 
-							beatsPerMeasure));
-						curbeat = curbeat + beatsPerMeasure;
-						});
-					lastdur = (me.duration - firstdur) - (numFullMeasNotes * beatsPerMeasure);
-					(lastdur > 0).if({
-						notearray = notearray.add(me.class.new(me.note, curbeat, lastdur))
-						});
-					this.add(GuidoSpanner(notearray, me.beat, \tie));
-					}, {
-					this.add(GuidoRest(curbeat, firstdur));
-					curbeat = curbeat + firstdur;
-					numFullMeasNotes = ((me.duration - firstdur) / beatsPerMeasure).floor;
-					numFullMeasNotes.do({arg i;
-						this.add(GuidoRest(curbeat, beatsPerMeasure));
-						curbeat = curbeat + beatsPerMeasure;
-						});
-					lastdur = (me.duration - firstdur) - (numFullMeasNotes * beatsPerMeasure);
-					(lastdur > 0).if({
-						this.add(GuidoRest(curbeat, lastdur))
-						})
-					})
-				})
-			});
-		this.sort;
-		}
-	
-	beatBeaming {
-	
-		}
-*/		
 	output {arg file;
 		var string, eventstring, initMeter, currentMeter, currentMeasure, theseevents;
 		file.write("[\n");
 		file.write("\\staff<\""++staffid.asString++"\"> ");
 		instr.notNil.if({file.write("\\instr<\""++instr.asString++"\"> ")});
-//		file.write("\\" ++ stemdir.asString); // turn on auto beaming for now
-		// clef
-		file.write("\\clef<\"" ++ clef.asString ++ "\"> ");
-		// key
-		key.isKindOf(Integer).if({
-			file.write("\\key<"++key++"> ");
-			}, {
-			file.write("\\key<\"" ++ keyConvert[key] ++ "\"> ");
-			});
-		// meter
 		currentMeasure = 1;
-		initMeter = currentMeter = timesig.meterAt(currentMeasure);
-		file.write("\\meter<\""++initMeter[0]++"/"++initMeter[1]++"\"> ");
-		file.write("\\"++stemdir.asString++" ");
-/*		// fill in rests
-		this.fillWithRests;
-		this.formatToMeasures;
-		beamToBeat.if({
-			this.beatBeaming
-			});
-*/
+		file.write("\\"++stemdir.asString++" \n");
 		events.do{arg me; me.output(file)};
 		file.write("]\n");
-		}
-		
-	*initClass {
-		keyConvert = Dictionary[
-			\c -> "c",
-			\C -> "C",
-			\cs -> "c#",
-			\Cs -> "C#",
-			\df -> "d&",
-			\Df -> "D&",
-			\d -> "d",
-			\D -> "D",
-			\ds -> "d#",
-			\Ds -> "D#",
-			\e -> "e",
-			\E -> "E",
-			\f -> "f",
-			\F -> "F",
-			\fs -> "f#",
-			\Fs -> "F#",
-			\Gf -> "G&",
-			\g -> "g",
-			\G -> "G",
-			\gs -> "g#",
-			\Gs -> "G#",
-			\af -> "a&",
-			\Af -> "A&",
-			\a -> "a",
-			\A -> "A",
-			\bf -> "b&",
-			\Bf -> "B&",
-			\b -> "b",
-			\B -> "B",
-			\Cf -> "C&" 
-			]
-		}
-	
+		}	
 	}
 
-GuidoEvent {
+GuidoEvent : GuidoObj {
+	var <>measure, <>beat;
 	output {arg file, beatComment = 0.0;
-		var string;
-		string = this.outputString(beatComment);
+		var string, append;
+		append = (measure.notNil or: {beat.notNil}).if({
+			"\t%"++measure++" ,"++beat;
+			}, {
+			""
+			});
+		string = this.outputString ++ append ++"\n";
 		file.write(string);
 		string.postln;
 		}
@@ -241,49 +153,46 @@ GuidoEvent {
 
 // aPitchClass should be an instance of PitchClass or an integer keynum
 GuidoNote : GuidoEvent {
-	var <note, <>duration, <>marks;
+	var <note, <>duration, <>marks, chord;
 	*new {arg aPitchClass = 60, duration = 0.25, marks;
-		^super.newCopyArgs(aPitchClass, duration, marks.asArray).init;
-	}
+		^super.new.initGuidoNote(aPitchClass, duration, marks.asArray);
+		}
 	
-	init {
-		this.note_(note);
-//		endtime = beat + duration;
+	initGuidoNote {arg argNote, argDur, argMarks;
+		duration = argDur;
+		marks = argMarks;
+		chord = false;
+		this.note_(argNote);
 		}
 		
 	note_ {arg aPitchClass;
+		aPitchClass.postln;
+		aPitchClass.isKindOf(Array).if({
+			chord = true
+			});
+		note = aPitchClass.asArray.collect({arg me;
+			this.convertToPC(me);
+			});
+		}
+		
+	convertToPC {arg aPitchClass;
 		var rem;
-		aPitchClass.isKindOf(Number).if({
+		case
+			{aPitchClass.isKindOf(Number)}
+			{
 			// check if there is an alteration... round to quarter-tones for now?
 			rem = (aPitchClass % 1.0).round(0.5);
 			aPitchClass = aPitchClass.trunc;
-			note = PitchClass(aPitchClass, alter: rem);
-			}, {
-			note = aPitchClass
-			});
-		(note.alter != 0).if({
-			marks = marks.add(GuidoArt(\alter, note.alter))
-			});
+			^PitchClass(aPitchClass, alter: rem);
+			}
+			{aPitchClass == \r}
+			{^PitchClass(\r)}
+			{true}
+			{^aPitchClass};
 		}
-/*		
-	// both return a new instance of GuidoNote
-	// interval can be PitchInterval or +-integer
-	transpose {arg interval, dir;
-		^this.class.new(note.transpose(interval, dir), beat, duration, marks);
-		}
-	
-	// center be a PitchClass or number representing a keynum 
-	invert {arg center;
-		^this.class.new(note.invert(center), beat, duration, marks);
-		}
-	
-	// for diminution and augmentation
-	scaleDur {arg timeScale;
-		^this.class.new(note, beat, duration * timeScale, marks);
-		}
-*/	
-	outputString {arg beatComment = 0.0;
-		var string, markstring, articulation = 0;
+
+	outputString {
+		var string, markstring, articulation = 0, noteStr;
 		var rhythm = this.calcRhyDur(duration);
 		markstring = "";
 		marks.do({arg me; me.isKindOf(GuidoArticulation).if({articulation = articulation + 1})});
@@ -292,153 +201,95 @@ GuidoNote : GuidoEvent {
 					markstring = markstring ++ me.outputString
 				})
 			});
-		string = markstring ++ note.guidoString++"*"++rhythm[0]++"/"++rhythm[1];		articulation.do({string = string ++" )"});
-		^"\t"++string ++" \t%% "++ beatComment ++ "\n";
-		}
-	}
-
-// mostly just an array of GuidoNotes... but easy to transpose and invert the whole things
-// augment and diminute
-/*
-GuidoMelody : GuidoEvent {
-	var <>notes;
-	
-	*new {arg ... guidoNotes;
-		^super.newCopyArgs(guidoNotes.flat);
-		}
-		
-	outputString {
-		var string;
-		string = "";
-		notes.do({arg me;
-			string = string ++ me.outputString;
-			});
-		^string;
-		}
-
-	// interval can be PitchInterval or +-integer		
-	transpose {arg interval, dir;
-		var thesenotes;
-		thesenotes = Array.newClear(notes.size);
-		notes.do({arg me, i;
-			thesenotes[i] = me.transpose(interval, dir);
-			})
-		^this.class.new(thesenotes);
-		}
-		
-	invert {arg center;
-		var thesenotes;
-		thesenotes = Array.newClear(notes.size);
-		center = center ?? this.notes[0].note;
-		notes.do({arg me, i;
-			thesenotes[i] = me.invert(center);
-			})
-		^this.class.new(thesenotes);
-		}
-		
-	scaleDur {arg timeScale;
-		var thesenotes, start, curdur;
-		start = notes[0].beat;
-		thesenotes = Array.newClear(notes.size);
-		notes.do({arg me, i;
-			thesenotes[i] = me.copy;
-			thesenotes[i].beat_(((thesenotes[i].beat - start) * timeScale) + start);
-			thesenotes[i].duration_(thesenotes[i].duration * timeScale);
-			});
-		^this.class.new(thesenotes);	
-		}
-		
-	retrograde {
-		var thesenotes, start, nextdur, size;
-		start = notes[0].beat;
-		size = notes.size;
-		nextdur = 0.0;
-		thesenotes = Array.newClear(size);
-		notes.reverse.do({arg me, i;
-			start = start + nextdur;
-			thesenotes[i] = me.copy;
-			(i < (size-1)).if({
-				nextdur = notes[size - 1 - i].beat - notes[size - 2 - i].beat;
+		noteStr = "";
+		note.do({arg me, i;
+			(i > 0).if({
+				noteStr = noteStr ++ ", ";
 				});
-			thesenotes[i].beat = start;
+			noteStr = noteStr ++ me.guidoString;
 			});
-		^this.class.new(thesenotes);	
-		}
-	
-	// add to all starttimes
-	offset {arg time;
-		var thesenotes;
-		thesenotes = Array.newClear(notes.size);
-		notes.do({arg me, i;
-			thesenotes[i] = me.copy;
-			thesenotes[i].beat_(thesenotes[i].beat + time);
+		chord.if({
+			noteStr = "{"++noteStr;
 			});
-		^this.class.new(thesenotes);
+		noteStr = noteStr++"*"++rhythm[0]++"/"++rhythm[1];
+		chord.if({
+			noteStr = noteStr ++ "}";
+			});
+		string = markstring ++ noteStr;
+		articulation.do({string = string ++" )"});
+		^"\t"++string;
 		}
 	}
-*/
-// No need to actually create GuidoRests on your own.. they will be created for you when a 
-// GuidoVoice is written out
 
-GuidoRest : GuidoEvent {
-	var <>duration;
-	*new {arg duration = 0.25;
-		^super.newCopyArgs(duration);
-		}
-		
-	outputString {arg beatComment = 0.0;
-		var rhythm;
-		rhythm = this.calcRhyDur(duration);
-		^"\t_"++"*"++rhythm[0]++"/"++rhythm[1]++" \t%% "++beatComment++"\n"
-		}
-	}
-	
-// Use GuidoTimeSig to set up Time signatures. GuidoMeter is used internally for reading 
+// Use GuidoTimeSig to set up Time signatures. GuidoTimeSig is used internally for reading 
 // GuidoTimeSigs
 
-GuidoMeter : GuidoEvent {
-	var <>beat, <>timesig;
-	*new {arg beat = 1, timesig = [4, 4];
-		^super.newCopyArgs(beat, timesig);
+GuidoTimeSig : GuidoEvent {
+	var <>upper, <>lower;
+	
+	*new {arg upper, lower;
+		^super.new.initGuidoTimeSig(upper, lower);
+		}
+	
+	initGuidoTimeSig {arg argUpper, argLower;
+		upper = argUpper;
+		lower = argLower;
 		}
 		
 	outputString {arg file;
-		^"\t\\meter<\""++timesig[0]++"/"++timesig[1]++"\"> \n";
+		^"\t\\meter<\""++upper++"/"++lower++"\">";
 		}
 	}
 
-
-
-GuidoChord : GuidoEvent {
-	var <>note, <>duration, <>marks;
+GuidoKeySig : GuidoEvent {
+	var key;
 	
-	*new {arg aPitchClassArray, duration = 1.0, marks;
-		^super.newCopyArgs(aPitchClassArray, duration, marks.asArray)
+	*new {arg key;
+		^super.new.initGuidoKeySig(key);
 		}
 		
-	outputString {arg beatComment = 0.0;
-		var string, markstring, notestring, numnotes, articulation = 0;
-		var rhythm = this.calcRhyDur(duration);
-		marks.do({arg me; me.isKindOf(GuidoArticulation).if({articulation = articulation + 1})});
-		markstring = "";
-		numnotes = note.size;
-		notestring = "{ ";
-		note.do({arg me, i;
-			me.isKindOf(Number).if({me = PitchClass(me)});
-			notestring = notestring ++ me.guidoString ++ "*"++rhythm[0]++"/"++rhythm[1];
-			(i != (numnotes-1)).if({
-				notestring = notestring ++ ", ";
-				})
+	initGuidoKeySig {arg argKey;
+		key = argKey.isKindOf(Integer).if({
+			argKey
+			}, {
+			keyConvert[argKey]
 			});
-		notestring = notestring ++ "} ";
-		(marks.size > 0).if({
-			marks.do{arg me; markstring = markstring ++ me.outputString}});
-		string = markstring ++ notestring;
-		articulation.do({string = string ++" )"});
-		^"\t"++string ++ "\t%% "++beatComment++"\n";
-		
 		}
-	}
+		
+	outputString {
+		^"\t\\key<"++key++">"
+		}
+}
+
+/*
+clef is \g, \f or \c 
+optionally, you can specify a line to place the note indication of the clef on (1 bottom, 5 top)
+\g2 is standard treble
+\c3 is standard alto
+\c4 is tenor
+
+double clefs are allowed
+\gg
+
+and these are also valid: \treble, \bass, \alto and \tenor
+*/
+
+GuidoClef : GuidoEvent {
+	var clef;
+	
+	*new {arg clef;
+		^super.new.initGuidoClef(clef);
+		}
+		
+	initGuidoClef	{arg argClef;
+		clef = argClef;
+		}
+		
+	outputString {
+		^"\t\\clef<\""++clef.asString++"\">";
+		}
+
+}
 
 // A Spanner is a collection of GuidoNotes that are linked through some aspect (for instance, all
 // notes in a Spanner may be tied together). These act like chords, but in a horizontal sense
@@ -462,7 +313,7 @@ GuidoSpanner : GuidoEvent {
 		arrGuidoNotes.do({arg me;
 			string = string ++ "\t"++ me.outputString;
 			});
-		string = string ++"\t)\n"
+		string = string ++"\t)"
 		^"\t"++string;
 	}	
 }
@@ -535,6 +386,7 @@ GuidoTempo : GuidoMark {
 			^nil;
 			})
 		}
+		
 	init {
 		string = (tempoString.isNil && absTempoString.isNil).if({
 				"\\"++ tag++" ";
@@ -597,107 +449,107 @@ GuidoArt {
 // maps out timesigs over measures: pass in an array of arrays:
 // [ [measure, [beats, div]], [measure, [beats, div]] ]
 // if a measure is left out, the previous measures timesig will be used
-GuidoTimeSig {
-	var <>timesigArray, <timesigDict;
-	
-	*new {arg timesigArray;
-		^super.newCopyArgs(timesigArray).init;
-		}
+//GuidoTimeSig {
+//	var <>timesigArray, <timesigDict;
+//	
+//	*new {arg timesigArray;
+//		^super.newCopyArgs(timesigArray).init;
+//		}
+//		
+//	init {
+//		var measure, meter;
+//		timesigDict = Dictionary.new;
+//		timesigArray.do{arg me;
+//			#measure, meter = me;
+//			timesigDict.add(measure -> meter);
+//			}
+//		}
+//		
+//	// create an array of meters for use in parsing voices... remember, measure one is at index 0!
+//	fillMeters {arg numMeasures;
+//		var curmeter, newmeter;
+//		newmeter = this.timesigDict.at(1);
+//		^Array.fill(numMeasures, {arg i;
+//			curmeter = newmeter;
+//			newmeter = this.timesigDict[i + 2] ? curmeter;
+//			curmeter;
+//			})
+//		}
+//	
+//	meterAt {arg measure = 1;
+//		var measures;
+//		measures = this.fillMeters(measure);
+//		^measures.last;
+//		}
+//		
+//	numBeatsAt {arg measure = 1;
+//		^this.meterAt(measure)[0]
+//		}
+//		
+//	divAt {arg measure = 1;
+//		^this.meterAt(measure)[1]
+//		}
+//	
+//	// returns which measure a beat occurs in, and the beat in that measure.
+//	// beats assumed to be quarter for now
+//	measureFromBeat {arg beat;
+//		var measure = 1, thisbeat = 1, meter;
+//		meter = this.meterAt(measure);
+//		thisbeat = thisbeat + ((meter[0] * 4) / meter[1]);
+//		while({thisbeat <= beat}, {
+//			measure = measure + 1;
+//			meter = this.meterAt(measure);
+//			thisbeat = thisbeat + ((meter[0] * 4) / meter[1]);
+//			});
+//		^[measure, (beat - thisbeat) % meter[0] + 1];
+//		}
+//	}
+//
+//GuidoTime {
+//	var <>now, <>tollerance;
+//	
+//	*new {arg curtime = 1.0, tollerance = 0.98;
+//		^this.newCopyArgs(curtime, tollerance)
+//		}
+//		
+//	add {arg timeval;
+//		var temp;
+//		temp = now + timeval;
+//		now = this.check(temp);
+//		}
+//	
+//	// this.check should be run everytime 'now' is updated
+//	check {arg timeval;
+//		^(((timeval % 1) >= tollerance).if({timeval.round}, {timeval}));
+//		}
+//		
+//	value {
+//		^now;
+//		}
+//		
+//	+ {arg aVal;
+//		aVal = (aVal.isKindOf(GuidoTime)).if({aVal.now}, {aVal});
+//		^now + aVal;
+//		}
+//	
+//	- {arg aVal;
+//		^now - aVal;
+//		}
+//	
+//	* {arg aVal;
+//		^now * aVal;
+//		}
+//	/ {arg aVal;
+//		^now / aVal
+//		}
+//		
+//	+= {arg aVal;
+//		var temp;
+//		temp = this.check(now + aVal);
+//		now = temp;
+//		^temp
+//		}
+//	
 		
-	init {
-		var measure, meter;
-		timesigDict = Dictionary.new;
-		timesigArray.do{arg me;
-			#measure, meter = me;
-			timesigDict.add(measure -> meter);
-			}
-		}
-		
-	// create an array of meters for use in parsing voices... remember, measure one is at index 0!
-	fillMeters {arg numMeasures;
-		var curmeter, newmeter;
-		newmeter = this.timesigDict.at(1);
-		^Array.fill(numMeasures, {arg i;
-			curmeter = newmeter;
-			newmeter = this.timesigDict[i + 2] ? curmeter;
-			curmeter;
-			})
-		}
-	
-	meterAt {arg measure = 1;
-		var measures;
-		measures = this.fillMeters(measure);
-		^measures.last;
-		}
-		
-	numBeatsAt {arg measure = 1;
-		^this.meterAt(measure)[0]
-		}
-		
-	divAt {arg measure = 1;
-		^this.meterAt(measure)[1]
-		}
-	
-	// returns which measure a beat occurs in, and the beat in that measure.
-	// beats assumed to be quarter for now
-	measureFromBeat {arg beat;
-		var measure = 1, thisbeat = 1, meter;
-		meter = this.meterAt(measure);
-		thisbeat = thisbeat + ((meter[0] * 4) / meter[1]);
-		while({thisbeat <= beat}, {
-			measure = measure + 1;
-			meter = this.meterAt(measure);
-			thisbeat = thisbeat + ((meter[0] * 4) / meter[1]);
-			});
-		^[measure, (beat - thisbeat) % meter[0] + 1];
-		}	
-	}
-
-GuidoTime {
-	var <>now, <>tollerance;
-	
-	*new {arg curtime = 1.0, tollerance = 0.98;
-		^this.newCopyArgs(curtime, tollerance)
-		}
-		
-	add {arg timeval;
-		var temp;
-		temp = now + timeval;
-		now = this.check(temp);
-		}
-	
-	// this.check should be run everytime 'now' is updated
-	check {arg timeval;
-		^(((timeval % 1) >= tollerance).if({timeval.round}, {timeval}));
-		}
-		
-	value {
-		^now;
-		}
-		
-	+ {arg aVal;
-		aVal = (aVal.isKindOf(GuidoTime)).if({aVal.now}, {aVal});
-		^now + aVal;
-		}
-	
-	- {arg aVal;
-		^now - aVal;
-		}
-	
-	* {arg aVal;
-		^now * aVal;
-		}
-	/ {arg aVal;
-		^now / aVal
-		}
-		
-	+= {arg aVal;
-		var temp;
-		temp = this.check(now + aVal);
-		now = temp;
-		^temp
-		}
-	
-		
-}
+//}
 

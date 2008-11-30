@@ -357,28 +357,31 @@ LPPart : LPObj {
 	initLPPart {arg argID, argVoice, argClef, argTimeSig, argKeySig;
 		id = argID;
 		voices = [];
+		argVoice.isNil.if({
+			this.addVoice(LPVoice(id))
+			}, {
+			this.addVoice(argVoice)
+			});
 		argClef = argClef ?? {LPClef(\treble)};
 		argTimeSig = argTimeSig ?? {LPTimeSig(4, 4)};
 		argKeySig = argKeySig ?? {LPKeySig(\c, \major)};
 		argClef.isKindOf(LPClef).if({
 			clef = argClef;
+			this.add(clef);
 			}, {
 			"clef must be an instance of LPClef".warn
 			});
 		argTimeSig.isKindOf(LPTimeSig).if({
 			timeSig = argTimeSig;
+			this.add(timeSig);
 			}, {
 			"timeSig must be an instance of LPTimeSig".warn;
 			});
 		argKeySig.isKindOf(LPKeySig).if({
 			keySig = argKeySig;
+			this.add(keySig);
 			}, {
 			"keySig must be an instance of LPKeySig".warn;
-			});
-		argVoice.isNil.if({
-			this.addVoice(LPVoice(id))
-			}, {
-			this.addVoice(argVoice)
 			});
 		showClef = showTimeSig = showKeySig = showBarLine = true;
 		}
@@ -409,7 +412,12 @@ LPPart : LPObj {
 		}
 		
 	add {arg ... anEvent;
-		voices[0].add(anEvent);
+		this.addToVoice(0, *anEvent);
+//		voices[0].add(anEvent);
+		}
+		
+	addToVoice {arg voice ... events;
+		voices[voice].add(*events);
 		}
 		
 	output {arg file, score;
@@ -425,9 +433,9 @@ LPPart : LPObj {
 		shortInstrumentName.notNil.if({
 			file.write("\t\t\\set Staff.shortInstrumentName =#\"" ++ shortInstrumentName ++ "\"\n");
 			});
-		file.write("\t\t\\clef " ++ clef.type ++ "\n");
-		file.write("\t\t\\time " ++ timeSig.sig ++ "\n");
-		file.write("\t\t\\key " ++ keySig.sig ++ "\n");
+//		file.write("\t\t\\clef " ++ clef.type ++ "\n");
+//		file.write("\t\t\\time " ++ timeSig.sig ++ "\n");
+//		file.write("\t\t\\key " ++ keySig.sig ++ "\n");
 		showClef.not.if({file.write("\t\t\\override Staff.Clef #'transparent = ##t\n")});
 		showTimeSig.not.if({file.write("\t\t\\override Staff.TimeSignature #'transparent = ##t\n")});
 		showKeySig.not.if({file.write("\t\t\\override Staff.KeySignature #'transparent = ##t\n")});
@@ -445,7 +453,8 @@ LPPart : LPObj {
 		}
 
 	}
-	
+
+// can I get rid of LPVoice? make it an array of array of notes in a voice?
 LPVoice : LPObj {
 	var <>id, <>voiceNum, <>notes, <>overrides;
 	*new {arg id, voiceNum;
@@ -495,6 +504,7 @@ LPVoice : LPObj {
 		anEvent.flat.do({arg thisEvent;
 			thisEvent.isKindOf(LPEvent).if({
 				notes = notes.add(thisEvent);
+				notes.postln;
 				})
 			});
 		}
@@ -512,6 +522,7 @@ LPVoice : LPObj {
 LPEvent : LPObj {
 	classvar rhythmToDur, timeToDur, timeToDots;
 	var <note, <prependStrings, <appendStrings, <tuplet, <events;
+	var <>beat, <>measure;
 	
 	*new {
 		^super.new.initLPEvent;
@@ -562,8 +573,20 @@ LPEvent : LPObj {
 		}
 		
 	setKeySig {arg aLPKeySig;
-		events.add([\time, aLPKeySig.sig]);
+		events.add([\key, aLPKeySig.sig]);
 		}
+		
+//	setTempo {arg beat, tempo, str;
+//		var tempStr;
+//		tempStr = str ?? {""};
+//		tempStr = tempStr ++ (beat ?? {""});
+//		(beat.notNil and: {tempo.notNil}).if({
+//			tempStr = tempStr ++ " = ";
+//			});
+//		tempStr = tempStr ++ (tempo ?? {""});
+//		tempStr = tempStr ++ beat ++ " = " ++ tempo;
+//		events.add([\tempo, tempStr]);
+//		}
 		
 	outputString {arg score;
 		var output;
@@ -752,6 +775,7 @@ if there are conficts:
 */
 
 // hmm... perhaps, if aPitchlass is an array, make it a chord?
+// make rests LPNotes with aPitchClass of \r
 LPNote : LPEvent {
 	var <>duration, <>formatDur, <>dots, <>spatial = false;
 	var <tremolo, <articulations, <dynamic, <dynamicChange, grace;
@@ -821,14 +845,18 @@ LPNote : LPEvent {
 		note = Array.newClear(aPitchClass.size);
 		// then, fill note... need to parse note correclt later
 		aPitchClass.do({arg thisPC, i;
-			thisPC.isKindOf(SimpleNumber).if({
+			case 
+				{thisPC.isKindOf(SimpleNumber)}
+				{
 				// check if there is an alteration... round to quarter-tones for now?
 				rem = (thisPC % 1.0).round(0.5);
 				thisPC = thisPC.trunc;
 				note[i] = PitchClass(thisPC, alter: rem);
-				}, {
-				note[i] = thisPC
-				});
+				}
+				{thisPC.isKindOf(Symbol)}
+				{note[i] = PitchClass(thisPC)}
+				{true}
+				{note[i] = thisPC};
 			});
 		}
 	
@@ -1121,8 +1149,9 @@ LPRest : LPEvent {
 	useSpatial {spatial = true}
 
 	}
-	
-LPClef : LPObj {
+
+/*	
+LPClef : LPEvent {
 	var type;
 	
 	*new {arg type;
@@ -1136,7 +1165,7 @@ LPClef : LPObj {
 		}
 	}
 	
-LPTimeSig : LPObj {
+LPTimeSig : LPEvent {
 	var upper, lower;
 	
 	*new {arg upper, lower;
@@ -1151,7 +1180,7 @@ LPTimeSig : LPObj {
 
 	}
 
-LPKeySig : LPObj {
+LPKeySig : LPEvent {
 	var <>tonic, <>mode;
 	
 	*new {arg tonic = \c, mode = \major;
@@ -1164,7 +1193,7 @@ LPKeySig : LPObj {
 		^tonic.asString ++ " \\"++mode;
 		}
 	}
-
+*/
 /*
 LPChord : LPEvent {
 	var <>duration, <>marks, <tuplet;
@@ -1206,13 +1235,95 @@ LPChord : LPEvent {
 	}
 */
 /* These layout objects are MOSTLY for entering overrides as LPEvents. Mostly formats settings */
-
+/*
 LPLayoutObjects {
 	classvar <>layoutObjects;
 	
 	*initClass {
 		layoutObjects = Dictionary.new;
 		}
+	}
+*/
+
+LPClef : LPEvent {
+	var type;
+	
+	*new {arg type;
+		^super.new.initLPClef(type);
+		}
+	
+	initLPClef {arg argType;
+		type = argType;
+		}
+	
+	outputString {
+		^"\t\t\\clef " ++ type.asString ++ "\n"
+		}
+	}
+	
+LPTimeSig : LPEvent {
+	var upper, lower;
+	
+	*new {arg upper, lower;
+		^super.new.initLPTimeSig(upper, lower);
+		}
+		
+	initLPTimeSig {arg argUpper, argLower;
+		upper = argUpper;
+		lower = argLower;
+	 	}
+	
+	outputString {
+		^"\t\t\\time " ++ upper.asString ++ "/" ++lower.asString ++ "\n";
+		}
+
+	}
+
+LPKeySig : LPEvent {
+	var <>tonic, <>mode;
+	
+	*new {arg tonic = \c, mode = \major;
+		^super.new.initLPKeySig(tonic, mode);
+		}
+		
+	initLPKeySig {arg argTonic, argMode;
+		tonic = argTonic;
+		mode = argMode;
+		}
+	
+	outputString {
+		^"\t\t\\key " ++ tonic.asString ++ " \\"++mode ++ "\n";
+		}
+	}
+	
+LPTempo : LPEvent {
+	var <>beat, <>tempo, <>string;
+	
+	*new {arg beat, tempo, string;
+		^super.new.initLPTempo(beat, tempo, string);
+		}
+		
+	initLPTempo {arg ... args;
+		#beat, tempo, string = args;
+		}
+		
+	outputString {
+		var tempoStr;
+		tempoStr = string.notNil.if({
+			"\""++string++"\""
+			}, {
+			""
+			});
+//		events.do({arg me;
+//			tempoStr = tempoStr ++ "\t" ++ me ++ "\n";
+//			});
+		tempoStr = "\\tempo " ++ tempoStr;
+		(beat.notNil and: {tempo.notNil}).if({
+			tempoStr = tempoStr ++ " "++beat++" = "++tempo;
+			});
+		^"\t\t " ++ tempoStr ++ "\n";
+		}
+		
 	}
 	
 //LPAccidental { }
