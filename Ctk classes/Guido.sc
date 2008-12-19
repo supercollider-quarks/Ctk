@@ -134,6 +134,8 @@ GuidoPart : GuidoObj {
 
 GuidoEvent : GuidoObj {
 	var <>measure, <>beat;
+	classvar rhythmToDur, timeToDots, timeToDur;
+
 	output {arg file, beatComment = 0.0;
 		var string, append;
 		append = (measure.notNil or: {beat.notNil}).if({
@@ -147,7 +149,110 @@ GuidoEvent : GuidoObj {
 		}
 		
 	calcRhyDur {arg duration;
+		duration.isKindOf(Symbol).if({
+			duration = rhythmToDur[duration]
+			});
 		^(duration).asFraction(64, false);
+		}
+		
+	*initClass {
+		rhythmToDur = IdentityDictionary[
+			\q -> 0.25,
+			\qd -> 0.25,
+			\qdd -> 0.25,
+			\e -> 0.125,
+			\ed -> 0.125,
+			\edd -> 0.125,
+			\s -> 0.0625,
+			\sd -> 0.0625,
+			\sdd -> 0.0625,
+			\t -> 0.03125,
+			\td -> 0.03125,
+			\tdd -> 0.03125,
+			\x -> 0.015625,
+			\xd -> 0.015625,
+			\xdd -> 0.015625,
+			\o -> 0.0078125,
+			\od -> 0.0078125,
+			\odd -> 0.0078125,
+			\h -> 0.5,
+			\hd -> 0.5,
+			\hdd -> 0.5,
+			\w -> 1.0,
+			\wd -> 1.0,
+			\wdd -> 1.0,
+			\b -> 2.0,
+			\bd -> 2.0,
+			\bdd -> 2.0,
+			\l -> 4.0,
+			\ld -> 4.0,
+			\ldd -> 4.0
+			];
+		timeToDots = IdentityDictionary[
+			0.25 -> 0,			
+			0.375 -> 1,			
+			0.4375 -> 2,			
+			0.125 -> 0,
+			0.1875 -> 1,
+			0.21875 -> 2,
+			0.0625 -> 0,
+			0.09375 -> 1,
+			0.109375 -> 2,
+			0.03125 -> 0,
+			0.046875 -> 1,
+			0.0546875 -> 2,
+			0.015625 -> 0,
+			0.0234375 -> 1,
+			0.02734375 -> 2,
+			0.0078125 -> 0,
+			0.01171875 -> 1,
+			0.013671875 -> 2,
+			0.00390625 -> 0,
+			0.5 -> 0,
+			0.75 -> 1,
+			0.875 -> 2,
+			1.0 -> 0,
+			1.5 -> 1,
+			1.75 -> 2,
+			2.0 -> 0,
+			3.0 -> 1,
+			3.5 -> 2,
+			4.0 -> 0,
+			6.0 -> 1,
+			7.0 -> 2
+			];
+		timeToDur = IdentityDictionary[
+			0.25 -> 0.25,			
+			0.375 -> 0.25,			
+			0.4375 -> 0.25,			
+			0.125 -> 0.125,
+			0.1875 -> 0.125,
+			0.21875 -> 0.125,
+			0.0625 -> 0.0625,
+			0.09375 -> 0.0625,
+			0.109375 -> 0.0625,
+			0.03125 -> 0.03125,
+			0.046875 -> 0.03125,
+			0.0546875 -> 0.03125,
+			0.015625 -> 0.015625,
+			0.0234375 -> 0.015625,
+			0.02734375 -> 0.015625,
+			0.0078125 -> 0.0078125,
+			0.01171875 -> 0.0078125,
+			0.013671875 -> 0.0078125,
+			0.5 -> 0.5,
+			0.75 -> 0.5,
+			0.875 -> 0.5,
+			1.0 -> 1.0,
+			1.5 -> 1.0,
+			1.75 -> 1.0,
+			2.0 -> 2.0,
+			3.0 -> 2.0,
+			3.5 -> 2.0,
+			4.0 -> 4.0,
+			6.0 -> 4.0,
+			7.0 -> 4.0
+			];
 		}
 	}
 
@@ -174,6 +279,10 @@ GuidoNote : GuidoEvent {
 			this.convertToPC(me);
 			});
 		}
+	
+	addDynamic {arg dynamic;
+		marks = marks.add(GuidoDynamic(\i, dynamic))
+		}
 		
 	convertToPC {arg aPitchClass;
 		var rem;
@@ -192,8 +301,9 @@ GuidoNote : GuidoEvent {
 		}
 
 	outputString {
-		var string, markstring, articulation = 0, noteStr;
+		var string, markstring, articulation = 0, noteStr, rhyString;
 		var rhythm = this.calcRhyDur(duration);
+		rhyString = "*"++rhythm[0]++"/"++rhythm[1];
 		markstring = "";
 		marks.do({arg me; me.isKindOf(GuidoArticulation).if({articulation = articulation + 1})});
 		(marks.size > 0).if({
@@ -206,15 +316,12 @@ GuidoNote : GuidoEvent {
 			(i > 0).if({
 				noteStr = noteStr ++ ", ";
 				});
-			noteStr = noteStr ++ me.guidoString;
+			noteStr = noteStr ++ me.guidoString++rhyString;
 			});
 		chord.if({
-			noteStr = "{"++noteStr;
+			noteStr = "{"++noteStr++"}";
 			});
-		noteStr = noteStr++"*"++rhythm[0]++"/"++rhythm[1];
-		chord.if({
-			noteStr = noteStr ++ "}";
-			});
+
 		string = markstring ++ noteStr;
 		articulation.do({string = string ++" )"});
 		^"\t"++string;

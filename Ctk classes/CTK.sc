@@ -1369,6 +1369,9 @@ CtkBuffer : CtkObj {
 		SystemClock.sched(time, {
 			Routine.run({
 				var msg;
+				completion.notNil.if({
+					bundle = bundle.add(completion)
+					});
 //				cond = cond ?? {Condition.new};
 				server.sendBundle(latency, bundle.postln);
 				sync.if({server.sync(cond);});
@@ -1753,7 +1756,7 @@ CtkControl : CtkObj {
 					timeScale = 1, doneAction = 0;
 				Out.kr(outbus,
 					EnvGen.kr(
-						Control.names([\myenv]).kr(Env.newClear(16)), 
+						Control.names([\myenv]).kr(Env.newClear(32)), 
 						gate, timeScale: timeScale, doneAction: doneAction) * 
 							levelScale + levelBias)
 				})

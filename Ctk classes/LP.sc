@@ -8,7 +8,7 @@ Paper size and margins:
 LPObj {
 
 	classvar <>lilypondPath = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond";
-	
+	classvar <>lily2imagePath = "/usr/local/bin/lily2image";
 	// these should all be Strings, numbers or booleans (OK for value), Scheme '#' and '#'' will be added for you
 	overridePropString {arg layoutObj, layoutProp, value, context;
 		var valueStr, contextStr;
@@ -325,6 +325,11 @@ LPScore : LPObj {
 			.unixCmdThen({("open "++basepath++"."++format).unixCmd})
 		}
 	
+	renderCropAndDisplay {arg basepath, format = \png;
+		this.output(basepath++".ly");
+		(lily2imagePath ++ " -f="++format++" "++basepath++". "++basepath++"")
+			.unixCmdThen({("open "++basepath++"."++format).unixCmd})		}
+			
 	// only add gliss's to notes longer then 1/ 64
 	useSpatial {arg minDur = 0.015625; 
 		spatial = true;
@@ -504,7 +509,6 @@ LPVoice : LPObj {
 		anEvent.flat.do({arg thisEvent;
 			thisEvent.isKindOf(LPEvent).if({
 				notes = notes.add(thisEvent);
-				notes.postln;
 				})
 			});
 		}
