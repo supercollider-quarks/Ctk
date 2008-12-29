@@ -122,6 +122,7 @@ CtkScore : CtkObj {
 				event.isKindOf(CtkScore);
 				} {
 				ctkscores = ctkscores.add(event);
+				this.checkEndTime(event);
 				} {
 				event.isKindOf(CtkMsg);
 				} {
@@ -1211,7 +1212,7 @@ CtkNote : CtkNode {
 
 /* methods common to CtkGroup and CtkNote need to be put into their own class (CtkNode???) */
 CtkGroup : CtkNode {
-	var <endtime = nil, <duration, <isGroupPlaying = false, <>children;
+	var <>endtime = nil, <>duration, <isGroupPlaying = false, <>children;
 	
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
@@ -1288,7 +1289,7 @@ CtkGroup : CtkNode {
 			SystemClock.sched(time, {server.sendBundle(latency, bund1, bund2)});
 			isGroupPlaying = false;
 			}, {
-			messages = messages.add(CtkMsg(server, starttime + time, bund1, bund2));
+			messages = messages.add(CtkMsg(server, time, bund1, bund2));
 			})
 		}
 	
@@ -1900,7 +1901,7 @@ CtkEvent : CtkObj {
 		server = server ?? {Server.default};
 		timer = CtkTimer.new(starttime);
 		(condition.isKindOf(Env) and: {condition.releaseNode.isNil}).if({
-			endtime = condition.times.sum;
+			endtime = condition.times.sum + starttime;
 			endtimeud = false
 			}, {
 			endtime = starttime;
@@ -2132,8 +2133,9 @@ CtkEvent : CtkObj {
 		this.setup;
 		group.node;
 		[group, envbus, envsynth].do({arg me; 
-			me.notNil.if({me.setStarttime(starttime);
-			score.add(me)
+			me.notNil.if({
+				me.setStarttime(starttime);
+				score.add(me)
 			})
 		});
 		eventEnd = eventDur.notNil.if({starttime + eventDur});
@@ -2162,6 +2164,9 @@ CtkEvent : CtkObj {
 			notes = [];
 			inc = inc + by;
 			this.checkCond;
+			});
+		group.notNil.if({
+			group.endtime_(score.endtime)
 			});
 		this.scoreClear;
 		^score;
