@@ -189,7 +189,7 @@ CtkScore : CtkObj {
 		buffersScored.not.if({
 			buffers.do({arg me;
 				this.add(CtkMsg(me.server, 0.0, me.bundle).bufflag_(true));
-				this.add(CtkMsg(me.server, endtime, me.freeBundle));
+				this.add(CtkMsg(me.server, endtime + 0.1, me.freeBundle));
 				(me.closeBundle.notNil).if({
 					this.add(CtkMsg(me.server, endtime, me.closeBundle));
 					});
@@ -1543,7 +1543,7 @@ CtkControl : CtkObj {
 	<endtime = 0.0, <duration; //may want to get rid of setter later
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, 
 	<isLFO = false, <isEnv = false;
-	var timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
+	var <timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
 		
 	classvar ctkEnv, sddict; 
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
@@ -1602,6 +1602,9 @@ CtkControl : CtkObj {
 	initEnv {arg argenv, argLevelScale, argLevelBias, argTimeScale, argAddAction, argTarget, 
 			argDoneAction;
 		env = argenv;
+		env.isKindOf(InterplEnv).if({
+			env = env.asEnv
+			});
 		timeScale = argTimeScale;
 		levelScale = argLevelScale;
 		levelBias = argLevelBias;

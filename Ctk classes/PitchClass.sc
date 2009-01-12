@@ -19,6 +19,7 @@ PitchClass {
 	calcpitch {arg thispitch, thisoctave;
 		var str, pitchnum;
 		octave = thisoctave ?? {octave};
+		[thispitch].postln;
 		thispitch.isKindOf(Number).if({
 			octave = (thispitch.round*0.0833333333).floor - 1;
 			pitchnum = thispitch % 12;
@@ -36,8 +37,8 @@ PitchClass {
 			);
 		pitch = pitch.asSymbol;
 		pitchclass = notenames[pitch];
-		["PitchClass", pitchclass];
-		(pitchclass > 0).if({
+		["PitchClass", pitchclass].postln;
+		(pitchclass >= 0).if({
 			keynum = pitchclass + (12 * (1 + octave));
 			freq = keynum.midicps;
 			}, {
