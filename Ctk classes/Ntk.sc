@@ -358,7 +358,7 @@ NtkEvent : NtkObj {
 	}
 	
 NtkNote : NtkEvent {
-	var <pitch, <dynamic;
+	var <pitch, <dynamic, <articulation;
 	*new {arg pitch, rhythm, measure, beat;
 		^super.new(measure, beat, rhythm).initNtkNote(pitch);
 		}
@@ -371,11 +371,18 @@ NtkNote : NtkEvent {
 		dynamic = [dynamicSym, above];
 		}
 		
+	addArticulation {arg articulationName;
+		articulation = articulationName;
+		}
+		
 	asGuidoEvent { 
 		var note;
 		note = GuidoNote.new(pitch, rhythm).beat_(beat).measure_(measure);
 		dynamic.notNil.if({
 			note.addDynamic(dynamic[0], dynamic[1])
+			});
+		articulation.notNil.if({
+			note.addArticulation(articulation)
 			});
 		^note;		
 		}
@@ -385,6 +392,9 @@ NtkNote : NtkEvent {
 		note = LPNote.new(pitch, rhythm).beat_(beat).measure_(measure);
 		dynamic.notNil.if({
 			note.addDynamic(dynamic[0], dynamic[1])
+			});
+		articulation.notNil.if({
+			note.addArticulation(articulation)
 			});
 		^note;
 		}

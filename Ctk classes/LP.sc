@@ -905,7 +905,7 @@ LPNote : LPEvent {
 	"coda", "varcoda" */
 	
 	addArticulation {arg articulation;
-		articulations = articulations.add(articulation);
+		articulations = articulations.add(articulation.asString);
 		}
 
 	addArticulationStrings {

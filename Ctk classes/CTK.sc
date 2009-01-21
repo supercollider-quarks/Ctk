@@ -273,12 +273,16 @@ CtkScore : CtkObj {
 								}, {
 								thisnote.map(time, argname, argval)								})
 							}
-						{argval.isKindOf(CtkControl)}
+						{argval.isKindOf(CtkBus)}
 						{
 							thisnote.noMaps.indexOf(argname).notNil.if({
 								thisnote.set(time, argname, argval.asUGenInput)
 								}, {
-								thisnote.map(time, argname, argval.asUGenInput)
+								argval.isKindOf(CtkControl).if({
+									thisnote.map(time, argname, argval.asUGenInput)
+									}, {
+									thisnote.mapa(time, argname, argval.asUGenInput)
+									})
 								})
 						}
 						{true}
@@ -649,22 +653,29 @@ CtkNoteObject {
 				};
 			args.add(name -> def);
 			});
-		kouts = synthdef.children.collect({arg me;
-			((me.rate == \control) 
-				and: {(me.class == Out) or: 
-					{(me.class == ReplaceOut) or: 
-						{me.class == XOut}
-						}
-					}).if({
-					me.inputs[0]})});
-		kouts.removeAllSuchThat({arg item; item.isKindOf(OutputProxy).not});
-		noMaps = kouts.collect({arg item;
-			var me, start, end;
-			me = item.dumpName;
-			start = me.indexOf($[);
-			end = me.indexOf($]);
-			synthdef.allControlNames[me[start+1..end-1].interpret].name.asSymbol;
-			})
+		noMaps = synthdef.children.collect({arg me;
+			(((me.rate == \control) or: {me.rate == \audio})
+//				and: {(me.class == Out) or: 
+//					{(me.class == ReplaceOut) or: 
+//						{me.class == XOut}
+//						}
+				and: {me.isKindOf(AbstractIn) or: {me.isKindOf(AbstractOut)}
+			}).if({
+				((me.class != LocalIn) and: {(me.class != LocalOut)}).if({
+					me.inputs[0].isKindOf(OutputProxy).if({me.inputs[0].name}, {nil});
+					}, {
+					nil
+					})
+			})});
+		noMaps.removeAllSuchThat({arg item; item.isNil});
+//		noMaps = kouts;
+//		noMaps = kouts.collect({arg item;
+//			var me, start, end;
+//			me = item.dumpName;
+//			start = me.indexOf($[);
+//			end = me.indexOf($]);
+//			synthdef.allControlNames[me[start+1..end-1].interpret].name.asSymbol;
+//			})
 		}
 		
 	// create an CtkNote instance
@@ -779,10 +790,23 @@ CtkNode : CtkObj {
 	mapn {arg time, key ... values;
 		var bund;
 		values = values.flat;
-		bund = [\n_map, this.node, key, values.size] ++ values.collect({arg me; me.bus});
+		bund = [\n_mapn, this.node, key, values.size] ++ values.collect({arg me; me.bus});
 		this.handleMsg(time, bund);
 		}
-	
+
+	mapa {arg time, key, value;
+		var bund;
+		bund = [\n_mapa, this.node, key, value.asUGenInput];
+		this.handleMsg(time, bund);
+		}
+
+	mapan {arg time, key ... values;
+		var bund;
+		values = values.flat;
+		bund = [\n_mapan, this.node, key, values.size] ++ values.collect({arg me; me.bus});
+		this.handleMsg(time, bund);
+		}
+			
 	handleMsg {arg time, bund;
 		this.isPlaying.if({ // if playing... send the set message now!
 			time.notNil.if({
@@ -1026,7 +1050,7 @@ CtkNote : CtkNode {
 			newValue = newValue.asArray;
 			this.setn(nil, argname, newValue.asUGenInput);
 			}{
-			newValue.isKindOf(CtkControl)
+			newValue.isKindOf(CtkBus)
 			}{
 			newValue.isPlaying.not.if({
 				this.checkIfRelease(newValue);
@@ -1035,7 +1059,11 @@ CtkNote : CtkNode {
 			noMaps.indexOf(argname).notNil.if({
 				this.set(latency, argname, newValue);
 				}, {
-				this.map(latency, argname, newValue);
+				newValue.isKindOf(CtkControl).if({
+					this.map(latency, argname, newValue);
+					}, {
+					this.mapa(latency, argname, newValue);
+					})
 				})
 			}{
 			true
@@ -1074,7 +1102,12 @@ CtkNote : CtkNode {
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
 			});
 		mapDict.keysValuesDo({arg key, val;
-			initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])			});
+			val.isKindOf(CtkControl).if({
+				initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])
+				}, {
+				initbundle = initbundle.add([\n_mapa, node, key, val.asUGenInput])
+				})
+			});
 		^initbundle;	
 		}
 	
@@ -1087,7 +1120,12 @@ CtkNote : CtkNode {
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
 			});
 		mapDict.keysValuesDo({arg key, val;
-			initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])			});
+			val.isKindOf(CtkControl).if({
+				initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])
+				}, {
+				initbundle = initbundle.add([\n_mapa, node, key, val.asUGenInput])
+				})
+			});
 		^initbundle;	
 		}
 		
@@ -1119,7 +1157,8 @@ CtkNote : CtkNode {
 			}{
 			setnDict.add(key -> val.asArray); ^nil;
 			}{
-			val.isKindOf(CtkControl)
+//			val.isKindOf(CtkControl)
+			val.isKindOf(CtkBus)
 			}{
 			// if this key is a noMap (so, probably the bus arg of Out.kr),
 			// send in the CtkControl's bus number
@@ -1165,7 +1204,11 @@ CtkNote : CtkNode {
 						this.checkIfRelease(val);
 						val.play;
 						});
-					bund.add([\n_map, node, key, val.asUGenInput]);
+					val.isKindOf(CtkControl).if({
+						bund.add([\n_map, node, key, val.asUGenInput]);
+						}, {
+						bund.add([\n_mapa, node, key, val.asUGenInput]);
+						})
 					});
 				bund.send(server, latency);
 				// for CtkControl mapping... make sure things are running!
@@ -1374,7 +1417,7 @@ CtkBuffer : CtkObj {
 					bundle = bundle.add(completion)
 					});
 //				cond = cond ?? {Condition.new};
-				server.sendBundle(latency, bundle.postln);
+				server.sendBundle(latency, bundle);
 				sync.if({server.sync(cond);});
 				// are there already messages to send? If yes... SYNC!, then send NOW
 				(messages.size > 0).if({
@@ -1537,8 +1580,10 @@ CtkBuffer : CtkObj {
 		}
 	asUGenInput {^bufnum}
 	}
-		
-CtkControl : CtkObj {
+
+CtkBus : CtkObj {}
+	
+CtkControl : CtkBus {
 	var <server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false, 
 	<endtime = 0.0, <duration; //may want to get rid of setter later
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, 
@@ -1783,14 +1828,18 @@ CtkControl : CtkObj {
 	}
 
 // not really needed... but it does most of the things that CtkControl does
-CtkAudio : CtkObj {
-	var <server, <bus, <numChans;
+CtkAudio : CtkBus {
+	var <server, <bus, <numChans, <isPlaying = false;
 	*new {arg numChans = 1, bus, server;
 		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans).init;
 		}
 
 	*play {arg numChans = 1, bus, server;
-		^this.new(numChans, bus, server);
+		^this.new(numChans, bus, server).play;
+		}
+		
+	play {
+		isPlaying = true;
 		}
 		
 	// free the id for further use

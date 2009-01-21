@@ -284,6 +284,10 @@ GuidoNote : GuidoEvent {
 		marks = marks.add(GuidoDynamic(\i, dynamic))
 		}
 		
+	addArticulation {arg articulation;
+		marks = marks.add(GuidoArticulation(articulation))
+		}
+		
 	convertToPC {arg aPitchClass;
 		var rem;
 		case
