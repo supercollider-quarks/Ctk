@@ -655,18 +655,13 @@ CtkNoteObject {
 			});
 		noMaps = synthdef.children.collect({arg me;
 			(((me.rate == \control) or: {me.rate == \audio})
-//				and: {(me.class == Out) or: 
-//					{(me.class == ReplaceOut) or: 
-//						{me.class == XOut}
-//						}
-				and: {me.isKindOf(AbstractIn) or: {me.isKindOf(AbstractOut)}
-			}).if({
-				((me.class != LocalIn) and: {(me.class != LocalOut)}).if({
-					me.inputs[0].isKindOf(OutputProxy).if({me.inputs[0].name}, {nil});
-					}, {
-					nil
-					})
-			})});
+				and: {me.isKindOf(AbstractIn) or: {me.isKindOf(AbstractOut)}}).if({
+					((me.class != LocalIn) and: {(me.class != LocalOut)}).if({
+						me.inputs[0].isKindOf(OutputProxy).if({me.inputs[0].name}, {nil});
+						}, {
+						nil
+						})
+				})});
 		noMaps.removeAllSuchThat({arg item; item.isNil});
 //		noMaps = kouts;
 //		noMaps = kouts.collect({arg item;
