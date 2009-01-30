@@ -2,7 +2,8 @@
 	
 PitchClass {
 	var <note, <acc, <octave, <pitch, <pitchclass, <keynum, <freq, <>alter;
-	classvar notenames, notenums, noteToScale, scaleToNote, accToSize, sizeToAcc, accToGuido;
+	classvar notenames, notenums, noteToScale, scaleToNote, accToSize, sizeToAcc, accToGuido, 
+		majScale, qualities, qualIdx;
 	// deal with transposition, notenames and PC classes here
 	// note and acc are symbols, octave is an integer, where middle c = c4
 
@@ -354,6 +355,31 @@ PitchClass {
 			^this.class.new(this.keynum + (aPitchInterval * dir))
 			})
 		}
+	
+	distanceFrom {arg aPC;
+		var thisNote, thatNote, baseInterval, interval, direction, octaves;
+		var halfsteps, idx, quality;
+		thisNote = noteToScale[note];
+		thatNote = noteToScale[aPC.note];
+		(aPC.keynum > keynum).if({
+			direction = \up;
+			(thatNote < thisNote).if({
+				thatNote = thatNote + 7;
+				})
+			}, {
+			direction = \down;
+			(thatNote > thisNote).if({
+				thatNote = thatNote - 7;
+				})			
+			});
+		baseInterval = (thatNote - thisNote);
+		halfsteps = (aPC.keynum - keynum).abs;
+		interval = baseInterval.abs + 1;
+		octaves = (halfsteps * 0.083333333333333).floor; 
+		idx = (halfsteps % 12) - qualIdx[interval];
+		quality = qualities[interval][idx];
+		^[PitchInterval(quality, interval + (octaves * 7)), direction];
+		}
 		
 	
 	// cn = c, cs = c-sharp, df = d-flat, dqf = d-quarter-flat, cqs = c-quarter-sharp
@@ -507,8 +533,29 @@ PitchClass {
 			\ss -> "##",
 			\sss -> "###",
 			\ssss -> "####"
-			];	
-
+			];
+		majScale = [0, 2, 4, 5, 7, 9, 11];
+		qualities = IdentityDictionary[
+			1 -> [\perf, \aug],
+			2 -> [\dim, \minor, \major, \aug],
+			3 -> [\dim, \minor, \major, \aug],
+			4 -> [\dim, \perf, \aug],
+			5 -> [\dim, \perf, \aug],
+			6 -> [\dim, \minor, \major, \aug],
+			7 -> [\dim, \minor, \major, \aug],
+			8 -> [\dim, \perf, \aug]
+			];
+		
+		qualIdx = IdentityDictionary[
+			1 -> 0,
+			2 -> 0,
+			3 -> 2,
+			4 -> 4,
+			5 -> 6,
+			6 -> 7,
+			7 -> 9,
+			8 -> 11,
+			];
 		}
 }
 
@@ -542,12 +589,12 @@ PitchInterval {
 }
 
 PitchCollection {
-	var <pitchCollection, <tonic, <octaveSize, <pitchBase, <sortedBase;
+	var <pitchCollection, <tonic, <octaveSize, <isScale, <pitchBase, <sortedBase;
 	
-	*new {arg pitchCollection, tonic, octaveSize = 12;
+	*new {arg pitchCollection, tonic, octaveSize = 12, isScale = false;
 		pitchCollection = pitchCollection.asArray;
 		tonic = tonic ? pitchCollection[0];
-		^super.newCopyArgs(pitchCollection, tonic, octaveSize).init;
+		^super.newCopyArgs(pitchCollection, tonic, octaveSize, isScale).init;
 		}
 		
 	init {
@@ -572,7 +619,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 	
 	*minor {arg tonic;
@@ -589,7 +636,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 		
 	*natMinor {arg tonic;
@@ -610,7 +657,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 		
 	*ionian {arg tonic;
@@ -631,7 +678,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 		
 	*phrygian {arg tonic;
@@ -648,7 +695,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 		
 	*lydian {arg tonic;
@@ -665,7 +712,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 	
 	*mixolydian {arg tonic;
@@ -682,7 +729,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 		
 	*aeolian {arg tonic;
@@ -703,7 +750,7 @@ PitchCollection {
 			start = start.transpose(PitchInterval(me, 2), \up); 
 			steps[i] = note;
 			};
-		^this.new(steps, tonic, 12)
+		^this.new(steps, tonic, 12, true)
 		}
 		
 	*chromatic {arg tonic;
@@ -719,7 +766,7 @@ PitchCollection {
 			newoctave = tonic.octave + ((i+start) / 12).floor;
 			PitchClass.new(step, octave: newoctave);
 			});
-		^this.new(steps, tonic, 12);
+		^this.new(steps, tonic, 12, true);
 		}
 	
 	// takes a keynum, returns the PitchClass closest to that keynum (under octave equivalence)
@@ -783,7 +830,16 @@ PitchCollection {
 				{arg i; pitchCollection[i].transpose(aPitchInterval, direction)}),
 			tonic.transpose(aPitchInterval, direction), octaveSize)
 		}
-	
+/*
+	modalTranspose {arg aPitchCollection, direction = \up;
+		var newCollection, newTonic, baseInterval;
+		newCollection = Array.fill(pitchCollection.size, 
+				{arg i; pitchCollection[i].transpose(aPitchInterval, direction)});
+		newTonic = tonic.transpose(aPitchInterval, direction);
+		^this.class.new(newCollection, newTonic, octaveSize)
+		}
+*/
+			
 	/*	
 	*quartertone {arg tonic;
 		var start, steps, step, newoctave; 

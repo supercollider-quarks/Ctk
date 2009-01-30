@@ -1924,7 +1924,7 @@ CtkTimer {
 		
 	next_ {arg inval;
 		next = inval;
-		isPlaying.not.if({
+		(isPlaying.not and: {inval.notNil}).if({
 			curtime = curtime + (inval*rtempo);
 			})
 		}
@@ -1998,6 +1998,7 @@ CtkEvent : CtkObj {
 								})
 							});
 						});
+					timer.next_(nil);
 					function.value(this, group, envbus, inc, server);
 //					this.run;
 					this.checkCond.if({
@@ -2055,7 +2056,11 @@ CtkEvent : CtkObj {
 			envsynth = envsd.new(duration: eventDur, target: group, server: server)
 				.outbus_(envbus.bus).evenv_(condition).amp_(amp);
 			}, {
-			envbus = CtkControl.new(1, amp, starttime, server: server);
+			amp.isKindOf(Env).if({
+				envbus = CtkControl.env(amp, starttime, server: server)
+				}, {
+				envbus = CtkControl.new(1, amp, starttime, server: server);
+				})
 			});
 		(target.isKindOf(CtkNote) || target.isKindOf(CtkGroup)).if({
 			target = target.node});
@@ -2111,7 +2116,11 @@ CtkEvent : CtkObj {
 	curtime {
 		^timer.curtime;
 		}
-	
+
+	now {
+		^timer.curtime;
+		}
+			
 	checkCond {
 		case
 			{
@@ -2187,6 +2196,7 @@ CtkEvent : CtkObj {
 		});
 		eventEnd = eventDur.notNil.if({starttime + eventDur});
 		while({
+			timer.next_(nil);
 			curtime = timer.curtime;
 			function.value(this, group, envbus, inc, server);
 			notes.asArray.do({arg me;
