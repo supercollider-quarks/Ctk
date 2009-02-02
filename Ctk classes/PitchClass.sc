@@ -381,6 +381,32 @@ PitchClass {
 		^[PitchInterval(quality, interval + (octaves * 7)), direction];
 		}
 		
+	modalTranspose {arg steps = 0, fromAPitchCollection, toAPitchCollection, direction = \up;
+		var degree = 0, pitchNames, idx = 0, test, size, notes, add, fromPC, toPC;
+		var newNote, newPitch, newPC, newAcc, curAcc;
+		fromAPitchCollection = fromAPitchCollection ?? {PitchCollection.major(\c)};
+		toAPitchCollection = toAPitchCollection ?? {fromAPitchCollection};
+		fromPC = fromAPitchCollection.pitchCollection;
+		toPC = toAPitchCollection.pitchCollection;
+		size = fromPC.size;
+		notes = fromPC.collect({arg me; me.note});
+		test = false;
+		while({
+			(this.note == notes[degree]).if({
+				test = true;
+				add = ((this.keynum - fromPC[degree].keynum) % 12).asInteger;
+				newNote = notes[(degree + steps) % 7];
+				newPC = toPC[(degree + steps) % 7];
+				newAcc = sizeToAcc[(accToSize[newPC.acc] + add)];
+				newPitch = (newNote ++ newAcc).asSymbol;
+				}, {
+				degree = degree + 1
+				});
+			(test == false and: {idx < size});
+			});
+		^this.class.new(newPitch, octave); //[degree, newNote, newPC, newPitch, curAcc].postln;
+		}
+
 	
 	// cn = c, cs = c-sharp, df = d-flat, dqf = d-quarter-flat, cqs = c-quarter-sharp
 	// dtqf = d-three-quarter-flat, ctqs = c-three-quarter-sharp
@@ -830,15 +856,15 @@ PitchCollection {
 				{arg i; pitchCollection[i].transpose(aPitchInterval, direction)}),
 			tonic.transpose(aPitchInterval, direction), octaveSize)
 		}
-/*
-	modalTranspose {arg aPitchCollection, direction = \up;
-		var newCollection, newTonic, baseInterval;
-		newCollection = Array.fill(pitchCollection.size, 
-				{arg i; pitchCollection[i].transpose(aPitchInterval, direction)});
-		newTonic = tonic.transpose(aPitchInterval, direction);
-		^this.class.new(newCollection, newTonic, octaveSize)
-		}
-*/
+
+//	modalTranspose {arg steps = 0, aPitchCollection, direction = \up;
+//		var newCollection, newTonic, baseInterval;
+//		newCollection = Array.fill(pitchCollection.size, 
+//				{arg i; pitchCollection[i].transpose(aPitchInterval, direction)});
+//		newTonic = tonic.transpose(aPitchInterval, direction);
+//		^this.class.new(newCollection, newTonic, octaveSize)
+//		}
+
 			
 	/*	
 	*quartertone {arg tonic;
