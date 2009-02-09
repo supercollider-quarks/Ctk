@@ -204,7 +204,7 @@ NtkPart : NtkObj {
 			NtkTimeSig(lastTimeSig.measure + 1,lastTimeSig.upper, 
 				lastTimeSig.lower, lastTimeSig.compound)};
 		measure = anNtkTimeSig.measure;
-		((measure - 1) > timeSigs.size).if({
+		(measure >= timeSigs.size).if({
 			(measure - 1 - timeSigs.size).do({arg i;
 				timeSigs = timeSigs.add(
 					NtkTimeSig.new(lastTimeSig.measure + i + 1, 
@@ -220,12 +220,11 @@ NtkPart : NtkObj {
 		}
 
 	// this can be HELLA optimized (that's right, this actually calls for use of the
-	// word 'HELLA'
+	// word 'HELLA')
 	fillWithRests {
 		var thisTImeSig, thisMeasure, rests, restDur, firstNote, lastNote;
 		rests = Array.fill(voices.size, {[]});
 		timeSigs.do({arg thisTimeSig, i;
-			var now = 1;
 			thisMeasure = this.notesForMeasure(i);
 			thisMeasure.do({arg thisVoice, v;
 				(thisVoice.size > 0).if({
@@ -320,8 +319,8 @@ NtkPart : NtkObj {
 	addToVoice {arg voice ... events;
 		voices[voice] = voices[voice] ++ events;
 		events.do({arg me;
-			(me.measure > timeSigs.size).if({
-				(me.measure - timeSigs.size).do({
+			(me.measure > (timeSigs.size - 1)).if({
+				(me.measure - (timeSigs.size - 1)).do({
 					this.timeSig_()
 					})
 				})
@@ -529,7 +528,7 @@ NtkTimeSig : NtkPriorityOneEvent {
 		case
 			{upper.isKindOf(Array)}
 			{(upper.size < (beat.size - 1)).if({
-				^(upper[beat-1] / lower)
+				^(upper[beat] / lower)
 				})}
 			{compound}
 			{^3/lower}
