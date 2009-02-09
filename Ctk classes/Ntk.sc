@@ -151,7 +151,7 @@ NtkScore : NtkObj {
 		theseParts = this.sortParts;
 		theseParts.do({arg aPart;
 			var guidoPart;
-			// need to gather the initial things for LPPart
+			aPart.fillWithRests;
 			guidoPart = aPart.asGuidoPart;
 			guidoScore.add(guidoPart);
 			});
@@ -164,6 +164,7 @@ NtkScore : NtkObj {
 		theseParts = this.sortParts;
 		theseParts.do({arg aPart;
 			var lpPart;
+			aPart.fillWithRests;			
 			lpPart = aPart.asLPPart;
 			lpScore.add(lpPart);
 			});		
@@ -191,32 +192,72 @@ NtkPart : NtkObj {
 		clef = (argClef ?? {NtkClef.treble(1, 1)});
 		key = (argKey ?? {NtkKeySig.major(1, 1, \c)});
 		timeSig = (argTimeSig ?? {NtkTimeSig(1, 4, 4)});
-		timeSigs = Array.newClear(8);
+		timeSigs = Array.with(timeSig);
 		// tempo is an Env that can be accessed by index?s		// users add to it with NtkTempos, but internally, all goes through the Env
 		}
 	
 	timeSig_ {arg anNtkTimeSig;
 		var measure;
+		var lastTimeSig;
+		lastTimeSig = timeSigs[timeSigs.size - 1];
+		anNtkTimeSig = anNtkTimeSig ?? {
+			NtkTimeSig(lastTimeSig.measure + 1,lastTimeSig.upper, 
+				lastTimeSig.lower, lastTimeSig.compound)};
 		measure = anNtkTimeSig.measure;
-		(measure > timeSigs.size).if({
-			timeSigs.growClear(measure - timeSigs.size);
+		((measure - 1) > timeSigs.size).if({
+			(measure - 1 - timeSigs.size).do({arg i;
+				timeSigs = timeSigs.add(
+					NtkTimeSig.new(lastTimeSig.measure + i + 1, 
+						lastTimeSig.upper, lastTimeSig.lower, lastTimeSig.compound)
+					);
+				});
 			});
-		timeSigs.put(measure, anNtkTimeSig);
+		timeSigs = timeSigs.add(anNtkTimeSig);
 		}
 		
 	timeSigAt {arg measure;
 		^timeSigs[measure];
 		}
-		
+
+	// this can be HELLA optimized (that's right, this actually calls for use of the
+	// word 'HELLA'
 	fillWithRests {
-		var thisTImeSig, thisMeasure;
-		timeSigs.size.do({arg i;
-			thisTImeSig = timeSigs[i];
-			thisMeasure = this.notesForMeasure(i + 1);
-			thisTImeSig.numBeats.do({arg thisBeat;
-				thisMeasure.copy.do({
+		var thisTImeSig, thisMeasure, rests, restDur, firstNote, lastNote;
+		rests = Array.fill(voices.size, {[]});
+		timeSigs.do({arg thisTimeSig, i;
+			var now = 1;
+			thisMeasure = this.notesForMeasure(i);
+			thisMeasure.do({arg thisVoice, v;
+				(thisVoice.size > 0).if({
+					firstNote = thisVoice[0];
+					(firstNote.beat != 0.0).if({
+						restDur = firstNote.beat * 0.25;
+						rests[v] = rests[v].add(NtkNote(\r, restDur, i, 0));
+						});
+					lastNote = thisVoice[thisVoice.size - 1];
+					(((lastNote.beat + (lastNote.duration * 4)) * 0.25) < thisTimeSig.totalDur).if({
+						rests[v] = rests[v].add(
+							NtkNote(\r, 
+								thisTimeSig.totalDur - 
+									((lastNote.beat + (lastNote.duration * 4)) * 0.25), 
+								i, lastNote.beat + (lastNote.duration * 4)))
+						})
+					}, {
+					rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.totalDur, i, 0));
+					});
+				thisVoice.doAdjacentPairs({arg first, second, j;
+					[first.beat, first.duration, second.beat, second.duration].postln;
+					(first.beat + (first.duration * 4) < second.beat).if({
+						rests[v] = rests[v].add(NtkNote(\r, 
+							(second.beat - (first.beat + (first.duration * 4))) * 0.25,
+							i, (first.beat + (first.duration * 4))))
+						})
 					});
 				});
+			});
+		voices.do({arg thisVoice, i;
+			voices[i] = voices[i] ++ rests[i];
+			this.sortVoice(i)
 			});
 		}
 	
@@ -278,6 +319,13 @@ NtkPart : NtkObj {
 	
 	addToVoice {arg voice ... events;
 		voices[voice] = voices[voice] ++ events;
+		events.do({arg me;
+			(me.measure > timeSigs.size).if({
+				(me.measure - timeSigs.size).do({
+					this.timeSig_()
+					})
+				})
+			})
 		}
 		
 	sortVoice {arg voice = 0;
@@ -320,7 +368,7 @@ NtkPart : NtkObj {
 
 // users do not see this
 NtkEvent : NtkObj {
-	var <measure, <beat, <rhythm, <tuplet, <dots, <event, <index;
+	var <measure, <beat, <rhythm, <tuplet, <dots, <event, <index, <duration;
 	
 	*new {arg measure = 1, beat = 1, rhythm, tuplet;
 		^super.new.initNtkEvent(measure, beat, rhythm, tuplet);
@@ -332,6 +380,11 @@ NtkEvent : NtkObj {
 //		this.calcRhythm(argRhythm);
 		rhythm = argRhythm;
 		tuplet = argTuplet;
+		duration = rhythm.isKindOf(Symbol).if({
+			rhythmToDur[rhythm];
+			}, {
+			rhythm
+			});
 		this.calcIndex;
 		}
 	
@@ -443,7 +496,7 @@ NtkClef : NtkPriorityOneEvent {
 	}
 	
 NtkTimeSig : NtkPriorityOneEvent {
-	var <upper, <lower, compound;
+	var <upper, <lower, <compound, <totalDur;
 	
 	*new {arg measure, upper, lower, compound = false;
 		^super.new(measure, 1).initNtkTimeSig(upper, lower, compound);
@@ -453,6 +506,7 @@ NtkTimeSig : NtkPriorityOneEvent {
 		upper = argUpper;
 		lower = argLower;
 		compound = argCompound;
+		totalDur = upper / lower;
 		compound.if({
 			((upper % 3) != 0).if({
 				"Compound time signature should have a numerator that is divisible by 3".warn;

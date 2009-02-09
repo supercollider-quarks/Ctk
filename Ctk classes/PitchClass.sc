@@ -381,9 +381,11 @@ PitchClass {
 		^[PitchInterval(quality, interval + (octaves * 7)), direction];
 		}
 		
-	modalTranspose {arg steps = 0, fromAPitchCollection, toAPitchCollection, direction = \up;
+	modalTranspose {arg steps = 0, fromAPitchCollection, toAPitchCollection;
 		var degree = 0, pitchNames, idx = 0, test, size, notes, add, fromPC, toPC;
-		var newNote, newPitch, newPC, newAcc, curAcc;
+		var newNote, newPitch, newPC, newAcc, curAcc, degPStep, octAdd, scaleDist;
+		var curNote, lastNote;
+		octAdd = (steps / 7).floor;
 		fromAPitchCollection = fromAPitchCollection ?? {PitchCollection.major(\c)};
 		toAPitchCollection = toAPitchCollection ?? {fromAPitchCollection};
 		fromPC = fromAPitchCollection.pitchCollection;
@@ -395,16 +397,20 @@ PitchClass {
 			(this.note == notes[degree]).if({
 				test = true;
 				add = ((this.keynum - fromPC[degree].keynum) % 12).asInteger;
-				newNote = notes[(degree + steps) % 7];
-				newPC = toPC[(degree + steps) % 7];
+				degPStep = degree + steps;
+				newNote = notes[degPStep % 7];
+				newPC = toPC[degPStep % 7];
 				newAcc = sizeToAcc[(accToSize[newPC.acc] + add)];
 				newPitch = (newNote ++ newAcc).asSymbol;
 				}, {
-				degree = degree + 1
+				lastNote = noteToScale[notes[degree + steps % 7]];
+				degree = degree + 1;
+				curNote = noteToScale[notes[degree + steps % 7]];
+				(curNote < lastNote).if	({octAdd = octAdd + 1});
 				});
 			(test == false and: {idx < size});
 			});
-		^this.class.new(newPitch, octave); //[degree, newNote, newPC, newPitch, curAcc].postln;
+		^this.class.new(newPitch, octave + octAdd); //
 		}
 
 	
@@ -852,11 +858,17 @@ PitchCollection {
 		}
 		
 	transpose {arg aPitchInterval, direction = \up;
-		^this.class.new(Array.fill(pitchCollection.size, 
-				{arg i; pitchCollection[i].transpose(aPitchInterval, direction)}),
+		^this.class.new(Array.fill(pitchCollection.size, {arg i;
+				pitchCollection[i].transpose(aPitchInterval, direction)}),
 			tonic.transpose(aPitchInterval, direction), octaveSize)
 		}
 
+	modalTranspose {arg steps, fromAPitchCollection, toAPitchCollection;
+		^this.class.new(Array.fill(pitchCollection.size, {arg i;
+				pitchCollection[i].modalTranspose(steps, fromAPitchCollection, toAPitchCollection)}),
+			tonic.modalTranspose(steps, fromAPitchCollection, toAPitchCollection))
+		}
+		
 //	modalTranspose {arg steps = 0, aPitchCollection, direction = \up;
 //		var newCollection, newTonic, baseInterval;
 //		newCollection = Array.fill(pitchCollection.size, 

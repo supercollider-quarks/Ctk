@@ -1115,11 +1115,15 @@ CtkNote : CtkNode {
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
 			});
 		mapDict.keysValuesDo({arg key, val;
-			val.isKindOf(CtkControl).if({
-				initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])
-				}, {
-				initbundle = initbundle.add([\n_mapa, node, key, val.asUGenInput])
-				})
+				bundlearray.add(key);
+				bundlearray.add(val.asMapInput);
+//			val.isKindOf(CtkControl).if({
+//				bundlearray.add(key);
+//				bundlearray.add(val.asMapInput);
+////				initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])
+//				}, {
+//				initbundle = initbundle.add([\n_mapa, node, key, val.asUGenInput])
+//				})
 			});
 		^initbundle;	
 		}
@@ -1792,6 +1796,7 @@ CtkControl : CtkBus {
 		}
 	
 	asUGenInput {^bus}
+	asMapInput {^(\c++bus).asSymbol}
 	
 	*initClass {
 		var thisctkno;
@@ -1852,6 +1857,7 @@ CtkAudio : CtkBus {
 		}
 		
 	asUGenInput {^bus}
+	asMapInput {^(\a++bus).asSymbol}
 	}
 	
 /* this will be similar to ProcMod ... global envelope magic 
