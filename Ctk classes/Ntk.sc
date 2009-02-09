@@ -245,7 +245,7 @@ NtkPart : NtkObj {
 					rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.totalDur, i, 0));
 					});
 				thisVoice.doAdjacentPairs({arg first, second, j;
-					[first.beat, first.duration, second.beat, second.duration].postln;
+//					[first.beat, first.duration, second.beat, second.duration].postln;
 					(first.beat + (first.duration * 4) < second.beat).if({
 						rests[v] = rests[v].add(NtkNote(\r, 
 							(second.beat - (first.beat + (first.duration * 4))) * 0.25,
