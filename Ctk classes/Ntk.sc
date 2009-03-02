@@ -223,37 +223,57 @@ NtkPart : NtkObj {
 	// word 'HELLA')
 	fillWithRests {
 		var thisTImeSig, thisMeasure, rests, restDur, firstNote, lastNote;
+		var nBeats, rem, thisBeat, thisBeatDur;
 		rests = Array.fill(voices.size, {[]});
+
 		timeSigs.do({arg thisTimeSig, i;
 			thisMeasure = this.notesForMeasure(i);
 			thisMeasure.do({arg thisVoice, v;
 				(thisVoice.size > 0).if({
 					firstNote = thisVoice[0];
-					(firstNote.beat != 0.0).if({
-						restDur = firstNote.beat * 0.25;
-						rests[v] = rests[v].add(NtkNote(\r, restDur, i, 0));
+					(firstNote.beat > 0.0).if({
+						nBeats = firstNote.beat.floor;
+						rem = firstNote.beat - nBeats;
+						nBeats.do({arg b;
+							rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.beatDur(b), i, b))
+							});
+						(rem > 0.0).if({
+							rests[v] = rests[v].add(NtkNote(\r, 
+								thisTimeSig.beatDur(nBeats) * rem, i, nBeats))
+								});
 						});
 					lastNote = thisVoice[thisVoice.size - 1];
-					(((lastNote.beat + (lastNote.duration * 4)) * 0.25) < thisTimeSig.totalDur).if({
+					nBeats = thisTimeSig.numBeats - lastNote.beat.ceil - 1;
+					// first - fill in any complete beats after the last note
+					nBeats.do({arg b;
 						rests[v] = rests[v].add(
-							NtkNote(\r, 
-								thisTimeSig.totalDur - 
-									((lastNote.beat + (lastNote.duration * 4)) * 0.25), 
-								i, lastNote.beat + (lastNote.duration * 4)))
-						})
-					}, {
-					rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.totalDur, i, 0));
-					});
+							NtkNote(\r, thisTimeSig.beatDur(thisTimeSig.numBeats - b),
+								i, thisTimeSig.numBeats - b - 1))
+						});
+					thisBeatDur = thisTimeSig.beatDur(lastNote.beat.floor);
+					rem = thisBeatDur - ((lastNote.beat % 1.0) + lastNote.duration);
+					(rem > 0).if({
+						rests[v] = rests[v].add(NtkNote(\r, rem, i, lastNote.beat + (lastNote.duration / thisTimeSig.beatDur(lastNote.beat))));
+						});
+				// NEED TO DO - fill in rest of current beat, in between beats, beats leading to next note
 				thisVoice.doAdjacentPairs({arg first, second, j;
+					var endBeat;
+					endBeat = first.beat + (first.duration / (thisTimeSig.beatDur(first.beat)));
+					(endBeat < second.beat).if({
+						rests[v] = rests[v].add(
+							NtkNote(\r, (second.beat - endBeat) * (thisTimeSig.beatDur(first.beat)), i, endBeat)
+							)
+						});
 //					[first.beat, first.duration, second.beat, second.duration].postln;
-					(first.beat + (first.duration * 4) < second.beat).if({
+/*					(first.beat + (first.duration * 4) < second.beat).if({
 						rests[v] = rests[v].add(NtkNote(\r, 
 							(second.beat - (first.beat + (first.duration * 4))) * 0.25,
 							i, (first.beat + (first.duration * 4))))
-						})
+						}) */
 					});
 				});
 			});
+		});
 		voices.do({arg thisVoice, i;
 			voices[i] = voices[i] ++ rests[i];
 			this.sortVoice(i)
@@ -535,7 +555,15 @@ NtkTimeSig : NtkPriorityOneEvent {
 			{true}
 			{^1/lower};
 		}
-		
+	
+	beatMul {arg beat;
+		case 
+			{compound}
+			{^3 * lower}
+			{true}
+			{^lower};
+		}
+			
 	asGuidoEvent { ^GuidoTimeSig(upper, lower).measure_(measure) }
 	asLPEvent { ^LPTimeSig(upper, lower).measure_(measure) }
 	}

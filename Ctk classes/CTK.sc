@@ -1371,41 +1371,50 @@ CtkBuffer : CtkObj {
 		}
 
 	init {
-		var sf, nFrames;
+		var sf, nFrames, test;
 		server = server ?? {Server.default};
 		bufnum = bufnum ?? {server.bufferAllocator.alloc(1)};
 		messages = [];
+		test = true;
 //		complettion = [];
 		path.notNil.if({
 			sf = SoundFile.new(path);
-			sf.openRead;
-			numChannels = sf.numChannels;
-			duration = sf.duration;
-			sampleRate = sf.sampleRate;
-			numFrames.isNil.if({
-				numFrames = sf.numFrames;
-				});
-			sf.close;
+			test = sf.openRead;
+			test.if({
+				numChannels = sf.numChannels;
+				duration = sf.duration;
+				sampleRate = sf.sampleRate;
+				numFrames.isNil.if({
+					numFrames = sf.numFrames;
+					});
+				sf.close;
+				}, {
+				("No soundfile found at: "++path).warn;
+				})
 			});
-		case { // path, not size - load file with b_allocRead
-			path.notNil && size.isNil
-			} {
-			nFrames = numFrames ?? {0};
-			bundle = [\b_allocRead, bufnum, path, startFrame, nFrames];
-			} {// path, size ( for DiskIn )
-			path.notNil && size.notNil
-			} {
-			nFrames = numFrames ?? {size};
-			bundle = [\b_alloc, bufnum, size, numChannels, 
-				[\b_read, bufnum, path, startFrame, nFrames, 0, 1]];
-			closeBundle = [\b_close, bufnum];
-			} { /// just allocate memory (for delays, FFTs etc.)
-			path.isNil && size.notNil
-			} {
-			numChannels = numChannels ?? {1};
-			bundle = [\b_alloc, bufnum, size, numChannels];
-			};
-		freeBundle = [\b_free, bufnum];
+		test.if({
+			case { // path, not size - load file with b_allocRead
+				path.notNil && size.isNil
+				} {
+				nFrames = numFrames ?? {0};
+				bundle = [\b_allocRead, bufnum, path, startFrame, nFrames];
+				} {// path, size ( for DiskIn )
+				path.notNil && size.notNil
+				} {
+				nFrames = numFrames ?? {size};
+				bundle = [\b_alloc, bufnum, size, numChannels, 
+					[\b_read, bufnum, path, startFrame, nFrames, 0, 1]];
+				closeBundle = [\b_close, bufnum];
+				} { /// just allocate memory (for delays, FFTs etc.)
+				path.isNil && size.notNil
+				} {
+				numChannels = numChannels ?? {1};
+				bundle = [\b_alloc, bufnum, size, numChannels];
+				};
+			freeBundle = [\b_free, bufnum];
+			}, {
+			"CtkBuffer set-up failed".warn;
+			})
 		}
 	
 	load {arg time = 0.0, sync = true, onComplete;
@@ -1591,7 +1600,7 @@ CtkControl : CtkBus {
 		
 	classvar ctkEnv, sddict; 
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
-		^this.newCopyArgs(Dictionary.new, nil, server, numChans, bus, initVal, starttime).initThisClass;
+		^this.newCopyArgs(Dictionary.new, nil, server, numChans, bus, initVal.asArray, starttime).initThisClass;
 		}
 	
 	/* calling .play on an object tells the object it is being used in real-time
@@ -1601,11 +1610,17 @@ CtkControl : CtkBus {
 		}
 
 	initThisClass {
-		var bund;
+		var bund, numSlots;
 		server = server ?? {Server.default};
 		bus = bus ?? {server.controlBusAllocator.alloc(numChans)};
 		messages = []; // an array to store sceduled bundles for this object
-		bund = [\c_setn, bus, numChans, initValue];
+		numSlots = (numChans > initValue.size).if({
+			initValue = initValue ++ Array.fill(numChans - initValue.size, {0.0});
+			numChans;
+			}, {
+			numChans
+			}); 
+		bund = [\c_setn, bus, initValue.size] ++ initValue;
 		messages = messages.add(CtkMsg(server, starttime.asFloat, bund));
 		ctkNote = nil;
 		}
@@ -1780,7 +1795,8 @@ CtkControl : CtkBus {
 			
 	set {arg val, time = 0.0;
 		var bund;
-		bund = [\c_setn, bus, numChans, val];
+		val = val.asArray;
+		bund = [\c_setn, bus, val.size] ++ val;
 		isPlaying.if({
 			SystemClock.sched(time, {server.sendBundle(latency, bund)});
 			}, {
