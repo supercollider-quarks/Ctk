@@ -61,7 +61,7 @@ LPScore : LPObj {
 	var <>score, file, <header, <paper, <paperSize, <landscape, <layoutOverrides;
 	// for spatial scores - minDuration is the duration cutoff for gliss's
 	var <>spatial = false, <minDuration, <lyVars;
-	var <baseMeasurementUnit;
+	var <baseMeasurementUnit, <includeMIDI;
 		
 	*new {arg title, composer, opus;
 		^super.new.initLPScore;
@@ -71,6 +71,7 @@ LPScore : LPObj {
 		var headers, papers;
 		score = [];
 		layoutOverrides = [];
+		includeMIDI = false;
 		lyVars = IdentityDictionary.new;
 		paper = Dictionary.new;
 		header = Dictionary.new;
@@ -302,30 +303,37 @@ LPScore : LPObj {
 		score.do({arg part, i;
 			// score contains parts - each part gets an opening '<<' and closing '>>'
 			file.write("\t\\new Staff = \""++ part.id.asString ++ "\" <<\n");
-			part.headOutput(file);
+			part.headOutput(file, this);
 			part.voices.do({arg voice;
 				file.write("\t\t\\"++voice.id++"\n");
 				});
 			file.write("\t\t>>\n");				
 			});
 		file.write("\t>>\n");
+		includeMIDI.if({
+			file.write("\t\\layout{}\n");
+			file.write("\t\\midi{}\n");
+		});		
 		file.write("}\n");
 		file.close;
 		}
 
-	render {arg basepath, format = \pdf;
+	render {arg basepath, format = \pdf, midiflag = false;
+		midiflag.if({includeMIDI = true});
 		this.output(basepath++".ly");
 		(lilypondPath ++" --formats="++format++" -o "++basepath++". "++basepath++".ly")
 			.unixCmd;
 		}
 				
-	renderAndDisplay {arg basepath, format = \pdf;
+	renderAndDisplay {arg basepath, format = \pdf, midiflag = false;
+		midiflag.if({includeMIDI = true});
 		this.output(basepath++".ly");
 		(lilypondPath ++" --formats="++format++" -o "++basepath++". "++basepath++".ly")
 			.unixCmdThen({("open "++basepath++"."++format).unixCmd})
 		}
 	
-	renderCropAndDisplay {arg basepath, format = \png;
+	renderCropAndDisplay {arg basepath, format = \png, midiflag = false;
+		midiflag.if({includeMIDI = true});
 		this.output(basepath++".ly");
 		(lily2imagePath ++ " -f="++format++" "++basepath++". "++basepath++"")
 			.unixCmdThen({("open "++basepath++"."++format).unixCmd})		}
@@ -431,12 +439,15 @@ LPPart : LPObj {
 			});
 		}
 		
-	headOutput {arg file;
+	headOutput {arg file, score;
 		instrumentName.notNil.if({
 			file.write("\t\t\\set Staff.instrumentName =#\"" ++ instrumentName ++ "\"\n");
 			});
 		shortInstrumentName.notNil.if({
 			file.write("\t\t\\set Staff.shortInstrumentName =#\"" ++ shortInstrumentName ++ "\"\n");
+			});
+		score.includeMIDI.if({
+			file.write("\t\t\\set Staff.midiInstrument =#\"" ++ instrumentName ++ "\"\n");
 			});
 //		file.write("\t\t\\clef " ++ clef.type ++ "\n");
 //		file.write("\t\t\\time " ++ timeSig.sig ++ "\n");

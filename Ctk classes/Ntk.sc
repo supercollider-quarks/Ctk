@@ -176,7 +176,7 @@ NtkPart : NtkObj {
 	// events get priority over notes. They are things like clef changes, meter, etc.
 	// notes are notes and rests
 	var <id, <measures, <voices, <notes, <clef, <key, <timeSig, <tempo, <tempoEnv;
-	var <timeSigs;
+	var <timeSigs, <>instrumentName;
 	
 	*new {arg id, clef, key, timeSig, tempo;
 		^super.new.initNtkPart(id, clef, key, timeSig, tempo);
@@ -373,7 +373,10 @@ NtkPart : NtkObj {
 		
 	asLPPart {
 		var part;
-		part = LPPart.new(id);
+		part = LPPart.new(id, clef: clef.asLPEvent, keySig: key.asLPEvent, timeSig: timeSig.asLPEvent);
+		instrumentName.notNil.if({
+			part.addInstrumentName(instrumentName);
+			});
 		voices.do({arg thisVoice, i;
 			thisVoice.do({arg thisEv;
 				this.sortVoice(i);
