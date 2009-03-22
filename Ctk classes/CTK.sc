@@ -404,7 +404,7 @@ CtkScore : CtkObj {
 			thisTimeEvent.do({arg me;
 				thisBundle = thisBundle ++ me.msgBundle;
 				});
-			(thisBundle.bundleSize < 1000).if({
+			(thisBundle.bundleSize < 4096).if({
 				thisBundle = thisBundle.addFirst(thisTime);
 				score.add(thisBundle);
 				}, {
@@ -415,7 +415,7 @@ CtkScore : CtkObj {
 					// remove a message
 					tmp = thisBundle.removeAt(0);
 					// check if tmpBundle is above our desired size first
-					((tmpBundle ++ tmp).bundleSize > 1000).if({
+					((tmpBundle ++ tmp).bundleSize > 4096).if({
 						tmpBundle = tmpBundle.addFirst(thisTime + (block * offset));
 						score.add(tmpBundle);
 						tmpBundle = [];
