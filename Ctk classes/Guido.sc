@@ -152,7 +152,7 @@ GuidoEvent : GuidoObj {
 		duration.isKindOf(Symbol).if({
 			duration = rhythmToDur[duration]
 			});
-		^(duration).asFraction(64, false);
+		^(duration).asFraction(50, false);
 		}
 		
 	*initClass {

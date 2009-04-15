@@ -225,7 +225,6 @@ NtkPart : NtkObj {
 		var thisTImeSig, thisMeasure, rests, restDur, firstNote, lastNote;
 		var nBeats, rem, thisBeat, thisBeatDur;
 		rests = Array.fill(voices.size, {[]});
-
 		timeSigs.do({arg thisTimeSig, i;
 			thisMeasure = this.notesForMeasure(i);
 			thisMeasure.do({arg thisVoice, v;
@@ -259,8 +258,11 @@ NtkPart : NtkObj {
 				thisVoice.doAdjacentPairs({arg first, second, j;
 					var endBeat;
 					endBeat = first.beat + (first.duration / (thisTimeSig.beatDur(first.beat)));
+					[endBeat, second.beat].postln;
 					(endBeat < second.beat).if({
 						rests[v] = rests[v].add(
+							// hmm - need to do this on a beat by beat basis - how much dur is left for this beat
+							// then, keep adding a new rest ACCORDING to any remaining duration
 							NtkNote(\r, (second.beat - endBeat) * (thisTimeSig.beatDur(first.beat)), i, endBeat)
 							)
 						});
@@ -271,6 +273,10 @@ NtkPart : NtkObj {
 							i, (first.beat + (first.duration * 4))))
 						}) */
 					});
+				}, {
+				thisTimeSig.numBeats.do({arg b;
+					rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.beatDur(b), i, b))
+					})
 				});
 			});
 		});

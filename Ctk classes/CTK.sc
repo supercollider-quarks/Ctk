@@ -551,7 +551,8 @@ CtkProtoNotes {
 	
 		
 CtkNoteObject {
-	var <synthdef, <server, <synthdefname, args, <noMaps;
+	var <synthdef, <server, <synthdefname, args, <noMaps, isPlaying, score;
+	
 	*new {arg synthdef, server;
 		^super.newCopyArgs(synthdef, server).init;
 		}
@@ -663,14 +664,6 @@ CtkNoteObject {
 						})
 				})});
 		noMaps.removeAllSuchThat({arg item; item.isNil});
-//		noMaps = kouts;
-//		noMaps = kouts.collect({arg item;
-//			var me, start, end;
-//			me = item.dumpName;
-//			start = me.indexOf($[);
-//			end = me.indexOf($]);
-//			synthdef.allControlNames[me[start+1..end-1].interpret].name.asSymbol;
-//			})
 		}
 		
 	// create an CtkNote instance
@@ -686,7 +679,244 @@ CtkNoteObject {
 			});
 		^args;
 		}
+		
+	tester {arg server;
+		var paramDict, durBox, playButton, clock;
+		var w, x, y, z, nChans;
+		server = server ?? {Server.default};
+		
+		w = Window.new("Controls for: "++synthdefname, Rect(100, 600, 1000, 400));
+		w.view.decorator_(x = FlowLayout(w.bounds, 10@10, 20@5));
+		w.front;
+		paramDict = Dictionary.new;
+		
+		playButton = Button(w, 50@20)
+			.states_([
+				["Play", Color.green, Color.black],
+				["Stop", Color.red, Color.black]
+				])
+			.action_({arg me;
+				this.playFunc(server, me.value, false, nil, playButton, durBox, paramDict, nChans)
+				});
+				
+		StaticText(w, 90@20)
+			.string_("Duration:");
+			
+		durBox = NumberBox(w, 50@20)
+			.value_(1);
+				
+		x.nextLine;
+		
+		Button(w, 50@20)
+			.states_([
+				["Render", Color.green, Color.black]
+				])
+			.action_({arg me;
+				CocoaDialog.savePanel({arg path;
+					this.playFunc(server, 1, true, path, playButton, durBox, paramDict, nChans);
+					}, {
+					"No file saved".warn
+					})
+				});
+				
+		StaticText(w, 90@20)
+			.string_("Num Channels:");
+		
+		nChans = NumberBox(w, 50@20)
+			.value_(2);
+		
+		x.shift(60, 0);
+		
+		Button(w, 100@20)
+			.states_([
+				["Draw Buffer", Color.green, Color.black]
+				])
+			.action_({
+				this.createBuffer
+				});
+		
+		x.nextLine;
+		
+		x.shift(310, 0);
+		
+		StaticText(w, 200@20)
+			.string_("Env or path to a buffer");
+		StaticText(w, 40@20)
+			.string_("Scale");
+		StaticText(w, 40@20)
+			.string_("Bias");
+		StaticText(w, 50@20)
+			.string_("TScale");
+		StaticText(w, 40@20)
+			.string_("Freq");
+		StaticText(w, 40@20)
+			.string_("Low");
+		StaticText(w, 40@20)
+			.string_("High");
+		StaticText(w, 40@20)
+			.string_("Phase");
+			
+		x.shift(0, -30);
+		
+		z = ScrollView(w, Rect.new(0, 0, w.bounds.width, w.bounds.height-60)) ;
+		z.decorator_(y = FlowLayout(z.bounds, 10@10, 20@5));
+		args.keysValuesDo({arg key, val;
+			paramDict.add(key -> Dictionary.new);
+			StaticText(z, 60@20)
+				.string_(key.asString);
+			paramDict[key].add("default" -> 
+				NumberBox(z, 40@20)
+					.value_(val)
+					);
+			StaticText(z, 40@20)
+				.string_("Control");
+			paramDict[key].add("control" -> 
+				PopUpMenu(z, 70@20)
+					.items_(["none", "env", "k-buffer", "playbuf", "diskin", 
+						"LFNoise0", "LFNoise1", "LFNoise2", 
+						"SinOsc", "Impulse", "LFSaw", "LFPar", "LFTri", "LFCub"])
+					.action_({arg me;
+						me.value;
+						});
+				);	
+			paramDict[key].add("env" -> 
+				TextView(z, 200@20)	
+				);
+			paramDict[key].add("scale" -> 
+				NumberBox(z, 40@20)
+					.value_(1)
+				);
+			paramDict[key].add("bias" -> 
+				NumberBox(z, 40@20)
+					.value_(0)
+				);		
+			paramDict[key].add("tscale" -> 
+				NumberBox(z, 40@20)
+					.value_(1)
+				);
+			paramDict[key].add("freq" -> 
+				NumberBox(z, 40@20)
+					.value_(1)
+				);
+			paramDict[key].add("low" -> 
+				NumberBox(z, 40@20)
+					.value_(-1)
+				);
+			paramDict[key].add("high" -> 
+				NumberBox(z, 40@20)
+					.value_(1)
+				);
+			paramDict[key].add("phase" -> 
+				NumberBox(z, 40@20)
+					.value_(0)
+				);
+			y.nextLine;
+			});		
+		}
+		
+playFunc {arg server, val, nrt = false, path, playButton, durBox, paramDict, nChans;
+	var func, str, buf, note, clock;
+	func = case 
+		{val == 0}
+		{isPlaying.if({isPlaying = false; server.freeAll; clock.clear; clock.stop; 
+			score.buffers.do({arg me; me.free})})}
+		{val == 1}
+		{	
+			score = CtkScore.new;
+			note = this.new;
+			note.setDuration(durBox.value);
+			note.args.keys.do({arg key;
+				case 
+					{(paramDict[key]["control"].value == 0)}
+					{note.perform((key++"_").asSymbol, paramDict[key]["default"].value)}
+					{(paramDict[key]["control"].value == 1)}
+					{
+						str = paramDict[key]["env"].string.interpret;
+						str.isKindOf(Env).if({
+							note.perform((key++"_").asSymbol, 
+								CtkControl.env(str, levelScale: paramDict[key]["scale"].value,
+									levelBias: paramDict[key]["bias"].value, timeScale: 
+									paramDict[key]["tscale"].value))
+								}, {
+								"Parameter for "++key++" does not appear to be an Env".warn;
+								})
+							
+					}
+					{(paramDict[key]["control"].value == 2)}
+					{
+						str = paramDict[key]["env"].string.interpret;
+						PathName(str).isFile.if({
+							score.add(buf = CtkBuffer.playbuf(str));
+							note.perform((key++"_").asSymbol, 
+								CtkControl.kbuf(buf, levelScale: paramDict[key]["scale"].value,
+									levelBias: paramDict[key]["bias"].value, 
+									timeScale: paramDict[key]["tscale"].value))
+
+							});
+					}
+					{(paramDict[key]["control"].value == 3)}
+					{
+						str = paramDict[key]["env"].string.interpret;
+						PathName(str).isFile.if({
+							score.add(buf = CtkBuffer.playbuf(str));
+							note.perform((key++"_").asSymbol, buf);
+							});
+					}
+					{(paramDict[key]["control"].value == 4)}
+					{
+						str = paramDict[key]["env"].string.interpret;
+						PathName(str).isFile.if({
+							score.add(buf = CtkBuffer.diskin(str));
+							note.perform((key++"_").asSymbol, buf);
+							});
+					}
+					{(paramDict[key]["control"].value > 4)}
+					{	note.perform((key++"_").asSymbol, 
+							CtkControl.lfo(paramDict[key]["control"]
+									.items[paramDict[key]["control"].value].interpret,
+								paramDict[key]["freq"].value,
+								paramDict[key]["low"].value,
+								paramDict[key]["high"].value,								paramDict[key]["phase"].value))
+					}
+					;				
+			});
+			score.add(note);
+			nrt.if({
+				score.write(path, options: ServerOptions.new.numOutputBusChannels_(nChans.value))
+				}, { 
+				clock = TempoClock.new;
+				score.play;
+				isPlaying = true;
+				clock.sched(durBox.value + 0.2, {
+					{(playButton.value != 0).if({playButton.valueAction_(0)})}.defer});
+				})
+		};
+	func.value;
+	}
 	
+createBuffer {
+	var bufEditWindow, bufEditDec, plot;
+	bufEditWindow = Window.new("A Plot Buffer", Rect(400, 500, 400, 300));
+	bufEditWindow.front;
+	plot = Plot.newClear(100, parent: bufEditWindow);
+	bufEditWindow.bounds_(Rect(400, 500, 460, 340));
+	Button(bufEditWindow, Rect(20, 300, 70, 20))
+		.states_([
+			["Lowpass", Color.green, Color.black]
+			])
+		.action_({plot.data_(plot.data.lowpass)});
+	Button(bufEditWindow, Rect(100, 300, 70, 20))
+		.states_([
+			["Save", Color.green, Color.black]
+			])
+		.action_({
+			CocoaDialog.savePanel({arg path;
+				plot.saveToSF(path)
+				}, {
+				"No Plot was saved".warn
+				})
+			})
+	}	
 }
 
 CtkSynthDef : CtkNoteObject {
@@ -1594,8 +1824,8 @@ CtkBus : CtkObj {}
 CtkControl : CtkBus {
 	var <server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false, 
 	<endtime = 0.0, <duration; //may want to get rid of setter later
-	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, 
-	<isLFO = false, <isEnv = false;
+	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, buffer,
+	<isLFO = false, <isEnv = false, <isKBuf = false;
 	var <timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
 		
 	classvar ctkEnv, sddict; 
@@ -1683,17 +1913,36 @@ CtkControl : CtkBus {
 		}
 	
 	levelScale_ {arg newLS = 1;
-		isEnv.if({
+		(isEnv or: {isKBuf}).if({
 			ctkNote.levelScale_(newLS);
 			levelScale = newLS;
 			})
 		}
 		
 	levelBias_ {arg newLB = 0;
-		isEnv.if({
+		(isEnv or: {isKBuf}).if({
 			ctkNote.levelBias_(newLB);
 			levelBias = newLB;
 			})
+		}
+		
+	*kbuf {arg buffer, starttime = 0.0, addAction = 0, target = 1, bus, server,
+			levelScale = 1, levelBias = 0, timeScale = 1;
+		^this.new(1, 0, starttime, bus, server).initKbuf(buffer, levelScale, levelBias, timeScale, 
+			addAction, target);
+		}
+	
+	initKbuf {arg argbuffer, argLevelScale, argLevelBias, argTimeScale, argAddAction, argTarget;
+		buffer = argbuffer;
+		timeScale = argTimeScale;
+		levelScale = argLevelScale;
+		levelBias = argLevelBias;
+		isKBuf = true;
+		duration = timeScale;
+		// the ctk note object for generating the env
+		ctkNote = sddict[\ctkkbuffer].new(starttime, timeScale, argAddAction, argTarget, 
+			server).buffer_(buffer).outbus_(bus).levelScale_(levelScale).levelBias_(levelBias)
+			.timeScale_(timeScale);
 		}
 		
 	*lfo {arg ugen, freq = 1, low = -1, high = 1, phase = 0, starttime = 0.0, duration,
@@ -1826,19 +2075,27 @@ CtkControl : CtkBus {
 							levelScale + levelBias)
 				})
 			);
-			[LFNoise0, LFNoise1, LFNoise2].do({arg ugen;
-				thisctkno = SynthDef(("CTK" ++ ugen.class).asSymbol, {arg freq, low, high, bus;
-					Out.kr(bus, ugen.kr(freq).range(low, high));
-					});
-				sddict.add(thisctkno);
+		// control rate buffer playback - single shot over duration
+		sddict.add(
+			SynthDef(\ctkkbuffer, {arg outbus, buffer, levelScale = 1, levelBias = 0, timeScale = 1;
+				var point;
+				point = Line.kr(0, 1, timeScale) * BufFrames.kr(buffer);
+				Out.kr(outbus, BufRd.kr(1, buffer, point, 0) * levelScale + levelBias);
 				});
-			[SinOsc, Impulse, LFSaw, LFPar, LFTri, LFCub].do({arg ugen;
-				thisctkno = 
-					SynthDef(("CTK" ++ ugen.class).asSymbol, {arg freq, low, high, phase, bus;
-						Out.kr(bus, ugen.kr(freq, phase).range(low, high));
-					});
-				sddict.add(thisctkno);
+			);
+		[LFNoise0, LFNoise1, LFNoise2].do({arg ugen;
+			thisctkno = SynthDef(("CTK" ++ ugen.class).asSymbol, {arg freq, low, high, bus;
+				Out.kr(bus, ugen.kr(freq).range(low, high));
 				});
+			sddict.add(thisctkno);
+			});
+		[SinOsc, Impulse, LFSaw, LFPar, LFTri, LFCub].do({arg ugen;
+			thisctkno = 
+				SynthDef(("CTK" ++ ugen.class).asSymbol, {arg freq, low, high, phase, bus;
+					Out.kr(bus, ugen.kr(freq, phase).range(low, high));
+				});
+			sddict.add(thisctkno);
+			});
 		
 		}
 	}

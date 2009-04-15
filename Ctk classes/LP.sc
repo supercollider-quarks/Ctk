@@ -507,7 +507,7 @@ LPVoice : LPObj {
 					}); // if there is already a tuplet, close it off!
 				tuplet = me.tuplet;
 				tuplet.notNil.if({
-					tupletValue = tuplet.reciprocal.asFraction;
+					tupletValue = tuplet.reciprocal.asFraction(50, false);
 					file.write("\\times "++ tupletValue[0] ++ "/" ++ tupletValue[1] ++ " { ");
 					});
 				});
