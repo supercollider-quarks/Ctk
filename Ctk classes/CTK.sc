@@ -61,7 +61,7 @@ CtkScore : CtkObj {
 	var <endtime = 0, score, <buffers, <ctkevents, <ctkscores, <controls, notes, <others, 
 		<buffermsg, <buffersScored = false, <groups, oscready = false, <messages;
 	var <masterScore, <allScores, <masterNotes, <masterControls, <masterBuffers, 
-		<masterGroups, <masterMessages;
+		<masterGroups, <masterMessages, cmdPeriod;
 	
 	
 	*new {arg ... events;
@@ -381,8 +381,6 @@ CtkScore : CtkObj {
 		server = server ?? {Server.default};
 		server.boot;
 		server.waitForBoot({
-//			var cond;
-//			cond = Condition.new;
 			score = Score.new;
 			Routine.run({
 				this.loadBuffers(server, clock, quant);
@@ -390,6 +388,20 @@ CtkScore : CtkObj {
 				this.groupTogether;
 				this.objectsToOSC;
 				score.play;
+				cmdPeriod = {
+					var items;
+					items = [masterBuffers, masterScore, masterControls].flat;
+					items.do({arg me;
+						me.free; 
+						me.isKindOf(CtkNote).if({
+							me.releases.do({arg thisRel; thisRel.free;})
+							})
+						});
+					CmdPeriod.remove(cmdPeriod);
+					cmdPeriod = nil;
+					};
+				CmdPeriod.add(cmdPeriod);
+				SystemClock.sched(endtime, cmdPeriod);
 				})
 			})
 		}
@@ -1340,20 +1352,13 @@ CtkNote : CtkNode {
 	msgBundle {
 		var bundlearray, initbundle;
 		bundlearray =	this.buildBundle;
+		mapDict.keysValuesDo({arg key, val;
+			bundlearray = bundlearray.add(key);
+			bundlearray = bundlearray.add(val.asMapInput);
+			});
 		initbundle = [bundlearray];
 		setnDict.keysValuesDo({arg key, val;
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
-			});
-		mapDict.keysValuesDo({arg key, val;
-				bundlearray.add(key);
-				bundlearray.add(val.asMapInput);
-//			val.isKindOf(CtkControl).if({
-//				bundlearray.add(key);
-//				bundlearray.add(val.asMapInput);
-////				initbundle = initbundle.add([\n_map, node, key, val.asUGenInput])
-//				}, {
-//				initbundle = initbundle.add([\n_mapa, node, key, val.asUGenInput])
-//				})
 			});
 		^initbundle;	
 		}
