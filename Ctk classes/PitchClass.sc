@@ -24,8 +24,8 @@ PitchClass {
 			octave = (thispitch.round*0.0833333333).floor - 1;
 			pitchnum = thispitch % 12;
 			(pitchnum == -0).if({pitchnum = 0});
-			(pitchnum == 0).if({octave = octave + 1});
-			pitch = notenums[pitchnum];
+			(pitchnum == 0).if({(thispitch != 0).if({octave = octave + 1})});
+ 			pitch = notenums[pitchnum];
 			}, {
 			pitch = thispitch;
 			});
