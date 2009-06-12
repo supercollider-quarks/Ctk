@@ -439,13 +439,13 @@ PitchClass {
 			\ffff -> -4,
 			\fff -> -3,
 			\ff -> -2,
-//			\tqf -> -1.5,
+			\tqf -> -1.5,
 			\f -> -1,
-//			\qf -> -0.5,
+			\qf -> -0.5,
 			\n -> 0,
-//			\qs -> 0.5,
+			\qs -> 0.5,
 			\s -> 1,
-//			\tqs -> 1.5,
+			\tqs -> 1.5,
 			\ss -> 2,
 			\sss -> 3,
 			\ssss -> 4
@@ -454,13 +454,13 @@ PitchClass {
 			-4 -> \ffff,
 			-3 -> \fff,
 			-2 -> \ff,
-//			-1.5 -> \tqf,
+			-1.5 -> \tqf,
 			-1 -> \f,
-//			-0.5 -> \qf,
+			-0.5 -> \qf,
 			0 -> \n,
-//			0.5 -> \qs,
+			0.5 -> \qs,
 			1 -> \s,
-//			1.5 -> \tqs,
+			1.5 -> \tqs,
 			2 -> \ss,
 			3 -> \sss,
 			4 -> \ssss
@@ -469,99 +469,99 @@ PitchClass {
 			\bs -> 0,
 			\cn -> 0,
 			\dff -> 0,
-//			\cqs -> 0.5,
-//			\dtqf -> 0.5,
+			\cqs -> 0.5,
+			\dtqf -> 0.5,
 			\bss -> 1,
 			\cs -> 1,
 			\df -> 1,
-//			\ctqs -> 1.5,
-//			\dqf -> 1.5,
+			\ctqs -> 1.5,
+			\dqf -> 1.5,
 			\css -> 2,
 			\dn -> 2,
 			\eff -> 2,
-//			\dqs -> 2.5,
-//			\etqf -> 2.5,
+			\dqs -> 2.5,
+			\etqf -> 2.5,
 			\ds -> 3,
 			\ef -> 3,
-//			\dtqs -> 3.5,
-//			\eqf -> 3.5,
+			\dtqs -> 3.5,
+			\eqf -> 3.5,
 			\dss -> 4,
 			\en -> 4,
 			\ff -> 4,
-//			\eqs -> 4.5,
-//			\fqf -> 4.5,
+			\eqs -> 4.5,
+			\fqf -> 4.5,
 			\es -> 5,
 			\fn -> 5,
 			\gff -> 5,
-//			\fqs -> 5.5,
-//			\gtqf -> 5.5,
+			\fqs -> 5.5,
+			\gtqf -> 5.5,
 			\fs -> 6,
 			\gf -> 6,
-//			\ftqs -> 6.5,
-//			\gqf -> 6.5,
+			\ftqs -> 6.5,
+			\gqf -> 6.5,
 			\fss -> 7,
 			\gn -> 7,
 			\aff -> 7,
-//			\gqs -> 7.5,
-//			\atqf -> 7.5,
+			\gqs -> 7.5,
+			\atqf -> 7.5,
 			\gs -> 8,
 			\af -> 8,
-//			\gtqs -> 8.5,
-//			\aqf -> 8.5,
+			\gtqs -> 8.5,
+			\aqf -> 8.5,
 			\gss -> 9,
 			\an -> 9,
 			\bff -> 9,
-//			\aqs -> 9.5,
-//			\btqf -> 9.5,
+			\aqs -> 9.5,
+			\btqf -> 9.5,
 			\as -> 10,
 			\bf -> 10,
-//			\atqs -> 10.5,
-//			\bqf -> 10.5,
+			\atqs -> 10.5,
+			\bqf -> 10.5,
 			\ass -> 11,
 			\bn -> 11,
 			\cf -> 11,
-//			\bqs -> 11.5,
-//			\cqf -> 11.5
+			\bqs -> 11.5,
+			\cqf -> 11.5,
 			\rn -> -1
 			];
 		notenums = Dictionary[
 			-1 -> \rn,
 			0 -> \cn,
-//			0.5 -> [\c, \qs],
+			0.5 -> \cqs, //[\c, \qs],
 			1 -> \cs,
-//			1.5 -> [\c, \tqs],
+			1.5 -> \ctqs, //[\c, \tqs],
 			2 -> \dn,
-//			2.5 -> [\d, \qs],
+			2.5 -> \dqs, //[\d, \qs],
 			3 -> \ef,
-//			3.5 -> [\d, \tqs],
+			3.5 -> \dtqs, //[\d, \tqs],
 			4 -> \en,
-//			4.5 -> [\e, \qs],
+			4.5 -> \eqs, //[\e, \qs],
 			5 -> \fn,
-//			5.5 -> [\f, \qs],
+			5.5 -> \fqs, //[\f, \qs],
 			6 -> \fs,
-//			6.5 -> [\f, \tqs],
+			6.5 -> \ftqs, //[\f, \tqs],
 			7 -> \gn,
-//			7.5 -> [\g, \qs],
+			7.5 -> \gqs, // [\g, \qs],
 			8 -> \af,
-//			8.5 -> [\g, \tqs],
+			8.5 -> \gtqs, //[\g, \tqs],
 			9 -> \an,
-//			9.5 -> [\a, \qs],
+			9.5 -> \aqs, // [\a, \qs],
 			10 -> \bf,
-//			10.5 -> [\a, \tqs],
+			10.5 -> \atqs, // [\a, \tqs],
 			11 -> \bn,
-//			11.5 -> [\b, \qs]
+			11.5 -> \bqs, // [\b, \qs]
 			];
 		accToGuido = IdentityDictionary[
 			\ffff -> "&&&&",
 			\fff -> "&&&",
 			\ff -> "&&",
-//			\tqf -> -1.5,
+			\tqf -> "&&", // -1.5, fix later
 			\f -> "&",
-//			\qf -> -0.5,
+			\qf -> "&", //-0.5,
 			\n -> "",
-//			\qs -> 0.5,
+			\qs -> "#", // 0.5,
 			\s -> "#",
-//			\tqs -> 1.5,
+			\tqs -> "##", //1.5,
 			\ss -> "##",
 			\sss -> "###",
 			\ssss -> "####"
@@ -903,3 +903,87 @@ PitchCollection {
 PC : PitchClass { }
 PI : PitchInterval { }
 PColl : PitchCollection { }
+
++ String {
+	pc {
+		^this.calcPC
+		}
+		
+	note {
+		^this
+		}
+
+	keynum {
+		^this.calcPC.keynum;
+		}
+		
+	hertz {
+		^this.calcPC.freq;
+		}
+	
+	pitchClass {
+		^this.calcPC.keynum % 12.0
+		}
+
+	noteName {
+		^this.calcPC.note.asString;
+		}
+		
+	noteAccidental {
+		^this.calcPC.acc.asString;
+		}
+		
+	noteOctave {
+		^this.calcPC.octave
+		}
+				
+	calcPC {
+		var noteName, octave, idx;
+		this.do({arg char, i;
+			char.isDecDigit.if({
+				idx = i;
+				octave = char.digit
+				});
+			});
+		idx.isNil.if({
+			octave = 4;
+			idx = this.size;
+			});
+		^PC(this[0..(idx-1)].toLower.asSymbol, octave);
+		}
+
+	}
+	
++ Symbol {
+	note {^this}
+	keynum {^this.asString.keynum}
+	hertz {^this.asString.hertz}
+	pitchClass {^this.asString.pitchClass}
+	noteName {^this.asString.noteName.asSymbol}
+	noteAccidental {^this.asString.noteAccidental.asSymbol}
+	noteOctave {^this.asString.noteOctave}
+	pc {^this.asString.calcPC}
+	}
+	
++ SimpleNumber {
+	pc {arg round = 1.0; ^this.calcPC(round)}
+	note {arg round = 1.0; var pc; pc = this.calcPC(round); ^(pc.pitch ++ pc.octave)}
+	keynum {arg round = 1.0; ^this.calcPC(round).keynum}
+	hertz {arg round = 1.0; ^this.calcPC(round).freq}
+	pitchClass {arg round = 1.0; ^this.calcPC(round) % 12.0}
+	noteName {arg round = 1.0; ^this.calcPC(round).note}
+	noteAccidental {arg round = 1.0; ^this.calcPC(round).acc}
+	noteOctave {arg round = 1.0; ^this.calcPC(round).octave}
+	calcPC {arg round = 1.0; ^PC(this.round(round))}
+	}
+	
++ SequenceableCollection {
+	pc {arg round = 1.0; ^this.collect({arg me; me.pc(round)})}
+	note {arg round = 1.0; ^this.collect({arg me; me.note(round)})}
+	keynum {arg round = 1.0; ^this.collect({arg me; me.keynum(round)})}
+	hertz {arg round = 1.0; ^this.collect({arg me; me.hertz(round)})}
+	pitchClass {arg round = 1.0; ^this.collect({arg me; me.pitchClass(round)})}
+	noteName {arg round = 1.0; ^this.collect({arg me; me.noteName(round)})}
+	noteAccidental {arg round = 1.0; ^this.collect({arg me; me.noteAccidental(round)})}
+	noteOctave {arg round = 1.0; ^this.collect({arg me; me.noteOctave(round)})}
+	}
