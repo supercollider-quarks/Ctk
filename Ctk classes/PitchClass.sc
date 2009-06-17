@@ -966,24 +966,35 @@ PColl : PitchCollection { }
 	}
 	
 + SimpleNumber {
-	pc {arg round = 1.0; ^this.calcPC(round)}
-	note {arg round = 1.0; var pc; pc = this.calcPC(round); ^(pc.pitch ++ pc.octave)}
-	keynum {arg round = 1.0; ^this.calcPC(round).keynum}
-	hertz {arg round = 1.0; ^this.calcPC(round).freq}
-	pitchClass {arg round = 1.0; ^this.calcPC(round) % 12.0}
-	noteName {arg round = 1.0; ^this.calcPC(round).note}
-	noteAccidental {arg round = 1.0; ^this.calcPC(round).acc}
-	noteOctave {arg round = 1.0; ^this.calcPC(round).octave}
-	calcPC {arg round = 1.0; ^PC(this.round(round))}
+	pc {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round)}
+	note {arg hertz = false, round = 1.0; var pc; pc = this.calcPC(hertz, round);
+		^(pc.pitch ++ pc.octave)}
+	keynum {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).keynum}
+	hertz {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).freq}
+	pitchClass {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round) % 12.0}
+	noteName {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).note}
+	noteAccidental {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).acc}
+	noteOctave {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).octave}
+	calcPC {arg hertz = false, round = 1.0; 
+		var tmp;
+		tmp = hertz.if({
+			this.cpsmidi
+			}, {
+			this
+			});
+		^PC(tmp.round(round))}
 	}
 	
 + SequenceableCollection {
-	pc {arg round = 1.0; ^this.collect({arg me; me.pc(round)})}
-	note {arg round = 1.0; ^this.collect({arg me; me.note(round)})}
-	keynum {arg round = 1.0; ^this.collect({arg me; me.keynum(round)})}
-	hertz {arg round = 1.0; ^this.collect({arg me; me.hertz(round)})}
-	pitchClass {arg round = 1.0; ^this.collect({arg me; me.pitchClass(round)})}
-	noteName {arg round = 1.0; ^this.collect({arg me; me.noteName(round)})}
-	noteAccidental {arg round = 1.0; ^this.collect({arg me; me.noteAccidental(round)})}
-	noteOctave {arg round = 1.0; ^this.collect({arg me; me.noteOctave(round)})}
+	pc {arg hertz = false, round = 1.0; ^this.collect({arg me; me.pc(hertz, round)})}
+	note {arg hertz = false, round = 1.0; ^this.collect({arg me; me.note(hertz, round)})}
+	keynum {arg hertz = false, round = 1.0; ^this.collect({arg me; me.keynum(hertz, round)})}
+	hertz {arg hertz = false, round = 1.0; ^this.collect({arg me; me.hertz(hertz, round)})}
+	pitchClass {arg hertz = false, round = 1.0; ^this.collect({arg me; 
+		me.pitchClass(hertz, round)})}
+	noteName {arg hertz = false, round = 1.0; ^this.collect({arg me; me.noteName(hertz, round)})}
+	noteAccidental {arg hertz = false, round = 1.0; 
+		^this.collect({arg me; me.noteAccidental(hertz, round)})}
+	noteOctave {arg hertz = false, round = 1.0; ^this.collect({arg me; 
+		me.noteOctave(hertz, round)})}
 	}
