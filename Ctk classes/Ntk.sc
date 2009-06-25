@@ -223,7 +223,7 @@ NtkPart : NtkObj {
 	// word 'HELLA')
 	fillWithRests {
 		var thisTImeSig, thisMeasure, rests, restDur, firstNote, lastNote;
-		var nBeats, rem, thisBeat, thisBeatDur;
+		var nBeats, rem, thisBeat, thisBeatDur, end;
 		rests = Array.fill(voices.size, {[]});
 		timeSigs.do({arg thisTimeSig, i;
 			thisMeasure = this.notesForMeasure(i);
@@ -242,8 +242,9 @@ NtkPart : NtkObj {
 								});
 						});
 					lastNote = thisVoice[thisVoice.size - 1];
-					nBeats = thisTimeSig.numBeats - lastNote.beat.ceil - 1;
+					nBeats = thisTimeSig.numBeats - lastNote.beat.ceil;
 					// first - fill in any complete beats after the last note
+					["nBeats!", nBeats, id, lastNote.beat, thisTimeSig.numBeats, thisTimeSig.totalDur, lastNote.duration].postln;
 					nBeats.do({arg b;
 						rests[v] = rests[v].add(
 							NtkNote(\r, thisTimeSig.beatDur(thisTimeSig.numBeats - b),
@@ -258,7 +259,7 @@ NtkPart : NtkObj {
 				thisVoice.doAdjacentPairs({arg first, second, j;
 					var endBeat;
 					endBeat = first.beat + (first.duration / (thisTimeSig.beatDur(first.beat)));
-					[endBeat, second.beat].postln;
+//					[endBeat, second.beat].postln;
 					(endBeat < second.beat).if({
 						rests[v] = rests[v].add(
 							// hmm - need to do this on a beat by beat basis - how much dur is left for this beat
@@ -266,14 +267,8 @@ NtkPart : NtkObj {
 							NtkNote(\r, (second.beat - endBeat) * (thisTimeSig.beatDur(first.beat)), i, endBeat)
 							)
 						});
-//					[first.beat, first.duration, second.beat, second.duration].postln;
-/*					(first.beat + (first.duration * 4) < second.beat).if({
-						rests[v] = rests[v].add(NtkNote(\r, 
-							(second.beat - (first.beat + (first.duration * 4))) * 0.25,
-							i, (first.beat + (first.duration * 4))))
-						}) */
 					});
-				}, {
+ 				}, {
 				thisTimeSig.numBeats.do({arg b;
 					rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.beatDur(b), i, b))
 					})
