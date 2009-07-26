@@ -320,7 +320,7 @@ GuidoNote : GuidoEvent {
 			(i > 0).if({
 				noteStr = noteStr ++ ", ";
 				});
-			noteStr = noteStr ++ me.guidoString++rhyString;
+			noteStr = noteStr ++ me.alt1 ++ me.guidoString ++ rhyString ++ me.alt2;
 			});
 		chord.if({
 			noteStr = "{"++noteStr++"}";

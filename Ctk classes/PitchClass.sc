@@ -1,7 +1,7 @@
 /* For GUIDO objects - no quartertones yet */
 	
 PitchClass {
-	var <note, <acc, <octave, <pitch, <pitchclass, <keynum, <freq, <>alter;
+	var <note, <acc, <octave, <pitch, <pitchclass, <keynum, <freq, <>alter, <alt1, <alt2;
 	classvar notenames, notenums, noteToScale, scaleToNote, accToSize, sizeToAcc, accToGuido, 
 		majScale, qualities, qualIdx;
 	// deal with transposition, notenames and PC classes here
@@ -30,6 +30,24 @@ PitchClass {
 			pitch = thispitch;
 			});
 		str = pitch.asString;
+		(str.size > 2).if({
+			case 
+				{str[str.size-2..str.size-1].asSymbol == \qs} {
+					alter = 0.5; 			
+					alt1 = "\\alter<"++alter++">(";
+					alt2 = ")";
+					}
+				{str[str.size-2..str.size-1].asSymbol == \qf} {
+					alter = -0.5; 			
+					alt1 = "\\alter<"++alter++">(";
+					alt2 = ")";
+					}
+				{true} {
+					alt1 = alt2 = ""
+					}
+				}, {
+				alt1 = alt2 = ""
+				});
 		note = str[0].asSymbol;
 		if(str.size > 1, 
 			{acc = str[1..str.size-1].asSymbol},
@@ -555,13 +573,13 @@ PitchClass {
 			\ffff -> "&&&&",
 			\fff -> "&&&",
 			\ff -> "&&",
-			\tqf -> "&&", // -1.5, fix later
+			\tqf -> "&", // -1.5, fix later
 			\f -> "&",
-			\qf -> "&", //-0.5,
+			\qf -> "", //-0.5,
 			\n -> "",
-			\qs -> "#", // 0.5,
+			\qs -> "", // 0.5,
 			\s -> "#",
-			\tqs -> "##", //1.5,
+			\tqs -> "#", //1.5,
 			\ss -> "##",
 			\sss -> "###",
 			\ssss -> "####"
