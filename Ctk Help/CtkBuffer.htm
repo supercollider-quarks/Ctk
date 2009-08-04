@@ -5,22 +5,22 @@
 <meta http-equiv="Content-Style-Type" content="text/css">
 <title></title>
 <meta name="Generator" content="Cocoa HTML Writer">
-<meta name="CocoaVersion" content="949.35">
+<meta name="CocoaVersion" content="949.46">
 <style type="text/css">
 p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
 p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
 p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
-p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #961e1e}
-p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #001cb9}
+p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #852921}
+p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #0022b5}
 p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #606060}
-p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #a91616}
+p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #95261a}
 span.s1 {font: 18.0px Helvetica}
-span.s2 {color: #001cb9}
+span.s2 {color: #0022b5}
 span.s3 {color: #000000}
 span.s4 {color: #606060}
-span.s5 {color: #961e1e}
-span.s6 {color: #426f0e}
+span.s5 {color: #852921}
+span.s6 {color: #4e6c17}
 span.Apple-tab-span {white-space:pre}
 </style>
 </head>
@@ -33,7 +33,7 @@ span.Apple-tab-span {white-space:pre}
 <p class="p2"><br></p>
 <p class="p1"><b>Class Methods</b></p>
 <p class="p2"><b><span class="Apple-converted-space"> </span></b></p>
-<p class="p1"><b><span class="Apple-converted-space"> </span>*new(path, size, startFrame, numFrames, numChannels, bufnum, server) </b>-</p>
+<p class="p1"><b><span class="Apple-converted-space"> </span>*new(path, size, startFrame, numFrames, numChannels, bufnum, server, channels) </b>-</p>
 <p class="p2"><span class="Apple-converted-space"> </span></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>bufnum</b> - defaults to nil. If nil, a buffer id will be allocated for you.</p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>server</b> - defaults to Server.default.</p>
@@ -44,20 +44,24 @@ span.Apple-tab-span {white-space:pre}
 <p class="p2"><span class="Apple-converted-space"> </span></p>
 <p class="p1"><span class="Apple-converted-space"> </span>the soundfile will be completely loaded into a CtkBuffer for use in UGens such as PlayBuf or BufRd. Size and<span class="Apple-converted-space">   </span></p>
 <p class="p1"><span class="Apple-converted-space"> </span>numChannels will be calculated for you with the SoundFile class. startFrame default to 0 and numFrames<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space"> </span>defaults to 0 (the entire file is read in)</p>
+<p class="p1"><span class="Apple-converted-space"> </span>defaults to 0 (the entire file is read in). Channels can be a single or an Array of channels to read. Nil (the <span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space"> </span>default) reads all channels.</p>
 <p class="p2"><span class="Apple-converted-space"> </span></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>if path and size is given</b></p>
 <p class="p2"><b><span class="Apple-converted-space"> </span></b></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span></b>A CtkBuffer suitable for use with DiskIn is allocated. The buffer is left open and will be closed when the buffer<span class="Apple-converted-space"> </span></p>
 <p class="p1"><span class="Apple-converted-space"> </span>is freed. Size should be a power of 2 (see the DiskIn file for). startFrame defaults to 0, numFrames defaults to</p>
-<p class="p1"><span class="Apple-converted-space"> </span>the buffer size.</p>
+<p class="p1"><span class="Apple-converted-space"> </span>the buffer size. Channels can be a single or an Array of channels to read. Nil (the default) reads all channels.</p>
 <p class="p2"><span class="Apple-converted-space"> </span></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>if only size is given</b></p>
 <p class="p2"><br></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span></b>An empty buffer is allocated of size. numChannels defaults to 1.</p>
 <p class="p2"><span class="Apple-converted-space"> </span><b><span class="Apple-converted-space"> </span></b></p>
-<p class="p1"><b><span class="Apple-converted-space"> </span>*diskin(path, size, startFrame, server) </b>- create a CtkBuffer suitable for DiskIn usage. size defaults to 32768.</p>
-<p class="p1"><b><span class="Apple-converted-space"> </span>*playbuf(path, startFrame, numFrames, server) </b>- create a CtkBuffer suitable for PlayBuf usage.</p>
+<p class="p1"><b><span class="Apple-converted-space"> </span>*diskin(path, size, startFrame, server, channels) </b>- create a CtkBuffer suitable for DiskIn usage. size defaults<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>to 32768. Channels can be nil (read all channels), a single number (read only 1 channel) or and Array</p>
+<p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>of channels.</p>
+<p class="p1"><b><span class="Apple-converted-space"> </span>*playbuf(path, startFrame, numFrames, server, channels) </b>- create a CtkBuffer suitable for PlayBuf usage.<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>Channels can be nil (read all channels), a single number (read only 1 channel) or and Array of channels.</p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>*buffer(size, numChannels, server) </b>- create a CtkBuffer of empty size and numChannels.</p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>*env(size, env, wavetable, server) </b>- createa a CtkBuffer of size, filled with values from Env. 'wavetable' is a</p>
 <p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>flag where 0 (the default) fills the CtkBuffer with a Signal, if 1 then a Wavetable is used.<span class="Apple-converted-space"> </span></p>
@@ -115,8 +119,6 @@ span.Apple-tab-span {white-space:pre}
 <p class="p1"><b><span class="Apple-converted-space"> </span>fillWithEnv(time, env, wavetable)</b> - converts an instance of Env into a Signal or Wavetable, and loads its<span class="Apple-converted-space"> </span></p>
 <p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>values to the CtkBuffer. The wavetable parameter is a flag. If 0, the values are written as a Signal, if 1,</p>
 <p class="p1"><span class="Apple-converted-space"> <span class="Apple-tab-span">	</span></span>they are written in Wavetable format.</p>
-<p class="p2"><br></p>
-<p class="p1"><b><span class="Apple-converted-space"> </span>copy()</b></p>
 <p class="p2"><b><span class="Apple-converted-space"> </span></b></p>
 <p class="p1"><b><span class="Apple-converted-space"> </span>Real-time uses</b></p>
 <p class="p2"><b><span class="Apple-converted-space"> </span></b></p>

@@ -1580,21 +1580,22 @@ CtkGroup : CtkNode {
 // the CtkBuffer will be considered live.
 
 CtkBuffer : CtkObj {
-	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, bundle, 
+	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, channels, bundle, 
 		<freeBundle, <closeBundle, <messages, <isPlaying = false, <isOpen = false;
 	var duration, <sampleRate, <starttime = 0.0, completion;
 	
-	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server;
+	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server, channels;
 		^this.newCopyArgs(Dictionary.new, nil, bufnum, path, size, startFrame, numFrames, 
-			numChannels, server).init;
+			numChannels, server, channels).init;
 		}
 	
-	*diskin {arg path, size = 32768, startFrame = 0, server;
-		^this.new(path, size, startFrame, server: server)
+	*diskin {arg path, size = 32768, startFrame = 0, server, channels;
+		^this.new(path, size, startFrame, server: server, channels: channels)
 		}
 		
-	*playbuf {arg path, startFrame = 0, numFrames, server;
-		^this.new(path, startFrame: startFrame, numFrames: numFrames, server: server)
+	*playbuf {arg path, startFrame = 0, numFrames, server, channels;
+		^this.new(path, startFrame: startFrame, numFrames: numFrames, server: server,
+			channels: channels)
 		}
 		
 	*buffer {arg size, numChannels, server;
@@ -1609,6 +1610,7 @@ CtkBuffer : CtkObj {
 		var sf, nFrames, test;
 		server = server ?? {Server.default};
 		bufnum = bufnum ?? {server.bufferAllocator.alloc(1)};
+		channels.notNil.if({channels = channels.asArray});
 		messages = [];
 		test = true;
 //		complettion = [];
@@ -1617,6 +1619,11 @@ CtkBuffer : CtkObj {
 			test = sf.openRead;
 			test.if({
 				numChannels = sf.numChannels;
+				channels.notNil.if({
+					(channels.size < numChannels).if({
+						numChannels = channels.size
+						})
+					});
 				duration = sf.duration;
 				sampleRate = sf.sampleRate;
 				numFrames.isNil.if({
@@ -1631,14 +1638,24 @@ CtkBuffer : CtkObj {
 			case { // path, not size - load file with b_allocRead
 				path.notNil && size.isNil
 				} {
+				// check if channels array is specified
 				nFrames = numFrames ?? {0};
-				bundle = [\b_allocRead, bufnum, path, startFrame, nFrames];
+				channels.notNil.if({
+					bundle = [\b_allocReadChannel, bufnum, path, startFrame, nFrames] ++ channels;
+					}, {
+					bundle = [\b_allocRead, bufnum, path, startFrame, nFrames];
+					});
 				} {// path, size ( for DiskIn )
 				path.notNil && size.notNil
 				} {
-				nFrames = numFrames ?? {size};
-				bundle = [\b_alloc, bufnum, size, numChannels, 
-					[\b_read, bufnum, path, startFrame, nFrames, 0, 1]];
+				nFrames = size; //numFrames ?? {size};
+				channels.notNil.if({
+					bundle = [\b_alloc, bufnum, size, numChannels, 
+						[\b_readChannel, bufnum, path, startFrame, nFrames, 0, 1] ++ channels];
+					}, {
+					bundle = [\b_alloc, bufnum, size, numChannels, 
+						[\b_read, bufnum, path, startFrame, nFrames, 0, 1]];
+					});
 				closeBundle = [\b_close, bufnum];
 				} { /// just allocate memory (for delays, FFTs etc.)
 				path.isNil && size.notNil
