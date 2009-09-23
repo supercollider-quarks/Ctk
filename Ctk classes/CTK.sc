@@ -684,14 +684,16 @@ CtkNoteObject {
 			.args_(args.deepCopy);
 		}
 		
-	args {
-		("Arguments and defaults for SynthDef "++synthdefname.asString++":").postln;
-		args.keysValuesDo({arg key, val;
-			("\t"++key++" defaults to "++val).postln;
+	args {arg post = true;
+		post.if({
+			("Arguments and defaults for SynthDef "++synthdefname.asString++":").postln;
+			args.keysValuesDo({arg key, val;
+				("\t"++key++" defaults to "++val).postln;
+				});
 			});
 		^args;
 		}
-		
+	
 	tester {arg server;
 		var paramDict, durBox, playButton, clock;
 		var w, x, y, z, nChans;
