@@ -258,7 +258,7 @@ GuidoEvent : GuidoObj {
 
 // aPitchClass should be an instance of PitchClass or an integer keynum
 GuidoNote : GuidoEvent {
-	var <note, <>duration, <>marks, chord;
+	var <note, <>duration, <>marks, chord, <>tie;
 	*new {arg aPitchClass = 60, duration = 0.25, marks;
 		^super.new.initGuidoNote(aPitchClass, duration, marks.asArray);
 		}
@@ -271,7 +271,6 @@ GuidoNote : GuidoEvent {
 		}
 		
 	note_ {arg aPitchClass;
-		aPitchClass.postln;
 		aPitchClass.isKindOf(Array).if({
 			chord = true
 			});
@@ -328,6 +327,14 @@ GuidoNote : GuidoEvent {
 
 		string = markstring ++ noteStr;
 		articulation.do({string = string ++" )"});
+		tie.notNil.if({
+			// tie can equal \start or \end
+			(tie == \start).if({
+				string = "\\tie(" ++ string;
+				}, {
+				string = string ++ ")";
+				});
+			});
 		^"\t"++string;
 		}
 	}

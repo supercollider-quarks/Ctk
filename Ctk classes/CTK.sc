@@ -1121,6 +1121,7 @@ CtkNode : CtkObj {
 		}
 					
 	asUGenInput {^node ?? {this.node}}
+	asControlInput {^node ?? {this.node}}
 		
 	*initClass {
 		addActions = IdentityDictionary[

@@ -34,12 +34,12 @@ PitchClass {
 			case 
 				{str[str.size-2..str.size-1].asSymbol == \qs} {
 					alter = 0.5; 			
-					alt1 = "\\alter<"++alter++">(";
+					alt1 = "\\alter<+"++alter++">(";
 					alt2 = ")";
 					}
 				{str[str.size-2..str.size-1].asSymbol == \qf} {
 					alter = -0.5; 			
-					alt1 = "\\alter<"++alter++">(";
+					alt1 = "\\alter<-"++alter++">(";
 					alt2 = ")";
 					}
 				{true} {

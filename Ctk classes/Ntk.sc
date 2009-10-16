@@ -151,6 +151,7 @@ NtkScore : NtkObj {
 		theseParts = this.sortParts;
 		theseParts.do({arg aPart;
 			var guidoPart;
+			aPart.splitAtBarline;
 			aPart.fillWithRests;
 			guidoPart = aPart.asGuidoPart;
 			guidoScore.add(guidoPart);
@@ -164,7 +165,8 @@ NtkScore : NtkObj {
 		theseParts = this.sortParts;
 		theseParts.do({arg aPart;
 			var lpPart;
-			aPart.fillWithRests;			
+			aPart.splitAtBarline;		
+			aPart.fillWithRests;
 			lpPart = aPart.asLPPart;
 			lpScore.add(lpPart);
 			});		
@@ -219,64 +221,101 @@ NtkPart : NtkObj {
 		^timeSigs[measure];
 		}
 
-	// this can be HELLA optimized (that's right, this actually calls for use of the
-	// word 'HELLA')
 	fillWithRests {
-		var thisTImeSig, thisMeasure, rests, restDur, firstNote, lastNote;
-		var nBeats, rem, thisBeat, thisBeatDur, end;
+		var thisMeasure, rests;
 		rests = Array.fill(voices.size, {[]});
 		timeSigs.do({arg thisTimeSig, i;
+			var thisMeasure, first, lower, rlower, rem, endBeat;
+			lower = thisTimeSig.lower;
+			rlower = lower.reciprocal;
 			thisMeasure = this.notesForMeasure(i);
 			thisMeasure.do({arg thisVoice, v;
+				// are there notes?
 				(thisVoice.size > 0).if({
-					firstNote = thisVoice[0];
-					(firstNote.beat > 0.0).if({
-						nBeats = firstNote.beat.floor;
-						rem = firstNote.beat - nBeats;
-						nBeats.do({arg b;
-							rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.beatDur(b), i, b))
+					// is the first note on beat 0.0? If not - 
+					//	fill in the rest according to the beat
+					((first = thisVoice[0].beat) != 0.0).if({
+						// fill in full beats
+						first.floor.do({arg beat;
+							rests[v] = rests[v].add(NtkNote(\r, 1*rlower, i, beat))
 							});
-						(rem > 0.0).if({
-							rests[v] = rests[v].add(NtkNote(\r, 
-								thisTimeSig.beatDur(nBeats) * rem, i, nBeats))
+						// then any remainder
+						((rem = (first % 1.0)) != 0.0).if({
+							rests[v] = rests[v].add(NtkNote(\r, rem*rlower, i, first.floor));
+							});
+						});
+					thisVoice.doAdjacentPairs({arg note1, note2;
+						((first = note1.beat + (note1.duration * lower)) < note2.beat).if({
+							// if the notes are in the same beat - just fill in the space
+							(first.floor == note2.beat.floor).if({
+								rests[v] = rests[v].add(
+									NtkNote(\r, (note2.beat - first) * rlower, i, first));
+								// otherwise - fill in the rest of this beat - 
+								// all complete beats, and the begining of the next
+								}, {
+								// is there some beat left over?
+								((first % 1.0) != 0.0).if({
+									rests[v] = rests[v].add(
+										NtkNote(\r, (1 - (first % 1.0)) * rlower, i, first))
+									});
+								// are there whole beats in between?
+								(note2.beat.floor - first.ceil).do({arg offset;
+									rests[v] = rests[v].add(
+										NtkNote(\r, rlower, i, first.ceil + offset))
+									});
+								// and any space IN a beat before the next note?
+								((note2.beat % 1.0) != 0.0).if({
+									rests[v] = rests[v].add(
+										NtkNote(\r, note2.beat % 1.0, i, note2.beat.floor))
+									});
+								})
+							})
+						});
+					// finally - find if the last note ends before the end of the measure
+					((first = (thisVoice.last.beat + (thisVoice.last.duration * lower))) <
+						thisTimeSig.upper).if({
+							// fill in the rest of the current beat
+							(((rem = (first.ceil - first)) % 1.0) != 0.0).if({
+								rests[v] = rests[v].add(NtkNote(\r, rem * rlower, i, first));
+								}, {
+								rests[v] = rests[v].add(NtkNote(\r, rlower, i, first));
 								});
-						});
-					lastNote = thisVoice[thisVoice.size - 1];
-					nBeats = thisTimeSig.numBeats - lastNote.beat.ceil;
-					// first - fill in any complete beats after the last note
-					["nBeats!", nBeats, id, lastNote.beat, thisTimeSig.numBeats, thisTimeSig.totalDur, lastNote.duration].postln;
-					nBeats.do({arg b;
-						rests[v] = rests[v].add(
-							NtkNote(\r, thisTimeSig.beatDur(thisTimeSig.numBeats - b),
-								i, thisTimeSig.numBeats - b - 1))
-						});
-					thisBeatDur = thisTimeSig.beatDur(lastNote.beat.floor);
-					rem = thisBeatDur - ((lastNote.beat % 1.0) + lastNote.duration);
-					(rem > 0).if({
-						rests[v] = rests[v].add(NtkNote(\r, rem, i, lastNote.beat + (lastNote.duration / thisTimeSig.beatDur(lastNote.beat))));
-						});
-				// NEED TO DO - fill in rest of current beat, in between beats, beats leading to next note
-				thisVoice.doAdjacentPairs({arg first, second, j;
-					var endBeat;
-					endBeat = first.beat + (first.duration / (thisTimeSig.beatDur(first.beat)));
-//					[endBeat, second.beat].postln;
-					(endBeat < second.beat).if({
-						rests[v] = rests[v].add(
-							// hmm - need to do this on a beat by beat basis - how much dur is left for this beat
-							// then, keep adding a new rest ACCORDING to any remaining duration
-							NtkNote(\r, (second.beat - endBeat) * (thisTimeSig.beatDur(first.beat)), i, endBeat)
-							)
-						});
-					});
- 				}, {
-				thisTimeSig.numBeats.do({arg b;
-					rests[v] = rests[v].add(NtkNote(\r, thisTimeSig.beatDur(b), i, b))
+							// any more full beats?
+							(thisTimeSig.upper - first.ceil - 1).do({arg offset;
+								rests[v] = rests[v].add(
+									NtkNote(\r, rlower, i, first.ceil + offset + 1))
+								})
+							})
+					}, {
+					rests[v] = rests[v].add(
+						NtkNote(\r, thisTimeSig.upper / thisTimeSig.lower, i, 0))
 					})
 				});
 			});
-		});
 		voices.do({arg thisVoice, i;
 			voices[i] = voices[i] ++ rests[i];
+			this.sortVoice(i)
+			});
+		}
+	
+	splitAtBarline {
+		voices.do({arg thisVoice, i;
+			var thisTimeSig, endBeat, oldDur, diff, lower, upper, adds;
+			adds = [];
+			thisVoice.do({arg note;
+				thisTimeSig = timeSigs[note.measure];
+				lower = thisTimeSig.lower;
+				upper = thisTimeSig.upper;
+				((endBeat = note.beat + (note.duration * lower)) > (upper)).if({
+					diff = endBeat - upper;
+					[diff, upper - note.beat / lower].postln;
+					note.rhythm_((upper - note.beat) / lower);
+					note.tie_(\start);
+					adds = adds.add(
+						NtkNote(note.pitch, diff / lower, note.measure + 1, 0).tie_(\end));
+					});
+				});
+			voices[i] = voices[i] ++ adds;
 			this.sortVoice(i)
 			});
 		}
@@ -401,24 +440,29 @@ NtkEvent : NtkObj {
 		measure = argMeasure;
 		beat = argBeat;
 //		this.calcRhythm(argRhythm);
-		rhythm = argRhythm;
+		this.rhythm_(argRhythm);
 		tuplet = argTuplet;
-		duration = rhythm.isKindOf(Symbol).if({
-			rhythmToDur[rhythm];
-			}, {
-			rhythm
-			});
+//		duration = rhythm.isKindOf(Symbol).if({
+//			rhythmToDur[rhythm];
+//			}, {
+//			rhythm
+//			});
 		this.calcIndex;
 		}
 	
-//	calcRhythm {arg argRhythm;
-//		argRhythm.isKindOf(\symf
-//		}
-		
 	calcIndex {
 		index = measure + (beat * 0.001);
 		}
 	
+	rhythm_ {arg aRhythm;
+		rhythm = aRhythm;
+		duration = rhythm.isKindOf(Symbol).if({
+			rhythmToDur[rhythm]
+			}, {
+			rhythm
+			})
+		}
+		
 	measure_ {arg newMeasure;
 		measure = newMeasure;
 		this.calcIndex;
@@ -434,7 +478,7 @@ NtkEvent : NtkObj {
 	}
 	
 NtkNote : NtkEvent {
-	var <pitch, <dynamic, <articulation;
+	var <pitch, <dynamic, <articulation, <>tie;
 	*new {arg pitch, rhythm, measure, beat;
 		^super.new(measure, beat, rhythm).initNtkNote(pitch);
 		}
@@ -459,6 +503,9 @@ NtkNote : NtkEvent {
 			});
 		articulation.notNil.if({
 			note.addArticulation(articulation)
+			});
+		tie.notNil.if({
+			note.tie_(tie)
 			});
 		^note;		
 		}
