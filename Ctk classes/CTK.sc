@@ -942,7 +942,7 @@ CtkSynthDef : CtkNoteObject {
 	}
 	
 CtkNode : CtkObj {
-	classvar addActions, <nodes, <servers, <resps, cmd, <groups;
+	classvar <addActions, <nodes, <servers, <resps, <cmd, <groups;
 
 	var <addAction, <target, <>server;
 	var >node, <>messages, <starttime, <>willFree = false;
@@ -1853,7 +1853,7 @@ CtkControl : CtkBus {
 	<isLFO = false, <isEnv = false, <isKBuf = false;
 	var <timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
 		
-	classvar ctkEnv, sddict; 
+	classvar <ctkEnv, <sddict; 
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
 		^this.newCopyArgs(Dictionary.new, nil, server, numChans, bus, initVal.asArray, starttime).initThisClass;
 		}
@@ -2235,7 +2235,7 @@ CtkTimer {
 	}
 	
 CtkEvent : CtkObj {
-	classvar envsd, addActions;
+	classvar <envsd, <addActions;
 	var starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
 	var isPlaying = false, isReleasing = false, releaseTime = 0.0, <timer, clock, 
 		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, envbus, playinit, notes, 
