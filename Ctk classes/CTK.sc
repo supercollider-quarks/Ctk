@@ -63,13 +63,14 @@ CtkScore : CtkObj {
 	var <masterScore, <allScores, <masterNotes, <masterControls, <masterBuffers, 
 		<masterGroups, <masterMessages, cmdPeriod;
 	
-	
 	*new {arg ... events;
 		^super.new.init(events);
 		}
 
 	init {arg events;
 		masterScore = [];
+		// I think this is where the mem leak comes in... all CtkObjs create this
+		// Dictionary - and this is bad.
 		objargs = Dictionary.new;
 		score = Score.new;
 		ctkscores = Array.new;
@@ -187,9 +188,10 @@ CtkScore : CtkObj {
 	
 	addBuffers {
 		buffersScored.not.if({
+			endtime = endtime + 0.1;
 			buffers.do({arg me;
 				this.add(CtkMsg(me.server, 0.0, me.bundle).bufflag_(true));
-				this.add(CtkMsg(me.server, endtime + 0.1, me.freeBundle));
+				this.add(CtkMsg(me.server, endtime, me.freeBundle));
 				(me.closeBundle.notNil).if({
 					this.add(CtkMsg(me.server, endtime, me.closeBundle));
 					});
@@ -595,7 +597,7 @@ CtkNoteObject {
 					this.buildControls;
 					}, {
 					synthdef = sd.def;
-					args = Dictionary.new;
+					args = IdentityDictionary.new;
 					synthdefname = synthdef.name;
 					count = 0;
 					namesAndPos = [];
@@ -653,7 +655,7 @@ CtkNoteObject {
 	buildControls {
 		var kouts;
 		synthdef.load(server ?? {Server.default});
-		args = Dictionary.new;
+		args = IdentityDictionary.new;
 		synthdefname = synthdef.name;
 		synthdef.allControlNames.do({arg ctl, i;
 			var def, name = ctl.name;
@@ -1279,6 +1281,9 @@ CtkNote : CtkNode {
 				(aValue.duration.notNil and: 
 					{duration.notNil and: {aValue.duration > duration}}).if({
 						aValue.duration_(duration);
+					});
+				(aValue.duration.isNil and: {duration.notNil}).if({
+					aValue.duration_(duration)
 					})
 				})
 		}
@@ -2090,7 +2095,9 @@ CtkControl : CtkBus {
 	
 	*initClass {
 		var thisctkno;
-		sddict = CtkProtoNotes(
+//		"Adding Ctk Notes".postln;
+		sddict = CtkProtoNotes.new;
+		sddict.add(
 			SynthDef(\ctkenv, {arg gate = 1, outbus, levelScale = 1, levelBias = 0, 
 					timeScale = 1, doneAction = 0;
 				Out.kr(outbus,

@@ -101,6 +101,50 @@ PitchClass {
 		change = this.keynum - center * 2;
 		^this.class.new(this.keynum - change)
 		}
+	
+	mapIntoRange {arg range = 6, target, numturns = 0, maxturns = 10, origval;
+		var newtestval, targetkey, rangesteps;
+		origval = origval ?? {this};
+		targetkey = target.keynum;
+		rangesteps = range.halfsteps;
+		(numturns < maxturns).if({
+			((keynum - targetkey).abs > rangesteps).if({
+				newtestval = (keynum > targetkey).if({
+					PC(pitch, octave - 1, alter)
+				}, {
+					PC(pitch, octave + 1, alter)
+				});
+				^newtestval.mapIntoRange(range, target, numturns + 1, maxturns, origval);
+			}, {
+			^this
+			});
+		}, {
+		"Your PitchClass couldn't be wrapped into the desired range. Check your parameters or increase maxturns.".warn;
+		^origval;
+		})
+	}
+	
+	mapIntoBounds {arg low, high;
+		var tmp, dif, lowkey, highkey;
+		((lowkey = low.keynum) > (highkey = high.keynum)).if({
+			tmp = high;
+			high = low;
+			low = tmp;
+		});
+		dif = highkey - lowkey * 0.5;
+		^this.mapIntoRange(dif, lowkey + dif);
+	}
+		
+	/*
+	a = PC(\fs, 8).mapIntoRange(6, PC(\c, 4));
+	a.octave;
+	a.pitch;
+	
+	a = PC(\fs, 8).mapIntoBounds(PC(\cdfs, 3), PC(\c, 4));
+	a.octave;
+	a.pitch;
+	\fs4.mapIntoRange
+	*/
 		
 //	// direction should be \up or \down - aPitchInterval can be an instance of PitchInterval
 	// OR an + or - integer (direction can be exculded in this case
@@ -610,7 +654,8 @@ PitchClass {
 }
 
 PitchInterval {
-	var <quality, <size, <mod;
+	classvar basesteps;
+	var <quality, <size, <mod, <halfsteps;
 	//quality is a symbol of \major, \minor, \perf, \dim or \aug
 	// size is a 
 	*new {arg quality, size;
@@ -619,7 +664,7 @@ PitchInterval {
 		mod = (size > 7).if({(size.round % 8) + 1}, {size});
 		((mod == 1) || (mod == 4) || (mod == 5)).if({
 			((quality ==  \perf) || (quality == \aug) || (quality == \dim)).if({
-				^super.newCopyArgs(quality, size, mod)
+				^super.newCopyArgs(quality, size, mod).initPitchInterval;
 				}, {
 				"Unisons, fourths, fifths or octaves need to be \\perf or \\aug".warn;
 				^nil;
@@ -628,7 +673,7 @@ PitchInterval {
 			((mod == 2) || (mod == 3) || (mod == 6) || (mod == 7)).if({
 				((quality == \major) || (quality == \minor) || 
 					(quality == \dim) || (quality == \aug)).if({
-				^super.newCopyArgs(quality, size, mod)
+				^super.newCopyArgs(quality, size, mod).initPitchInterval;
 				}, {
 				"Seconds, thirds, sixths or sevents need to be \\major, \\minor, \\dim or \\aug".warn;
 				^nil;
@@ -636,6 +681,48 @@ PitchInterval {
 			})
 		})
 	}
+	
+	initPitchInterval {
+		halfsteps = basesteps[mod - 1];
+		((mod == 1) or: {(mod == 4) or: {mod == 5}}).if({
+			case {
+				quality == \perf
+			} {
+				nil
+			} {
+				quality == \aug
+			} {
+				halfsteps = halfsteps + 1;
+			} {
+				quality == \dim
+			} {
+				halfsteps = halfsteps - 1;
+			}
+		}, {
+			case {
+				quality == \minor
+			} {
+				nil
+			} {
+				quality == \major
+			} {
+				halfsteps = halfsteps + 1;
+			} {
+				quality == \dim
+			} {
+				halfsteps = halfsteps - 1;
+			} {
+				quality == \aug
+			} {
+				halfsteps = halfsteps + 2;
+			}
+		})
+			
+	}
+	
+	*initClass {
+		basesteps = [0, 1, 3, 5, 7, 8, 10];
+		}
 }
 
 PitchCollection {
@@ -993,6 +1080,7 @@ PColl : PitchCollection { }
 	noteName {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).note}
 	noteAccidental {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).acc}
 	noteOctave {arg hertz = false, round = 1.0; ^this.calcPC(hertz, round).octave}
+	halfsteps {^this}
 	calcPC {arg hertz = false, round = 1.0; 
 		var tmp;
 		tmp = hertz.if({

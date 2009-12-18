@@ -295,7 +295,7 @@ LPScore : LPObj {
 			file.write("\n");
 			});
 		score.do({arg part, i;
-			file.write("%Voice" ++ i ++"\n");
+			file.write("%Voice" ++ i ++"\n");		
 			part.output(file, this);
 			});
 		file.write("\\score {\n");
@@ -303,6 +303,9 @@ LPScore : LPObj {
 		score.do({arg part, i;
 			// score contains parts - each part gets an opening '<<' and closing '>>'
 			file.write("\t\\new Staff = \""++ part.id.asString ++ "\" <<\n");
+			part.partFunctions.do({arg me;
+				file.write("\t\t"++me++"\n");
+			});
 			part.headOutput(file, this);
 			part.voices.do({arg voice;
 				file.write("\t\t\\"++voice.id++"\n");
@@ -361,7 +364,7 @@ LPScore : LPObj {
 LPPart : LPObj {
 	var <voices, <>clef, <>timeSig, <>keySig, <>id, <>spatial = false;
 	var showClef, showTimeSig, showKeySig, showBarLine, <>staffLines = 5;
-	var <instrumentName, <shortInstrumentName;
+	var <instrumentName, <shortInstrumentName, <partFunctions;
 	
 	*new {arg id, clef, timeSig, keySig, voice;
 		^super.new.initLPPart(id, voice, clef, timeSig, keySig);
@@ -370,6 +373,7 @@ LPPart : LPObj {
 	initLPPart {arg argID, argVoice, argClef, argTimeSig, argKeySig;
 		id = argID;
 		voices = [];
+		partFunctions = [];
 		argVoice.isNil.if({
 			this.addVoice(LPVoice(id))
 			}, {
@@ -404,7 +408,17 @@ LPPart : LPObj {
 		this.showBarLine_(showBars);
 		spatial = true
 		}
-
+	
+	addFunction {arg functionString ... args;
+		var str;
+		str = "#("++functionString;
+		args.do({arg me;
+			str = str + "'"++me;
+			});
+		str = str +")";
+		partFunctions = partFunctions.add(str);
+		}
+		
 	showClef_ {arg bool = true; showClef = bool}
 	showKeySig_ {arg bool = true; showKeySig = bool}
 	showTimeSig_ {arg bool = true; showTimeSig = bool}
@@ -432,7 +446,7 @@ LPPart : LPObj {
 	addToVoice {arg voice ... events;
 		voices[voice].add(*events);
 		}
-		
+
 	output {arg file, score;
 		voices.do({arg me;
 			me.output(file, score)
@@ -858,7 +872,6 @@ LPNote : LPEvent {
 				
 	// this needs to allow chords
 	note_ {arg ... aPitchClass;
-		var rem;
 		aPitchClass = aPitchClass.flat;
 		note = Array.newClear(aPitchClass.size);
 		// then, fill note... need to parse note correclt later
@@ -867,9 +880,7 @@ LPNote : LPEvent {
 				{thisPC.isKindOf(SimpleNumber)}
 				{
 				// check if there is an alteration... round to quarter-tones for now?
-				rem = (thisPC % 1.0).round(0.5);
-				thisPC = thisPC.trunc;
-				note[i] = PitchClass(thisPC, alter: rem);
+				note[i] = PitchClass(thisPC);
 				}
 				{thisPC.isKindOf(Symbol)}
 				{note[i] = PitchClass(thisPC)}
