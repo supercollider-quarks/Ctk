@@ -1269,6 +1269,15 @@ CtkNote : CtkNode {
 			});		
 		}
 	
+	performArgs {arg argsPairs;
+		argsPairs = argsPairs.clump(2);
+		argsPairs.do({arg thisPair;
+			var key, val;
+			#key, val = thisPair;
+			this.perform((key ++ "_").asSymbol, val)
+		});
+	}
+	
 	checkIfRelease {arg aValue;
 		// if it is a CtkControl     AND
 		(aValue.isKindOf(CtkControl) and: {
