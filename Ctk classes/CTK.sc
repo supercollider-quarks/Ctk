@@ -2189,7 +2189,7 @@ need to create a clock like object that will wait in tasks, advance time in .wri
 /* CtkTimer needs to be a TempoClock when played, a timekeeper when used for NRT */
 
 CtkTimer {
-	var starttime, <curtime, <clock, <tempo, rtempo, isPlaying = false, <next = nil;
+	var starttime, <curtime, <clock, <tempo, rtempo, isPlaying = false, <next = nil, start;
 	
 	*new {arg starttime = 0.0;
 		^super.newCopyArgs(starttime, starttime).initCtkTimer;
@@ -2252,7 +2252,7 @@ CtkTimer {
 	
 CtkEvent : CtkObj {
 	classvar <envsd, <addActions;
-	var starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
+	var <starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
 	var isPlaying = false, isReleasing = false, releaseTime = 0.0, <timer, clock, 
 		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, envbus, playinit, notes, 
 		score, <endtime, endtimeud, noFunc = false, eventDur;
@@ -2438,7 +2438,7 @@ CtkEvent : CtkObj {
 		}
 
 	now {
-		^timer.curtime;
+		^timer.now;
 		}
 			
 	checkCond {
