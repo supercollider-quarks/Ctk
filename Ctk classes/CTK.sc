@@ -3,6 +3,8 @@ CtkObj {
 	var <objargs;
 	var <uniqueMethods;
 	
+	at {^this}
+	
 	addTo {arg aCtkScore;
 		aCtkScore.add(this);
 		^this;
@@ -182,18 +184,18 @@ CtkScore : CtkObj {
 		this.prepareObjects(false);
 		this.groupTogether;
 		this.objectsToOSC;
-		score.add([endtime, 0]);		
+		score.add([endtime + 0.2, 0]);		
 		path.notNil.if({score.saveToFile(path)});
 		}
 	
 	addBuffers {
 		buffersScored.not.if({
-			endtime = endtime + 0.1;
+//			endtime = endtime + 0.1;
 			buffers.do({arg me;
 				this.add(CtkMsg(me.server, 0.0, me.bundle).bufflag_(true));
-				this.add(CtkMsg(me.server, endtime, me.freeBundle));
+				this.add(CtkMsg(me.server, endtime + 0.1, me.freeBundle));
 				(me.closeBundle.notNil).if({
-					this.add(CtkMsg(me.server, endtime, me.closeBundle));
+					this.add(CtkMsg(me.server, endtime + 0.1, me.closeBundle));
 					});
 				});
 			})
@@ -292,7 +294,7 @@ CtkScore : CtkObj {
 					});
 				});
 			(thisnote.messages.size > 0).if({
-				thisnote.messages.do({arg me;
+				thisnote.messages.reverseDo({arg me;
 					masterMessages = masterMessages.add(me);
 					})
 				});
@@ -394,7 +396,7 @@ CtkScore : CtkObj {
 					var items;
 					items = [masterBuffers, masterScore, masterControls].flat;
 					items.do({arg me;
-						me.free; 
+						me.free(addMsg: false); 
 						me.isKindOf(CtkNote).if({
 							me.releases.do({arg thisRel; thisRel.free;})
 							})
@@ -468,17 +470,19 @@ CtkScore : CtkObj {
 		
 	// SC2 it! create OSCscore, add buffers to the score, write it
 	write {arg path, duration, sampleRate = 44100, headerFormat = "AIFF", 
-			sampleFormat = "int16", options;
-		var tmpfile;
+			sampleFormat = "int16", options, action;
+		var tmpfile, stamp;
+		stamp = Date.seed;
 		tmpfile = (thisProcess.platform.name == \windows).if({
-			"/windows/temp/trashme" 
+			"/windows/temp/trashme" ++ stamp;
 			}, {
-			"/tmp/trashme"
+			"/tmp/trashme" ++ stamp;
 			});
 		this.saveToFile;
-		score.recordNRT(tmpfile, path, sampleRate: sampleRate, 
+		score.recordNRTThen(tmpfile, path, sampleRate: sampleRate, 
 			headerFormat: headerFormat,
-		 	sampleFormat: sampleFormat, options: options, duration: duration);
+		 	sampleFormat: sampleFormat, options: options, duration: duration,
+		 	action: action);
 		}
 		
 	// add a time to all times in a CtkScore
@@ -1600,6 +1604,7 @@ CtkBuffer : CtkObj {
 	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, channels, bundle, 
 		<freeBundle, <closeBundle, <messages, <isPlaying = false, <isOpen = false;
 	var duration, <sampleRate, <starttime = 0.0, completion;
+	var <collection, collPath, send;
 	
 	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server, channels;
 		^this.newCopyArgs(Dictionary.new, nil, bufnum, path, size, startFrame, numFrames, 
@@ -1623,6 +1628,40 @@ CtkBuffer : CtkObj {
 		^this.new(size: size, numChannels: 1, server: server).fillWithEnv(0.0, env, wavetable);
 		}
 
+	*collection {arg collection, numChannels = 1, server;
+		var data, obj;
+		collection.isKindOf(RawArray).not.if({
+			data = collection.collectAs({arg val; val}, FloatArray);
+		}, {
+			data = collection;
+		});
+		^this.new(size: data.size, numChannels: numChannels, server: server).collection_(data);
+	}
+	
+//	*collection {arg collection, numChannels = 1, server;
+//		var fil, path, data;
+//		server.isLocal.if({
+//			collection.isKindOf(RawArray).not.if({
+//				data = collection.collectAs({arg val; val}, FloatArray);
+//			}, {
+//				data = collection;
+//			});
+//			fil = SoundFile.new;
+//			sndfile.sampleRate_(server.sampleRate ?? {44100});
+//			sndfile.numChannels_(numChannels);
+//			path = PathName.tmp ++ sndfile.hash.asString;
+//			sndfile.openWrite(path).if({
+//				sndfile.writeData(data);
+//				sndfile.close;
+//					
+//			}, {
+//				"Failed to write data".warn
+//			})
+//		}, {
+//			"cannot load a collection with a non-local server".warn;
+//		})	
+//	}
+	
 	init {
 		var sf, nFrames, test;
 		server = server ?? {Server.default};
@@ -1686,6 +1725,11 @@ CtkBuffer : CtkObj {
 			})
 		}
 	
+	collection_ {arg aCollection;
+		// should probably do some checking here... for now, this is fine
+		collection = aCollection;
+	}
+	
 	load {arg time = 0.0, sync = true, onComplete;
 		SystemClock.sched(time, {
 			Routine.run({
@@ -1724,7 +1768,7 @@ CtkBuffer : CtkObj {
 		^bundle;
 		}
 		
-	free {arg time = 0.0;
+	free {arg time = 0.0, addMsg = true;
 		closeBundle.notNil.if({
 			SystemClock.sched(time, {
 				server.sendBundle(latency, closeBundle, freeBundle);
@@ -1736,6 +1780,11 @@ CtkBuffer : CtkObj {
 				server.bufferAllocator.free(bufnum);
 				});
 			});
+		addMsg.if({
+			[closeBundle, freeBundle].do({arg bund;
+				messages = messages.add(CtkMsg(server, time+starttime, bund));
+			})
+		});
 		isPlaying = false;
 		}
 
@@ -1828,6 +1877,33 @@ CtkBuffer : CtkObj {
 		this.set(time, 0, env);
 		}
 
+//	loadCollection {arg time = 0.0, collection, startFrame = 0, action;
+//		var fil, path, data;
+//		server.isLocal.if({
+//			collection.isKindOf(RawArray).not.if({
+//				data = collection.collectAs({arg val; val}, FloatArray);
+//			}, {
+//				data = collection;
+//			});
+//			(collection.size > ((numFrames - startFrame) * numChannels)).if({
+//				"collection is larger then the number of frames allocated".warn;
+//			});
+//			fil = SoundFile.new;
+//			sndfile.sampleRate_(server.sampleRate ?? {44100});
+//			sndfile.numChannels_(numChannels);
+//			path = PathName.tmp ++ sndfile.hash.asString;
+//			sndfile.openWrite(path).if({
+//				sndfile.writeData(data);
+//				sndfile.close;
+//					
+//			}, {
+//				"Failed to write data".warn
+//			})
+//		}, {
+//			"cannot loadCollection with a non-local server".warn;
+//		})	
+//	}
+	
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
 	bufferFunc {arg time, bund;
 		isPlaying.if({
@@ -2320,7 +2396,7 @@ CtkEvent : CtkObj {
 						});
 					timer.next_(nil);
 					function.value(this, group, envbus, inc, server);
-//					this.run;
+					this.run;
 					this.checkCond.if({
 						timer.next;
 						}, {
@@ -2484,7 +2560,7 @@ CtkEvent : CtkObj {
 				})
 			});
 		notes = (notes ++ ctkevents).flat;
-		isPlaying.if({this.run});
+//		isPlaying.if({this.run});
  		}
 	
 	//  may not need this... or, if may be able to be simplified (just store objects to 
@@ -2583,7 +2659,7 @@ CtkEvent : CtkObj {
 
 CtkMsg : CtkObj{
 	var <starttime, <duration, <endtime, <messages, <target = 0, <>bufflag = false;
-	var <>server;
+	var <>server; //, <singleShot;
 	
 	*new {arg server, starttime ... messages;
 		^super.new.initMsgClass(server, starttime, messages);
@@ -2604,16 +2680,29 @@ CtkMsg : CtkObj{
 		}
 		
 	bundle {
-		arg bundle;
+		var bundle;
 		bundle = [starttime];
 		messages.do({arg me; bundle = bundle.add(me)});
 		^bundle;
 		}
 		
 	msgBundle {
-		arg bundle;
+		var bundle;
 		bundle = [];
 		messages.do({arg me; bundle = bundle.add(me)});
 		^bundle;
 		}
 	}
+	
+/* 
+ * time to make versions of ProcModR and ProcEvents with Ctk CtkPMod will actually work 
+ * more like CtkEvent with routing, recording, OSCresponder handling, releaseFunc, onReleaseFunc, etc. Is this better ... no! wtf??? is there something that has changed here?
+*/ 
+
+CtkPMod : CtkObj {
+ 	
+}
+
+CtkPEvents : CtkObj {
+	
+}
