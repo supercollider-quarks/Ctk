@@ -1,5 +1,5 @@
 CtkObj {
-	classvar <>latency = 0.1, <cond;
+	classvar <>latency = 0.1, <cond, <addActions;
 	var <objargs;
 	var <uniqueMethods;
 	
@@ -54,6 +54,18 @@ CtkObj {
 	
 	*initClass {
 		cond = Condition.new;
+		addActions = IdentityDictionary[
+			\head -> 0,
+			\tail -> 1,
+			\before -> 2,
+			\after -> 3,
+			\replace -> 4,
+			0 -> 0,
+			1 -> 1,
+			2 -> 2,
+			3 -> 3,
+			4 -> 4
+			];
 		}
 	}
 
@@ -948,11 +960,11 @@ CtkSynthDef : CtkNoteObject {
 	}
 	
 CtkNode : CtkObj {
-	classvar <addActions, <nodes, <servers, <resps, <cmd, <groups;
+	classvar /*<addActions, */<nodes, <servers, <resps, <cmd, <groups;
 
 	var <addAction, <target, <>server;
 	var >node, <>messages, <starttime, <>willFree = false;
-	var <isPaused = false, <>releases;
+	var <isPaused = false, <>releases, <>releaseFunc, <>onReleaseFunc;
 
 	node {
 		^node ?? {node = server.nextNodeID};
@@ -963,7 +975,10 @@ CtkNode : CtkObj {
 		this.addServer(group);
 		thisidx = servers.indexOf(server);
 		nodes[thisidx] = nodes[thisidx].add(node);
-		group.notNil.if({group.children = group.children.add(node)});
+		group.notNil.if({
+			group.noteDict.add(node -> this);
+			group.children = group.children.add(node);
+			});
 		}
 		
 	setStarttime {arg newStarttime;
@@ -985,6 +1000,7 @@ CtkNode : CtkObj {
 					groups.do({arg me;
 						me.notNil.if({
 							me.children.remove(msg[1]);
+							me.noteDict.removeAt(msg[1]);
 							})
 						});
 					})
@@ -1071,11 +1087,13 @@ CtkNode : CtkObj {
 	release {arg time, key = \gate;
 		this.set(time, key, 0);
 		willFree = true;
-		((releases.size > 0) && this.isPlaying).if({
+		(((releases.size > 0) or: {onReleaseFunc.notNil or: {releaseFunc.notNil}}) and: {this.isPlaying}).if({
 			Routine.run({
+				onReleaseFunc.value;
 				while({
 					0.1.wait;
 					this.isPlaying.not.if({
+						releaseFunc.value(this);
 						(releases.size > 0).if({
 							releases.do({arg me; me.free})
 							});
@@ -1093,7 +1111,9 @@ CtkNode : CtkObj {
 		bund = [\n_free, this.node];
 		willFree = true;
 		this.isPlaying.if({
+			onReleaseFunc.value;
 			SystemClock.sched(time, {
+				releaseFunc.value;
 				server.sendBundle(latency, bund);
 				(releases.size > 0).if({	
 					releases.do({arg me;
@@ -1130,18 +1150,18 @@ CtkNode : CtkObj {
 	asControlInput {^node ?? {this.node}}
 		
 	*initClass {
-		addActions = IdentityDictionary[
-			\head -> 0,
-			\tail -> 1,
-			\before -> 2,
-			\after -> 3,
-			\replace -> 4,
-			0 -> 0,
-			1 -> 1,
-			2 -> 2,
-			3 -> 3,
-			4 -> 4
-			];
+		//addActions = IdentityDictionary[
+//			\head -> 0,
+//			\tail -> 1,
+//			\before -> 2,
+//			\after -> 3,
+//			\replace -> 4,
+//			0 -> 0,
+//			1 -> 1,
+//			2 -> 2,
+//			3 -> 3,
+//			4 -> 4
+//			];
 		nodes = [];
 		servers = [];
 		resps = [];
@@ -1510,7 +1530,7 @@ CtkNote : CtkNode {
 
 /* methods common to CtkGroup and CtkNote need to be put into their own class (CtkNode???) */
 CtkGroup : CtkNode {
-	var <>endtime = nil, <>duration, <isGroupPlaying = false, <>children;
+	var <>endtime = nil, <>duration, <isGroupPlaying = false, <>children, <>noteDict;
 	
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
@@ -1530,6 +1550,7 @@ CtkGroup : CtkNode {
 		server = server ?? {Server.default};
 		messages = Array.new;
 		children = Array.new;
+		noteDict = Dictionary.new;
 		}
 		
 	newBundle {
@@ -1941,7 +1962,7 @@ CtkControl : CtkBus {
 	<endtime = 0.0, <duration; //may want to get rid of setter later
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, buffer,
 	<isLFO = false, <isEnv = false, <isKBuf = false;
-	var <timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false;
+	var <timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false, <label;
 		
 	classvar <ctkEnv, <sddict; 
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
@@ -2215,11 +2236,15 @@ CtkControl : CtkBus {
 			});
 		
 		}
+		
+	label_ {arg aLabel;
+		label = aLabel.asSymbol;
 	}
+}
 
 // not really needed... but it does most of the things that CtkControl does
 CtkAudio : CtkBus {
-	var <server, <bus, <numChans, <isPlaying = false;
+	var <server, <bus, <numChans, <isPlaying = false, <label;
 	*new {arg numChans = 1, bus, server;
 		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans).init;
 		}
@@ -2248,7 +2273,11 @@ CtkAudio : CtkBus {
 		
 	asUGenInput {^bus}
 	asMapInput {^(\a++bus).asSymbol}
+	
+	label_ {arg aLabel;
+		label = aLabel.asSymbol;
 	}
+}
 	
 /* this will be similar to ProcMod ... global envelope magic 
 
@@ -2327,7 +2356,7 @@ CtkTimer {
 	}
 	
 CtkEvent : CtkObj {
-	classvar <envsd, <addActions;
+	classvar <envsd;
 	var <starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
 	var isPlaying = false, isReleasing = false, releaseTime = 0.0, <timer, clock, 
 		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, envbus, playinit, notes, 
@@ -2339,7 +2368,7 @@ CtkEvent : CtkObj {
 		}
 		
 	initCE {arg argTarget;
-		argTarget.asUGenInput;
+		argTarget = argTarget.asUGenInput;
 		target = argTarget ?? {1};
 		server = server ?? {Server.default};
 		timer = CtkTimer.new(starttime);
@@ -2626,18 +2655,18 @@ CtkEvent : CtkObj {
 		}
 	
 	*initClass {
-		addActions = IdentityDictionary[
-			\head -> 0,
-			\tail -> 1,
-			\before -> 2,
-			\after -> 3,
-			\replace -> 4,
-			0 -> 0,
-			1 -> 1,
-			2 -> 2,
-			3 -> 3,
-			4 -> 4
-			];
+//		addActions = IdentityDictionary[
+//			\head -> 0,
+//			\tail -> 1,
+//			\before -> 2,
+//			\after -> 3,
+//			\replace -> 4,
+//			0 -> 0,
+//			1 -> 1,
+//			2 -> 2,
+//			3 -> 3,
+//			4 -> 4
+//			];
 		StartUp.add({
 		envsd = CtkNoteObject(
 			SynthDef(\ctkeventenv_2561, {arg evgate = 1, outbus, amp = 1, timeScale = 1, 
@@ -2694,15 +2723,3 @@ CtkMsg : CtkObj{
 		}
 	}
 	
-/* 
- * time to make versions of ProcModR and ProcEvents with Ctk CtkPMod will actually work 
- * more like CtkEvent with routing, recording, OSCresponder handling, releaseFunc, onReleaseFunc, etc. Is this better ... no! wtf??? is there something that has changed here?
-*/ 
-
-CtkPMod : CtkObj {
- 	
-}
-
-CtkPEvents : CtkObj {
-	
-}
