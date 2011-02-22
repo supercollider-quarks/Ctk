@@ -15,9 +15,10 @@ CtkObj {
 		this.addUniqueMethod(key.asSymbol, {arg object; object.objargs[key]});
 		}
 
-	addSetter {arg key;
+	addSetter {arg key, func;
 		this.addUniqueMethod((key.asString++"_").asSymbol, 
-			{arg object, newval; object.objargs[key] = newval; object;
+//			{arg object, newval; object.objargs[key] = newval.value; object;
+			{arg object, newval; object.objargs[key] = newval; func.value(object, newval); object;
 			});
 		}
 		
@@ -561,13 +562,21 @@ CtkProtoNotes {
 			})	
 		}
 	
-	load {arg aServer;
-		synthdefs.do({arg me; me.load(aServer)});
-		}
+	load {arg ... servers;
+		servers.do({arg aServer;
+			synthdefs.do({arg me; me.load(aServer)});
+		})
+	}
 		
-	send {arg aServer;
-		synthdefs.do({arg me; me.send(aServer)});	
-		}
+	send {arg ... servers;
+		servers.do({arg aServer;
+			synthdefs.do({arg me; me.send(aServer)});	
+		})
+	}
+	
+//	add {
+//		synthdefs.do({arg me; me.add;})
+//	}
 		
 	at {arg id;
 		^dict[id.asString]
@@ -660,14 +669,22 @@ CtkNoteObject {
 		}
 	
 	// for loading directly to a specific server
-	load {arg aServer;
-		synthdef.load(aServer)
+	load {arg ... servers;
+		server.do({arg aServer;
+			synthdef.load(aServer)
+		})
 		}
 
-	send {arg aServer;
-		synthdef.send(aServer)
+	send {arg ... servers;
+		server.do({arg aServer;
+			synthdef.send(aServer)
+		})
 		}
-			
+	
+	add {
+		synthdef.add;	
+	}
+	
 	buildControls {
 		var kouts;
 		synthdef.load(server ?? {Server.default});
@@ -845,110 +862,110 @@ CtkNoteObject {
 			y.nextLine;
 			});		
 		}
-		
-playFunc {arg server, val, nrt = false, path, playButton, durBox, paramDict, nChans;
-	var func, str, buf, note, clock;
-	func = case 
-		{val == 0}
-		{isPlaying.if({isPlaying = false; server.freeAll; clock.clear; clock.stop; 
-			score.buffers.do({arg me; me.free})})}
-		{val == 1}
-		{	
-			score = CtkScore.new;
-			note = this.new;
-			note.setDuration(durBox.value);
-			note.args.keys.do({arg key;
-				case 
-					{(paramDict[key]["control"].value == 0)}
-					{note.perform((key++"_").asSymbol, paramDict[key]["default"].value)}
-					{(paramDict[key]["control"].value == 1)}
-					{
-						str = paramDict[key]["env"].string.interpret;
-						str.isKindOf(Env).if({
-							note.perform((key++"_").asSymbol, 
-								CtkControl.env(str, levelScale: paramDict[key]["scale"].value,
-									levelBias: paramDict[key]["bias"].value, timeScale: 
-									paramDict[key]["tscale"].value))
-								}, {
-								"Parameter for "++key++" does not appear to be an Env".warn;
-								})
-							
-					}
-					{(paramDict[key]["control"].value == 2)}
-					{
-						str = paramDict[key]["env"].string.interpret;
-						PathName(str).isFile.if({
-							score.add(buf = CtkBuffer.playbuf(str));
-							note.perform((key++"_").asSymbol, 
-								CtkControl.kbuf(buf, levelScale: paramDict[key]["scale"].value,
-									levelBias: paramDict[key]["bias"].value, 
-									timeScale: paramDict[key]["tscale"].value))
-
-							});
-					}
-					{(paramDict[key]["control"].value == 3)}
-					{
-						str = paramDict[key]["env"].string.interpret;
-						PathName(str).isFile.if({
-							score.add(buf = CtkBuffer.playbuf(str));
-							note.perform((key++"_").asSymbol, buf);
-							});
-					}
-					{(paramDict[key]["control"].value == 4)}
-					{
-						str = paramDict[key]["env"].string.interpret;
-						PathName(str).isFile.if({
-							score.add(buf = CtkBuffer.diskin(str));
-							note.perform((key++"_").asSymbol, buf);
-							});
-					}
-					{(paramDict[key]["control"].value > 4)}
-					{	note.perform((key++"_").asSymbol, 
-							CtkControl.lfo(paramDict[key]["control"]
-									.items[paramDict[key]["control"].value].interpret,
-								paramDict[key]["freq"].value,
-								paramDict[key]["low"].value,
-								paramDict[key]["high"].value,								paramDict[key]["phase"].value))
-					}
-					;				
-			});
-			score.add(note);
-			nrt.if({
-				score.write(path, options: ServerOptions.new.numOutputBusChannels_(nChans.value))
-				}, { 
-				clock = TempoClock.new;
-				score.play;
-				isPlaying = true;
-				clock.sched(durBox.value + 0.2, {
-					{(playButton.value != 0).if({playButton.valueAction_(0)})}.defer});
-				})
-		};
-	func.value;
-	}
+			
+	playFunc {arg server, val, nrt = false, path, playButton, durBox, paramDict, nChans;
+		var func, str, buf, note, clock;
+		func = case 
+			{val == 0}
+			{isPlaying.if({isPlaying = false; server.freeAll; clock.clear; clock.stop; 
+				score.buffers.do({arg me; me.free})})}
+			{val == 1}
+			{	
+				score = CtkScore.new;
+				note = this.new;
+				note.setDuration(durBox.value);
+				note.args.keys.do({arg key;
+					case 
+						{(paramDict[key]["control"].value == 0)}
+						{note.perform((key++"_").asSymbol, paramDict[key]["default"].value)}
+						{(paramDict[key]["control"].value == 1)}
+						{
+							str = paramDict[key]["env"].string.interpret;
+							str.isKindOf(Env).if({
+								note.perform((key++"_").asSymbol, 
+									CtkControl.env(str, levelScale: paramDict[key]["scale"].value,
+										levelBias: paramDict[key]["bias"].value, timeScale: 
+										paramDict[key]["tscale"].value))
+									}, {
+									"Parameter for "++key++" does not appear to be an Env".warn;
+									})
+								
+						}
+						{(paramDict[key]["control"].value == 2)}
+						{
+							str = paramDict[key]["env"].string.interpret;
+							PathName(str).isFile.if({
+								score.add(buf = CtkBuffer.playbuf(str));
+								note.perform((key++"_").asSymbol, 
+									CtkControl.kbuf(buf, levelScale: paramDict[key]["scale"].value,
+										levelBias: paramDict[key]["bias"].value, 
+										timeScale: paramDict[key]["tscale"].value))
 	
-createBuffer {
-	var bufEditWindow, bufEditDec, plot;
-	bufEditWindow = Window.new("A Plot Buffer", Rect(400, 500, 400, 300));
-	bufEditWindow.front;
-	plot = Plot.newClear(100, parent: bufEditWindow);
-	bufEditWindow.bounds_(Rect(400, 500, 460, 340));
-	Button(bufEditWindow, Rect(20, 300, 70, 20))
-		.states_([
-			["Lowpass", Color.green, Color.black]
-			])
-		.action_({plot.data_(plot.data.lowpass)});
-	Button(bufEditWindow, Rect(100, 300, 70, 20))
-		.states_([
-			["Save", Color.green, Color.black]
-			])
-		.action_({
-			CocoaDialog.savePanel({arg path;
-				plot.saveToSF(path)
-				}, {
-				"No Plot was saved".warn
+								});
+						}
+						{(paramDict[key]["control"].value == 3)}
+						{
+							str = paramDict[key]["env"].string.interpret;
+							PathName(str).isFile.if({
+								score.add(buf = CtkBuffer.playbuf(str));
+								note.perform((key++"_").asSymbol, buf);
+								});
+						}
+						{(paramDict[key]["control"].value == 4)}
+						{
+							str = paramDict[key]["env"].string.interpret;
+							PathName(str).isFile.if({
+								score.add(buf = CtkBuffer.diskin(str));
+								note.perform((key++"_").asSymbol, buf);
+								});
+						}
+						{(paramDict[key]["control"].value > 4)}
+						{	note.perform((key++"_").asSymbol, 
+								CtkControl.lfo(paramDict[key]["control"]
+										.items[paramDict[key]["control"].value].interpret,
+									paramDict[key]["freq"].value,
+									paramDict[key]["low"].value,
+									paramDict[key]["high"].value,								paramDict[key]["phase"].value))
+						}
+						;				
+				});
+				score.add(note);
+				nrt.if({
+					score.write(path, options: ServerOptions.new.numOutputBusChannels_(nChans.value))
+					}, { 
+					clock = TempoClock.new;
+					score.play;
+					isPlaying = true;
+					clock.sched(durBox.value + 0.2, {
+						{(playButton.value != 0).if({playButton.valueAction_(0)})}.defer});
+					})
+			};
+		func.value;
+		}
+	
+	createBuffer {
+		var bufEditWindow, bufEditDec, plot;
+		bufEditWindow = Window.new("A Plot Buffer", Rect(400, 500, 400, 300));
+		bufEditWindow.front;
+		plot = Plot.newClear(100, parent: bufEditWindow);
+		bufEditWindow.bounds_(Rect(400, 500, 460, 340));
+		Button(bufEditWindow, Rect(20, 300, 70, 20))
+			.states_([
+				["Lowpass", Color.green, Color.black]
+				])
+			.action_({plot.data_(plot.data.lowpass)});
+		Button(bufEditWindow, Rect(100, 300, 70, 20))
+			.states_([
+				["Save", Color.green, Color.black]
+				])
+			.action_({
+				CocoaDialog.savePanel({arg path;
+					plot.saveToSF(path)
+					}, {
+					"No Plot was saved".warn
+					})
 				})
-			})
-	}	
+		}	
 }
 
 CtkSynthDef : CtkNoteObject {
@@ -963,19 +980,47 @@ CtkNode : CtkObj {
 	classvar /*<addActions, */<nodes, <servers, <resps, <cmd, <groups;
 
 	var <addAction, <target, <>server;
-	var >node, <>messages, <starttime, <>willFree = false;
+	var >node, <>messages, <starttime, <>willFree = false;//, <group;
 	var <isPaused = false, <>releases, <>releaseFunc, <>onReleaseFunc;
 
+	*new {
+		^super.new.initCtkNode;
+	}
+	
+	initCtkNode {
+		server = server ?? {Server.default};
+		servers[server].isNil.if({
+			servers.add(server -> server);
+			nodes.add(server -> []);
+			groups.add(server -> []);
+			resps.add(server -> OSCresponderNode(server.addr, '/n_end', {arg time, resp, msg, addr;
+				var tag, nodeID, prevNodeID, nextNodeID, group, headNode, tailNode;
+				#tag, nodeID, prevNodeID, nextNodeID, group, headNode, tailNode = msg;
+				group = (group == 1);
+				nodes[server].remove(msg[1]);
+				groups[server].do({arg me;
+					me.notNil.if({
+						me.children.remove(msg[1]);
+						me.noteDict.removeAt(msg[1]);
+						})
+					});
+				}).add); 
+		});
+		cmd.if({cmd = false; CmdPeriod.doOnce({this.cmdPeriod})});
+	}
+	
 	node {
 		^node ?? {node = server.nextNodeID};
 		}
-		
+	
+	// server is the server assigned already to an object or. If
+	// an object is inited without a server, Server.default is used
 	watch {arg group;
 		var thisidx;
-		this.addServer(group);
-		thisidx = servers.indexOf(server);
-		nodes[thisidx] = nodes[thisidx].add(node);
-		group.notNil.if({
+//		["Group", group].postln;
+		nodes[server] = nodes[server].add(node);
+		group.isKindOf(CtkGroup).if({
+			this.addGroup(group);
 			group.noteDict.add(node -> this);
 			group.children = group.children.add(node);
 			});
@@ -985,37 +1030,20 @@ CtkNode : CtkObj {
 		starttime = newStarttime;
 		}
 		
-	addServer {arg group;
+	addGroup {arg group;
 		var idx;
-		groups.indexOf(group).isNil.if({
-			groups = groups.add(group)
+		//groups.postln;
+		groups[server].indexOf(group).isNil.if({
+			groups[server] = groups[server].add(group)
 			});
-		servers.includes(server).not.if({
-			idx = servers.size;
-			servers = servers.add(server); // add the server
-			nodes = nodes.add([]); // add an array for these nodes to live in
-			resps = resps.add(OSCresponderNode(server.addr, '/n_end', {arg time, resp, msg;
-				nodes[idx].remove(msg[1]);
-				(groups.size > 0).if({
-					groups.do({arg me;
-						me.notNil.if({
-							me.children.remove(msg[1]);
-							me.noteDict.removeAt(msg[1]);
-							})
-						});
-					})
-				}).add); // add a responder to remove nodes
-			cmd.if({cmd = false; CmdPeriod.doOnce({this.cmdPeriod})});
-			});
-	
 		}
 	
 	isPlaying {
 		var idx;
-		this.addServer;
+//		this.addServer;
 		(servers.size > 0).if({
-			idx = servers.indexOf(server);
-			(node.notNil && nodes[idx].includes(node)).if({^true}, {^false});
+//			idx = servers.indexOf(server);
+			(nodes[server].notNil && nodes[server].includes(node)).if({^true}, {^false});
 			}, {
 			^false
 			})
@@ -1037,7 +1065,7 @@ CtkNode : CtkObj {
 	
 	setn {arg time, key ... values;
 		var bund;
-		values = values.flat;
+		values = values.flat.perform(\asUGenInput);
 		bund = [\n_setn, this.node, key, values.size] ++ values;
 		this.handleMsg(time, bund);	
 		}
@@ -1150,23 +1178,11 @@ CtkNode : CtkObj {
 	asControlInput {^node ?? {this.node}}
 		
 	*initClass {
-		//addActions = IdentityDictionary[
-//			\head -> 0,
-//			\tail -> 1,
-//			\before -> 2,
-//			\after -> 3,
-//			\replace -> 4,
-//			0 -> 0,
-//			1 -> 1,
-//			2 -> 2,
-//			3 -> 3,
-//			4 -> 4
-//			];
-		nodes = [];
-		servers = [];
-		resps = [];
+		nodes = Dictionary.new; // [];
+		servers = Dictionary.new; // []
+		resps = Dictionary.new; // [];
 		cmd = true;
-		groups = [];
+		groups = Dictionary.new; // [];
 		}
 	}	
 
@@ -1179,8 +1195,9 @@ CtkNote : CtkNode {
 		<endtime, <args, <setnDict, <mapDict, <noMaps, automations, <refsDict;
 			
 	*new {arg starttime = 0.0, duration, addAction = 0, target = 1, server, synthdefname, noMaps;
-		server = server ?? {Server.default};
+//		server = server ?? {Server.default};
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server)
+			.initCtkNode
 			.initCN(starttime, duration, synthdefname, noMaps);
 		}
 				
@@ -1377,6 +1394,7 @@ CtkNote : CtkNode {
 		bundlearray =	this.buildBundle;
 		initbundle = [starttime, bundlearray];
 		setnDict.keysValuesDo({arg key, val;
+			val = val.perform(\asUGenInput);
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
 			});
 		mapDict.keysValuesDo({arg key, val;
@@ -1399,6 +1417,7 @@ CtkNote : CtkNode {
 			});
 		initbundle = [bundlearray];
 		setnDict.keysValuesDo({arg key, val;
+			val = val.perform(\asUGenInput);
 			initbundle = initbundle.add([\n_setn, node, key, val.size] ++ val);
 			});
 		^initbundle;	
@@ -1406,9 +1425,9 @@ CtkNote : CtkNode {
 		
 	buildBundle {
 		var bundlearray, tmp;
-		(target.isKindOf(CtkNote) || target.isKindOf(CtkGroup)).if({
-			target = target.node});
-		bundlearray =	[\s_new, synthdefname, this.node, addActions[addAction], target];
+//		(target.isKindOf(CtkNote) || target.isKindOf(CtkGroup)).if({
+//			target = target.node});
+		bundlearray =	[\s_new, synthdefname, this.node, addActions[addAction], target.asUGenInput];
 		args.keysValuesDo({arg key, val;
 			var refsize;
 			// check if val is a Ref - if so, we just need the initial value
@@ -1472,6 +1491,7 @@ CtkNote : CtkNode {
 				bund = OSCBundle.new;
 				bund.add(this.buildBundle);
 				setnDict.keysValuesDo({arg key, val;
+					val = val.perform(\asUGenInput);
 					bund.add([\n_setn, node, key, val.size] ++ val);
 					});
 				mapDict.keysValuesDo({arg key, val;
@@ -1487,7 +1507,7 @@ CtkNote : CtkNode {
 					});
 				bund.send(server, latency);
 				// for CtkControl mapping... make sure things are running!
-				this.watch(group);
+				this.watch(group ?? {target}); // don't think this is correct - how to figure out which group things are runningin?
 				// if a duration is given... kill it
 				duration.notNil.if({
 					SystemClock.sched(duration, {this.free(0.1, false)})
@@ -1534,6 +1554,7 @@ CtkGroup : CtkNode {
 	
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
+			.initCtkNode(server)
 			.init(starttime, duration);
 		}
 		
@@ -1547,7 +1568,7 @@ CtkGroup : CtkNode {
 		duration.notNil.if({
 			endtime = starttime + duration
 			});
-		server = server ?? {Server.default};
+//		server = server ?? {Server.default};
 		messages = Array.new;
 		children = Array.new;
 		noteDict = Dictionary.new;
@@ -1625,7 +1646,7 @@ CtkBuffer : CtkObj {
 	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, channels, bundle, 
 		<freeBundle, <closeBundle, <messages, <isPlaying = false, <isOpen = false;
 	var duration, <sampleRate, <starttime = 0.0, completion;
-	var <collection, collPath, send;
+	var <collection, collPath, send, <label;
 	
 	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server, channels;
 		^this.newCopyArgs(Dictionary.new, nil, bufnum, path, size, startFrame, numFrames, 
@@ -1953,7 +1974,12 @@ CtkBuffer : CtkObj {
 			"A CtkBuffer's server can not be changed while it is being used in real-time mode".warn;})
 		}
 	asUGenInput {^bufnum}
+	
+	label_ {arg aLabel;
+		label = aLabel.asSymbol;
 	}
+	
+}
 
 CtkBus : CtkObj {}
 	
@@ -1975,6 +2001,14 @@ CtkControl : CtkBus {
 		^this.new(numChans, initVal, 0.0, bus, server).play;
 		}
 
+	*reserve {arg numChans, initVal = 0.0, starttime = 0.0, bus, server;
+		^this.new(numChans, initVal, starttime, bus, server).reserve;
+	}
+	
+	reserve {
+		server.controlBusAllocator.reserve(bus, numChans, true);
+	}
+	
 	initThisClass {
 		var bund, numSlots;
 		server = server ?? {Server.default};
@@ -2253,6 +2287,14 @@ CtkAudio : CtkBus {
 		^this.new(numChans, bus, server).play;
 		}
 		
+	*reserve {arg numChans, bus, server;
+		^this.new(numChans, bus, server).reserve;
+	}
+	
+	reserve {
+		server.audioBusAllocator.reserve(bus, numChans, true);
+	}
+	
 	play {
 		isPlaying = true;
 		}
@@ -2487,8 +2529,9 @@ CtkEvent : CtkObj {
 				envbus = CtkControl.new(1, amp, starttime, server: server);
 				})
 			});
-		(target.isKindOf(CtkNote) || target.isKindOf(CtkGroup)).if({
-			target = target.node});
+//			
+//		(target.isKindOf(CtkNote) || target.isKindOf(CtkGroup)).if({
+//			target = target.node});
 		}
 	
 	free {
