@@ -1197,8 +1197,8 @@ CtkNote : CtkNode {
 	*new {arg starttime = 0.0, duration, addAction = 0, target = 1, server, synthdefname, noMaps;
 //		server = server ?? {Server.default};
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server)
+			.initCN(starttime, duration, synthdefname, noMaps)
 			.initCtkNode
-			.initCN(starttime, duration, synthdefname, noMaps);
 		}
 				
 	copy {arg newStarttime;
@@ -1214,6 +1214,14 @@ CtkNote : CtkNode {
 		}
 
 	initCN {arg argstarttime, argduration, argsynthdefname, argnoMaps;
+		target.isKindOf(CtkNode).if({
+			(target.server != server).if({
+				"Mismatch between target Server and this CtkNode's server, setting to target's server".warn;
+				server = target.server;
+			})
+		}, {
+			server = server ?? {Server.default};
+		});
 		starttime = argstarttime;
 		duration = argduration;
 		synthdefname = argsynthdefname;
@@ -1554,8 +1562,8 @@ CtkGroup : CtkNode {
 	
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
+			.init(starttime, duration)
 			.initCtkNode(server)
-			.init(starttime, duration);
 		}
 		
 	*play {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
@@ -1563,6 +1571,14 @@ CtkGroup : CtkNode {
 		}
 		
 	init {arg argstarttime, argduration;
+		target.isKindOf(CtkNode).if({
+			(target.server != server).if({
+				"Mismatch between target Server and this CtkNode's server, setting to target's server".warn;
+				server = target.server;
+			})
+		}, {
+			server = server ?? {Server.default};
+		});
 		starttime = argstarttime;
 		duration = argduration;
 		duration.notNil.if({
