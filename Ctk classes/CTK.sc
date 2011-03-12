@@ -1051,9 +1051,9 @@ CtkNode : CtkObj {
 		
 	cmdPeriod {
 		resps.do({arg me; me.remove});
-		resps = [];
-		servers = [];
-		nodes = [];
+		resps = Dictionary.new;
+		servers = Dictionary.new;
+		nodes = Dictionary.new;
 		cmd = true;
 		}
 		
