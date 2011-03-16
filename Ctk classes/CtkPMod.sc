@@ -90,7 +90,6 @@ CtkPMod : CtkObj {
 			{arg object, newval; 
 				object.objargs[key] = newval; func.value(object, newval); 
 				isGroup.if({
-					"I'm a group!".postln;
 					group.noteDict.keysValuesDo({arg node, thisNote;
 						thisNote.args[(key).asSymbol].notNil.if({
 							thisNote.perform((key ++ "_").asSymbol, newval);
@@ -304,9 +303,9 @@ CtkPMod : CtkObj {
 		^score;
 	}
 	
-	function_ {arg newfunction;
-		noFunc = newfunction.notNil;
-		function = newfunction;
+	function_ {arg newFunction;
+		noFunc = newFunction.notNil;
+		function = newFunction;
 		}
 
 	responder_ {arg aResponder;

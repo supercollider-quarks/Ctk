@@ -715,10 +715,16 @@ CtkNoteObject {
 		
 	// create an CtkNote instance
 	new {arg starttime = 0.0, duration, addAction = 0, target = 1, server;
+		this.deprecated(thisMethod, this.class.findRespondingMethodFor(\note));
+		^this.note(starttime, duration, addAction, target, server, synthdefname, noMaps)
+//			.args_(args.deepCopy);
+		}
+		
+	note {arg starttime = 0.0, duration, addAction = 0, target = 1, server;
 		^CtkNote.new(starttime, duration, addAction, target, server, synthdefname, noMaps)
 			.args_(args.deepCopy);
 		}
-		
+		 
 	args {arg post = true;
 		post.if({
 			("Arguments and defaults for SynthDef "++synthdefname.asString++":").postln;
@@ -1117,6 +1123,7 @@ CtkNode : CtkObj {
 		willFree = true;
 		(((releases.size > 0) or: {onReleaseFunc.notNil or: {releaseFunc.notNil}}) and: {this.isPlaying}).if({
 			Routine.run({
+				(time ?? 0).wait;
 				onReleaseFunc.value;
 				while({
 					0.1.wait;
