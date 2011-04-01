@@ -12,7 +12,7 @@ CtkPMod : CtkObj {
  	var <>recordPath, <>headerFormat = "wav", <>sampleFormat = "float", hdr;
  	var <audioIn, <routebus, <outbus, <numChannels;
  	var <>releaseFunc, <>onReleaseFunc, <responder, <>initFunc, <>internalReleaseFunc;
- 	var <parameters, <inputOptions;
+ 	var <slots, <inputOptions;
  	var <inc, notes, watch, playinit, addAction, target, <group, <wrapGroup, envSynth;
  	var <endtime, endtimeud, noFunc = false, cper, <>hasGUI = false, <gui;
  	var <ctkPEvents, <>ampFunc, <routeOut, <routeAmp;
@@ -41,7 +41,7 @@ CtkPMod : CtkObj {
 		routeOut = 0;
 		routeAmp = 0;
 		inc = 0;
-		parameters = [];
+		slots = [];
 		playinit = true;
 		notes = [];
 		watch = [];
@@ -100,15 +100,15 @@ CtkPMod : CtkObj {
 			});
 		}
  	
- 	addParameter {arg key, defaultVal, func;
-	 	parameters = parameters.add([key, false]);
+ 	addSlot {arg key, defaultVal, func;
+	 	slots = slots.add([key, false]);
 		this.addGetter(key, defaultVal);
 		this.addSetter(key, func);
 		^this;
 		}
 	
-	addGroupParameter {arg key, defaultVal, func;
-		parameters = parameters.add([key, true]);
+	addGroupSlot {arg key, defaultVal, func;
+		slots = slots.add([key, true]);
 		this.addGetter(key, defaultVal);
 		this.addSetter(key, func, true);
 		^this;
@@ -229,7 +229,7 @@ CtkPMod : CtkObj {
 		});
 		initFunc.value(this, group, routebus, 0, audioIn, server);
 		notes = notes.add(
-			envSynth = envsd.new(0.0, addAction: \tail, target: wrapGroup, server: server)
+			envSynth = envsd.note(0.0, addAction: \tail, target: wrapGroup, server: server)
 				.inbus_(routebus).outbus_(outbus).env_(theEnv).amp_(amp).routeOut_(routeOut)
 				.routeAmp_(routeAmp);
 		);
@@ -456,14 +456,14 @@ CtkPModSheet {
 
 CtkPModGUI {
 	var <ctkPMod, parent, win, dec, width, <height, spec, relFunc, bounds;
-	var <startButton, ampNum, ampSlide, paramMenu, valueBox, values, activeParam, curParam, paramField, isGroupParam;
+	var <startButton, ampNum, ampSlide, slotMenu, valueBox, values, activeSlot, curSlot, slotField, isGroupSlot;
 	
 	*new {arg ctkPMod, parent, bounds;
 		^super.newCopyArgs(ctkPMod, parent).initCtkPModGUI(bounds);
 	}
 	
 	initCtkPModGUI {arg argBounds;
-		var id, ins, params;
+		var id, ins, slots;
 		spec = [-120, 12, \db].asSpec;
 		bounds = argBounds ?? {Rect(400, Window.screenBounds.height - 120, 1200, 60)};
 		parent.notNil.if({
@@ -516,31 +516,31 @@ CtkPModGUI {
 				.action_({arg pm; this.updateInput(pm.value)});
 		});
 		StaticText(win, 80 @ 30)
-			.string_("Parameters:");
-		params = ctkPMod.parameters.collect({arg me; me[0].asString});
+			.string_("Slots:");
+		slots = ctkPMod.slots.collect({arg me; me[0].asString});
 //		activeParam = params[0];
 		PopUpMenu(win, 80 @ 30)
-			.items_(params ?? {[""]})
+			.items_(slots ?? {[""]})
 			.value_(0)
 			.action_({arg pm;
-				this.setActiveParam(pm.value)
+				this.setActiveSlot(pm.value)
 			});
-		paramField = TextField(win, ((width * 0.55) - 440) @ 30)
+		slotField = TextField(win, ((width * 0.55) - 440) @ 30)
 			.string_(
 //				curParam.postln;
-				curParam.notNil.if({
+				curSlot.notNil.if({
 //					ctkPMod.parameters[0].postln;
-					curParam = ctkPMod.perform(ctkPMod.parameters[0]).asCompileString
+					curSlot = ctkPMod.perform(ctkPMod.slots[0]).asCompileString
 				}, {
 				})
 			)
 			.action_({arg field;
 				field.value.interpret.postcs;
-				ctkPMod.perform((activeParam ++ "_").asSymbol, field.value.interpret);
-				isGroupParam.if({
+				ctkPMod.perform((activeSlot ++ "_").asSymbol, field.value.interpret);
+				isGroupSlot.if({
 					ctkPMod.group.noteDict.keysValuesDo({arg key, thisNote;
-						thisNote.args[(activeParam).asSymbol].notNil.if({
-							thisNote.perform((activeParam ++ "_").asSymbol,
+						thisNote.args[(activeSlot).asSymbol].notNil.if({
+							thisNote.perform((activeSlot ++ "_").asSymbol,
 								field.value.interpret);
 						})
 					})
@@ -552,11 +552,11 @@ CtkPModGUI {
 				["Post", Color.black, Color.white]]
 				)
 			.action_({
-				this.postParams;
+				this.postSlots;
 			});
 			
-		(ctkPMod.parameters.size > 0).if({
-			this.setActiveParam(0);		
+		(ctkPMod.slots.size > 0).if({
+			this.setActiveSlot(0);		
 		})
 	}
 	
@@ -593,18 +593,18 @@ CtkPModGUI {
 		ctkPMod.audioIn_(ctkPMod.inputOptions[idx], update: true);
 	}
 	
-	setActiveParam {arg idx;
-		activeParam = ctkPMod.parameters[idx][0];
-		isGroupParam = ctkPMod.parameters[idx][1];
-		curParam = ctkPMod.perform(ctkPMod.parameters[idx][0]).asCompileString;
-		paramField.string_(curParam)
+	setActiveSlot {arg idx;
+		activeSlot = ctkPMod.slots[idx][0];
+		isGroupSlot = ctkPMod.slots[idx][1];
+		curSlot = ctkPMod.perform(ctkPMod.slots[idx][0]).asCompileString;
+		slotField.string_(curSlot)
 	}
 	
-	postParams {
-		ctkPMod.parameters.do({arg thisData;
-			var thisParam, global;
-			#thisParam, global = thisData;
-			(thisParam.asString + "current value: " + ctkPMod.perform(thisParam).asCompileString).postln;
+	postSlots {
+		ctkPMod.slots.do({arg thisData;
+			var thisSlot, global;
+			#thisSlot, global = thisData;
+			(thisSlot.asString + "current value: " + ctkPMod.perform(thisSlot).asCompileString).postln;
 		})
 	}
 	
@@ -612,6 +612,10 @@ CtkPModGUI {
 		win.close;	
 	}
 		
+	front {
+		win.front;
+	}
+	
 	addTrigger {arg label, action;
 		{
 			Button(win, 50 @ 40)
@@ -734,7 +738,7 @@ CtkPEvents : CtkObj {
 			scalerSynth = [];
 			out.do({arg thisOut, i;				
 				scalerSynth = scalerSynth.add(
-					scaler[i].new(addAction: \after, target: 1, server: thisOut.server)
+					scaler[i].note(addAction: \after, target: 1, server: thisOut.server)
 						.inbus_(thisOut).amp_(amp).play;
 					)
 			});
@@ -788,6 +792,10 @@ CtkPEvents : CtkObj {
 	
 	timeStamp {arg id = 0;
 		^startTimes[id];
+	}
+	
+	isPlaying {
+		^first.not;
 	}
 	
 	kill {

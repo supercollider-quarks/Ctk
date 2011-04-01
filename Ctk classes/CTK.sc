@@ -2100,7 +2100,7 @@ CtkControl : CtkBus {
 			env.times.sum * timeScale;
 			});
 		// the ctk note object for generating the env
-		ctkNote = sddict[\ctkenv].new(starttime, duration, argAddAction, argTarget, 
+		ctkNote = sddict[\ctkenv].note(starttime, duration, argAddAction, argTarget, 
 			server).myenv_(env).outbus_(bus).levelScale_(levelScale).levelBias_(levelBias)
 			.timeScale_(timeScale).doneAction_(doneAction);
 		}
@@ -2133,7 +2133,7 @@ CtkControl : CtkBus {
 		isKBuf = true;
 		duration = timeScale;
 		// the ctk note object for generating the env
-		ctkNote = sddict[\ctkkbuffer].new(starttime, timeScale, argAddAction, argTarget, 
+		ctkNote = sddict[\ctkkbuffer].note(starttime, timeScale, argAddAction, argTarget, 
 			server).buffer_(buffer).outbus_(bus).levelScale_(levelScale).levelBias_(levelBias)
 			.timeScale_(timeScale);
 		}
@@ -2160,12 +2160,12 @@ CtkControl : CtkBus {
 			{
 			[LFNoise0, LFNoise1, LFNoise2].indexOf(ugen).notNil;
 			} {
-			ctkNote = thisctkno.new(starttime, duration, argAddAction,
+			ctkNote = thisctkno.note(starttime, duration, argAddAction,
 				argTarget, server).freq_(freq).low_(low).high_(high).bus_(bus);
 			} {
 			[SinOsc, Impulse, LFSaw, LFPar, LFTri, LFCub].indexOf(ugen).notNil;
 			} {
-			ctkNote = thisctkno.new(starttime, duration, argAddAction, 
+			ctkNote = thisctkno.note(starttime, duration, argAddAction, 
 				argTarget, server).freq_(freq).low_(low).high_(high)
 				.phase_(phase).bus_(bus);
 			}			
