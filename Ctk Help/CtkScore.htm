@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Style-Type" content="text/css">
 <title></title>
 <meta name="Generator" content="Cocoa HTML Writer">
-<meta name="CocoaVersion" content="949.33">
+<meta name="CocoaVersion" content="1038.35">
 <style type="text/css">
 p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
 p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
@@ -13,16 +13,17 @@ p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; min-height: 12.0px}
 p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco}
 p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #001cb9}
 p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #961e1e}
-p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #521c1f}
+p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #007522}
+p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #000000; min-height: 12.0px}
+p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px Monaco; color: #521c1f}
 span.s1 {font: 18.0px Helvetica}
 span.s2 {color: #001cb9}
 span.s3 {color: #000000}
 span.s4 {color: #426f0e}
 span.s5 {color: #961e1e}
-span.s6 {color: #606060}
-span.s7 {color: #002093}
-span.s8 {color: #3f4b15}
-span.s9 {color: #3c3c3c}
+span.s6 {color: #002093}
+span.s7 {color: #3f4b15}
+span.s8 {color: #3c3c3c}
 span.Apple-tab-span {white-space:pre}
 </style>
 </head>
@@ -120,32 +121,33 @@ span.Apple-tab-span {white-space:pre}
 <p class="p4"><span class="Apple-tab-span">	</span>gliss.value(3 + (i + 4), 10.rrand(7), j.reciprocal, 440 * j, 880 * j);</p>
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><br></p>
-<p class="p6">// uncomment to play the CtkScore you have created</p>
-<p class="p4">score.play(s);</p>
-<p class="p3"><br></p>
-<p class="p6">// uncomment to write the score to a soundfile</p>
-<p class="p4">score.write(<span class="s6">"~/Desktop/test.aiff"</span>.standardizePath, 22,<span class="Apple-converted-space"> </span></p>
-<p class="p4"><span class="Apple-tab-span">	</span>options: <span class="s2">ServerOptions</span>.new.numOutputBusChannels_(2).blockSize_(1));</p>
-<p class="p3"><br></p>
-<p class="p6">// uncomment to save the CtkScore as a file</p>
-<p class="p4">score.saveToFile(<span class="s6">"~/Desktop/test.sc"</span>.standardizePath);</p>
+<p class="p7">// uncomment to play the CtkScore you have created</p>
+<p class="p7">//score.play(s);</p>
+<p class="p8"><br></p>
+<p class="p7">// uncomment to write the score to a soundfile</p>
+<p class="p7">//score.write("~/Desktop/test.aiff".standardizePath, 22,<span class="Apple-converted-space"> </span></p>
+<p class="p7">//<span class="Apple-tab-span">	</span>options: ServerOptions.new.numOutputBusChannels_(2).blockSize_(1),</p>
+<p class="p7">//);</p>
+<p class="p8"><br></p>
+<p class="p7">// uncomment to save the CtkScore as a file</p>
+<p class="p7">//score.saveToFile("~/Desktop/test.sc".standardizePath);</p>
 <p class="p4">)</p>
 <p class="p3"><span class="Apple-tab-span">	</span></p>
 <p class="p3"><br></p>
-<p class="p7">/*<span class="Apple-converted-space"> </span></p>
-<p class="p7">* working with a 'parent' score - manipulating CtkScore objects</p>
-<p class="p7">*/</p>
+<p class="p9">/*<span class="Apple-converted-space"> </span></p>
+<p class="p9">* working with a 'parent' score - manipulating CtkScore objects</p>
+<p class="p9">*/</p>
 <p class="p3"><br></p>
 <p class="p4">s.boot;</p>
-<p class="p4">o = <span class="s7">ServerOptions</span>.new.numOutputBusChannels_(1);</p>
+<p class="p4">o = <span class="s6">ServerOptions</span>.new.numOutputBusChannels_(1);</p>
 <p class="p3"><br></p>
-<p class="p7">// the 'parent' score</p>
-<p class="p4">a = <span class="s7">CtkScore</span>.new;</p>
+<p class="p9">// the 'parent' score</p>
+<p class="p4">a = <span class="s6">CtkScore</span>.new;</p>
 <p class="p3"><br></p>
-<p class="p4">b = <span class="s7">CtkScore</span>.new;</p>
+<p class="p4">b = <span class="s6">CtkScore</span>.new;</p>
 <p class="p3"><br></p>
-<p class="p4">z = <span class="s7">CtkSynthDef</span>(<span class="s8">\test</span>, {<span class="s7">arg</span> freq, dur;</p>
-<p class="p4"><span class="Apple-tab-span">	</span><span class="s7">Out</span>.ar(0, <span class="s7">SinOsc</span>.ar(freq, 0, <span class="s7">XLine</span>.kr(0.1, 0.0001, dur)))</p>
+<p class="p4">z = <span class="s6">CtkSynthDef</span>(<span class="s7">\test</span>, {<span class="s6">arg</span> freq, dur;</p>
+<p class="p4"><span class="Apple-tab-span">	</span><span class="s6">Out</span>.ar(0, <span class="s6">SinOsc</span>.ar(freq, 0, <span class="s6">XLine</span>.kr(0.1, 0.0001, dur)))</p>
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><span class="Apple-tab-span">	</span></p>
 <p class="p4">t = 0.0;</p>
@@ -157,38 +159,38 @@ span.Apple-tab-span {white-space:pre}
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><br></p>
 <p class="p4">a.add(b);</p>
-<p class="p4">a.saveToFile(<span class="s9">"~/Desktop/test.sc"</span>.standardizePath)</p>
-<p class="p4">a.write(<span class="s9">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
+<p class="p4">a.saveToFile(<span class="s8">"~/Desktop/test.sc"</span>.standardizePath)</p>
+<p class="p4">a.write(<span class="s8">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
 <p class="p3"><br></p>
-<p class="p4">p = <span class="s7">Player</span>.new(<span class="s9">"~/Desktop/test.aiff"</span>.standardizePath).gui</p>
+<p class="p4">p = <span class="s6">Player</span>.new(<span class="s8">"~/Desktop/test.aiff"</span>.standardizePath).gui</p>
 <p class="p3"><br></p>
-<p class="p7">// make a copy of b with an offset of 2.05 seconds</p>
+<p class="p9">// make a copy of b with an offset of 2.05 seconds</p>
 <p class="p4">c = b.copy;</p>
 <p class="p4">c.offset(2.05);</p>
-<p class="p7">// alter the freq , durations and the dur parameter of c's notes</p>
-<p class="p4">c.notes.do({<span class="s7">arg</span> me;</p>
+<p class="p9">// alter the freq , durations and the dur parameter of c's notes</p>
+<p class="p4">c.notes.do({<span class="s6">arg</span> me;</p>
 <p class="p4"><span class="Apple-tab-span">	</span>me.setDuration(0.11).dur_(0.11).freq_(me.freq * 2)</p>
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><span class="Apple-tab-span">	</span></p>
-<p class="p7">// add it to the score</p>
+<p class="p9">// add it to the score</p>
 <p class="p4">a.add(c);</p>
 <p class="p3"><br></p>
-<p class="p4">a.write(<span class="s9">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
+<p class="p4">a.write(<span class="s8">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
 <p class="p3"><br></p>
-<p class="p4">p = <span class="s7">Player</span>.new(<span class="s9">"~/Desktop/test.aiff"</span>.standardizePath).gui;</p>
+<p class="p4">p = <span class="s6">Player</span>.new(<span class="s8">"~/Desktop/test.aiff"</span>.standardizePath).gui;</p>
 <p class="p3"><br></p>
-<p class="p7">// let's alter the score 'c'...<span class="Apple-converted-space"> </span></p>
+<p class="p9">// let's alter the score 'c'...<span class="Apple-converted-space"> </span></p>
 <p class="p3"><br></p>
-<p class="p4">c.notes.do({<span class="s7">arg</span> me;</p>
+<p class="p4">c.notes.do({<span class="s6">arg</span> me;</p>
 <p class="p4"><span class="Apple-tab-span">	</span>me.freq_(me.freq * (1 + 0.25.rand2));</p>
 <p class="p4"><span class="Apple-tab-span">	</span>});</p>
 <p class="p3"><br></p>
-<p class="p7">// offset it another 0.123 seconds<span class="Apple-tab-span">	</span></p>
+<p class="p9">// offset it another 0.123 seconds<span class="Apple-tab-span">	</span></p>
 <p class="p4">c = c.offset(0.123);</p>
 <p class="p3"><br></p>
-<p class="p4">a.write(<span class="s9">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
+<p class="p4">a.write(<span class="s8">"~/Desktop/test.aiff"</span>.standardizePath, options: o);</p>
 <p class="p3"><br></p>
-<p class="p4">p = <span class="s7">Player</span>.new(<span class="s9">"~/Desktop/test.aiff"</span>.standardizePath).gui;</p>
+<p class="p4">p = <span class="s6">Player</span>.new(<span class="s8">"~/Desktop/test.aiff"</span>.standardizePath).gui;</p>
 <p class="p3"><br></p>
 <p class="p3"><br></p>
 </body>

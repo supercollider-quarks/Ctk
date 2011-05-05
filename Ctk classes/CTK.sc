@@ -492,7 +492,7 @@ CtkScore : CtkObj {
 			"/tmp/trashme" ++ stamp;
 			});
 		this.saveToFile;
-		score.recordNRTThen(tmpfile, path, sampleRate: sampleRate, 
+		score.recordNRT(tmpfile, path, sampleRate: sampleRate, 
 			headerFormat: headerFormat,
 		 	sampleFormat: sampleFormat, options: options, duration: duration,
 		 	action: action);
