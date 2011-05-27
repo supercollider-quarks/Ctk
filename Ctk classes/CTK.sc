@@ -2265,7 +2265,7 @@ CtkControl : CtkBus {
 					timeScale = 1, doneAction = 0;
 				Out.kr(outbus,
 					EnvGen.kr(
-						Control.names([\myenv]).kr(Env.newClear(32)), 
+						Control.names([\myenv]).kr(Env.newClear(64)), 
 						gate, timeScale: timeScale, doneAction: doneAction) * 
 							levelScale + levelBias)
 				})
