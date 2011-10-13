@@ -1055,6 +1055,18 @@ CtkNode : CtkObj {
 			})
 		}
 		
+	before {arg time, target;
+		var bund;
+		bund = [\n_before, this.node.asUGenInput, target.node.asUGenInput];
+		this.handleMsg(time, bund);
+	}
+	
+	after {arg time, target;
+		var bund;
+		bund = [\n_after, this.node.asUGenInput, target.node.asUGenInput];
+		this.handleMsg(time, bund);		
+	}
+	
 	cmdPeriod {
 		resps.do({arg me; me.remove});
 		resps = Dictionary.new;
@@ -1703,30 +1715,6 @@ CtkBuffer : CtkObj {
 		^this.new(size: data.size, numChannels: numChannels, server: server).collection_(data);
 	}
 	
-//	*collection {arg collection, numChannels = 1, server;
-//		var fil, path, data;
-//		server.isLocal.if({
-//			collection.isKindOf(RawArray).not.if({
-//				data = collection.collectAs({arg val; val}, FloatArray);
-//			}, {
-//				data = collection;
-//			});
-//			fil = SoundFile.new;
-//			sndfile.sampleRate_(server.sampleRate ?? {44100});
-//			sndfile.numChannels_(numChannels);
-//			path = PathName.tmp ++ sndfile.hash.asString;
-//			sndfile.openWrite(path).if({
-//				sndfile.writeData(data);
-//				sndfile.close;
-//					
-//			}, {
-//				"Failed to write data".warn
-//			})
-//		}, {
-//			"cannot load a collection with a non-local server".warn;
-//		})	
-//	}
-	
 	init {
 		var sf, nFrames, test;
 		server = server ?? {Server.default};
@@ -1941,33 +1929,6 @@ CtkBuffer : CtkObj {
 			});
 		this.set(time, 0, env);
 		}
-
-//	loadCollection {arg time = 0.0, collection, startFrame = 0, action;
-//		var fil, path, data;
-//		server.isLocal.if({
-//			collection.isKindOf(RawArray).not.if({
-//				data = collection.collectAs({arg val; val}, FloatArray);
-//			}, {
-//				data = collection;
-//			});
-//			(collection.size > ((numFrames - startFrame) * numChannels)).if({
-//				"collection is larger then the number of frames allocated".warn;
-//			});
-//			fil = SoundFile.new;
-//			sndfile.sampleRate_(server.sampleRate ?? {44100});
-//			sndfile.numChannels_(numChannels);
-//			path = PathName.tmp ++ sndfile.hash.asString;
-//			sndfile.openWrite(path).if({
-//				sndfile.writeData(data);
-//				sndfile.close;
-//					
-//			}, {
-//				"Failed to write data".warn
-//			})
-//		}, {
-//			"cannot loadCollection with a non-local server".warn;
-//		})	
-//	}
 	
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
 	bufferFunc {arg time, bund;
@@ -2000,6 +1961,42 @@ CtkBuffer : CtkObj {
 	
 	label_ {arg aLabel;
 		label = aLabel.asSymbol;
+	}
+	
+	loadToFloatArray { arg index = 0, count = -1, action;
+		var msg, cond, path, file, array, condition;
+		{
+			Routine.run({
+				condition = Condition.new;
+				path = PathName.tmp ++ this.hash.asString;
+				
+				msg = this.write(0.0, path, "aiff", "float", count, index);
+				latency.wait;
+				server.sync(condition);
+				file = SoundFile.new;
+				protect {
+					file.openRead(path);
+					array = FloatArray.newClear(file.numFrames * file.numChannels);
+					file.readData(array);
+				} {
+					file.close;
+					if(File.delete(path).not) { ("Could not delete data file:" + path).warn };
+				};
+				action.value(array, this);
+			})
+		}.forkIfNeeded;
+	}
+
+	plot { arg name = "Plot", bounds = Rect(10, 10, 500, 400), minval = -1.0, maxval = 1.0, parent, labels=true;
+		var gui;
+		gui = GUI.current;
+		this.loadToFloatArray(action: { |array, buf|
+			{
+				GUI.use( gui, {
+					array.plot(name, bounds, numChannels: buf.numChannels, minval: minval, maxval: maxval, parent: parent, labels: labels);
+				});
+			}.defer;
+		});
 	}
 	
 }
@@ -2338,6 +2335,7 @@ CtkAudio : CtkBus {
 		
 	asUGenInput {^bus}
 	asMapInput {^(\a++bus).asSymbol}
+	asCtkAudio {^this}
 	
 	label_ {arg aLabel;
 		label = aLabel.asSymbol;

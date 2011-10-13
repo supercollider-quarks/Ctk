@@ -220,6 +220,7 @@ CtkPMod : CtkObj {
 		})
 	}
 	
+	/* NOT SURE _ THIS MIGHT MESS UP TIMINGS WITH PLAYBUFS >>> TEST!!! */
 	initPlay {
 		var theEnv;
 		condition.isKindOf(Env).if({
@@ -604,7 +605,7 @@ CtkPModGUI {
 		ctkPMod.slots.do({arg thisData;
 			var thisSlot, global;
 			#thisSlot, global = thisData;
-			(thisSlot.asString + "current value: " + ctkPMod.perform(thisSlot).asCompileString).postln;
+			("\t" ++ thisSlot.asString ++ ": " + ctkPMod.perform(thisSlot).asCompileString).postln;
 		})
 	}
 	
@@ -627,6 +628,10 @@ CtkPModGUI {
 				});
 			win.refresh;
 		}.defer;
+	}
+	
+	window {
+		^win;	
 	}
 
 }
@@ -730,7 +735,7 @@ CtkPEvents : CtkObj {
 		});
 	}
 	
-	next {
+	runInit {
 		first.if({
 			first = false;
 			cperFunc = {this.kill};
@@ -744,8 +749,12 @@ CtkPEvents : CtkObj {
 			});
 			init.value;
 			timer.play;
-			startTimes.add(0 -> this.now);
+			startTimes.add(\init -> this.now);
 		});
+	}
+	
+	next {
+		this.runInit;
 		(index < events.size).if({
 			startTimes.add(index -> this.now);
 			events[index].asArray.do({arg thisEv;
@@ -846,8 +855,10 @@ CtkPEvents : CtkObj {
 			})
 		});
 		gui.notNil.if({
-			gui.ampNum.value_(newAmp.ampdb.round(0.001));
-			gui.ampSlide.value_(ampSpec.unmap(newAmp.ampdb))
+			{
+				gui.ampNum.value_(newAmp.ampdb.round(0.001));
+				gui.ampSlide.value_(ampSpec.unmap(newAmp.ampdb))
+			}.defer
 		})
 	}
 	
