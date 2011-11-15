@@ -2246,6 +2246,15 @@ CtkControl : CtkBus {
 		^this;
 		}
 		
+	get {arg action;
+		var o;
+		OSCresponderNode(nil, '/c_set', {arg time, resp, msg;
+			action.value(msg[1], msg[2]);
+			resp.remove;
+		}).add;
+		server.sendMsg(\c_get, bus); 	
+	}
+	
 	+ {arg offset;
 		^this.new(1, bus + offset, server);
 		}
