@@ -435,7 +435,9 @@ CtkPMod : CtkObj {
 		hdr.notNil.if({hdr.stop; hdr = nil});
 		clock.clear;
 		clock.stop;
+		timer.free;
 	 	timer = CtkTimer.new(starttime);
+	 	clock = timer.clock;
 		}
 	
 	makeGUI {arg parent, bounds;
@@ -907,7 +909,8 @@ CtkPEventsGUI {
 		font = Font("Arial", 20);
 		ctkPEvent = argCtkPEvent;
 		parent = argParent;
-		bounds = argBounds ?? {Rect(20, Window.screenBounds.height, width = 400, height = 255)};
+		bounds = argBounds ?? {Rect(20, Window.screenBounds.height - 20, 
+			width = 400, height = 255)};
 		parent.isNil.if({
 			window = Window.new(ctkPEvent.id, bounds);
 			dec = window.addFlowLayout((marginX = 20) @ (marginY = 20), (gapX = 10) @ (gapY = 5));
