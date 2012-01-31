@@ -25,7 +25,7 @@ CtkPMod : CtkObj {
 
  	initCPMod {arg argAddAction, argTarget, argoutbus, argNumChannels, argAudioIn, 
 	 		argNumInChannels;
-	 	addAction = addActions[addAction];
+	 	addAction = addActions[argAddAction];
 	 	target = argTarget.asUGenInput ?? {1};
 	 	server = server ?? {Server.default};
 	 	version = 0;
@@ -114,6 +114,30 @@ CtkPMod : CtkObj {
 		^this;
 	}
 		
+	addReleaseFunc {arg func;
+		releaseFunc = releaseFunc.addFunc(func);
+	}
+	
+	removeReleaseFunc {arg func;
+		releaseFunc.removeFunc(func);
+	}
+	
+	addOnReleaseFunc {arg func;
+		onReleaseFunc = onReleaseFunc.addFunc(func);
+	}
+	
+	removeOnReleaseFunc {arg func;
+		onReleaseFunc.removeFunc(func);
+	}
+	
+	addInitFunc {arg func;
+		initFunc = initFunc.addFunc(func);
+	}
+	
+	removeInitFunc {arg func;
+		initFunc.removeFunc(func);
+	}
+	
  	/* NOTE TO SELF! WHEN A NOTE FINISHES PLAYING, REMOVE IT FROM NOTES! 
  	use CtkNote:releaseFunc_ to remove from 'children' array!
  	... will CtkBuffers work as well?
