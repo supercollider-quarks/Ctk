@@ -137,7 +137,7 @@ CtkPMod : CtkObj {
 	removeInitFunc {arg func;
 		initFunc.removeFunc(func);
 	}
-	
+		
  	/* NOTE TO SELF! WHEN A NOTE FINISHES PLAYING, REMOVE IT FROM NOTES! 
  	use CtkNote:releaseFunc_ to remove from 'children' array!
  	... will CtkBuffers work as well?
@@ -267,6 +267,7 @@ CtkPMod : CtkObj {
 	setup {arg recPath, timeStamp = true, hFormat, sFormat;
 		routebus = CtkAudio.play(outbus.numChans, server: server);
 		wrapGroup = CtkGroup.play(0.0, addAction: addAction, target: target, server: server);
+		["Setup!", wrapGroup.node, target, addAction].postln;
 		group = CtkGroup.play(0.01, addAction: \head, target: wrapGroup, server: server);
 		clock = timer.clock;
 		responder.notNil.if({
@@ -450,6 +451,7 @@ CtkPMod : CtkObj {
 				gui.startButton.value_(0)
 			}.defer;
 		});
+		["Here is the releasefunc!", releaseFunc].postln;
 		releaseFunc.value;
 		internalReleaseFunc.value;
 		isPlaying = false;
@@ -461,7 +463,7 @@ CtkPMod : CtkObj {
 		clock.stop;
 		timer.free;
 	 	timer = CtkTimer.new(starttime);
-	 	clock = timer.clock;
+		clock = timer.clock;
 		}
 	
 	makeGUI {arg parent, bounds;
@@ -523,7 +525,7 @@ CtkPModGUI {
 			.action_({arg numBox;
 				this.updateAmp(numBox.value);
 			});
-		ampSlide = Slider(win, (width * 0.28 - 10) @ 30)
+		ampSlide = Slider(win, (width * 0.23 - 10) @ 30)
 			.value_( spec.unmap(ctkPMod.amp.ampdb) ) // map it!
 			.action_({arg slide;
 				this.updateAmp(spec.map(slide.value));
@@ -664,7 +666,7 @@ CtkPModGUI {
 
 CtkPEvents : CtkObj {
 	var <id, <amp, lag, init, kill, <erlisting, <events, <releases, <eventDict, <index, 
-		first, <gui, <out, numChannels, scaler, <scalerSynth, <server, cperFunc, <>ampSpec, 
+		<first, <gui, <out, numChannels, scaler, <scalerSynth, <server, cperFunc, <>ampSpec, 
 		show, place, pmodWins, timer, clock, <>onEvent, startTimes, <>ampFunc, <>watchedMods;
 //	var recPath, timeStamp = true, hFormat, sFormat, updateGUI = true;
 
@@ -933,8 +935,7 @@ CtkPEventsGUI {
 		font = Font("Arial", 20);
 		ctkPEvent = argCtkPEvent;
 		parent = argParent;
-		bounds = argBounds ?? {Rect(20, Window.screenBounds.height - 20, 
-			width = 400, height = 255)};
+		bounds = argBounds ?? {Rect(20, Window.screenBounds.height, width = 400, height = 255)};
 		parent.isNil.if({
 			window = Window.new(ctkPEvent.id, bounds);
 			dec = window.addFlowLayout((marginX = 20) @ (marginY = 20), (gapX = 10) @ (gapY = 5));
