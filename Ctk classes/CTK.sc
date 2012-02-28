@@ -202,11 +202,24 @@ CtkScore : CtkObj {
 		}
 	
 	addBuffers {
+		var data, chunk;
 		buffersScored.not.if({
 //			endtime = endtime + 0.1;
 			buffers.do({arg me;
 				this.add(CtkMsg(me.server, 0.0, me.bundle).bufflag_(true));
 				this.add(CtkMsg(me.server, endtime + 0.1, me.freeBundle));
+				me.collection.notNil.if({
+					data = me.collection.collectAs({|item| item}, FloatArray);
+					(data.size / 1024).floor.do({arg i;
+						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, i * 1024, 1024] ++ 
+							data[(i*1024).asInt..((i*1024)+1023).asInt]));
+					});
+					chunk = (data.size / 1024).floor * 1024;
+					(data.size > chunk).if({
+						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk, data.size-chunk-1] ++ 
+							data[chunk.asInt..(data.size-chunk-1).asInt]));
+					});
+				});
 				(me.closeBundle.notNil).if({
 					this.add(CtkMsg(me.server, endtime + 0.1, me.closeBundle));
 					});
@@ -222,7 +235,7 @@ CtkScore : CtkObj {
 	// builds everything except the buffers since they act
 	// different in NRT and RT
 	
-	prepareObjects {var rt = false;
+	prepareObjects {arg rt = false;
 		var eventArray, allReleases, theseReleases;
 		var time, argname, argval;
 		masterNotes = Array.new;
@@ -331,13 +344,16 @@ CtkScore : CtkObj {
 				});	
 			});
 		masterNotes = masterNotes ++ allReleases;
-		masterBuffers.do({arg thisbuffer;
-			(thisbuffer.messages.size > 0).if({
-				thisbuffer.messages.do({arg me;
-					masterMessages = masterMessages.add(me);
-					})
-				})
-			});
+//		rt.if({
+//			"Not rt!".postln;
+//			masterBuffers.do({arg thisbuffer;
+//				(thisbuffer.messages.size > 0).if({
+//					thisbuffer.messages.do({arg me;
+//						masterMessages = masterMessages.add(me);
+//						})
+//					})
+//				});
+//		});
 		}
 	
 	collectReleases {arg noteCollect;
@@ -404,6 +420,8 @@ CtkScore : CtkObj {
 				this.prepareObjects(true);
 				this.groupTogether;
 				this.objectsToOSC;
+				latency.wait;
+				server.sync(cond);
 				score.play;
 				cmdPeriod = {
 					var items;
@@ -460,25 +478,24 @@ CtkScore : CtkObj {
 			});
 		oscready = true;	
 		}
-		
+	
+	// make collections work here
 	loadBuffers {arg server, clock, quant;
+		var data, chunk;
 		(buffers.size > 0).if({
-			server.sync(cond, 
-				Array.fill(buffers.size, {arg i;
-					buffers[i].bundle;
-					})
-				);
-			buffers.do({arg me;
-				this.add(CtkMsg(server, endtime, me.freeBundle));
-				(me.closeBundle.notNil).if({
-					this.add(CtkMsg(server, endtime, me.closeBundle));
-					});
-				me.messages.do({arg thisMsg;
+			buffers.do({arg thisBuf;
+				thisBuf.messages.do({arg thisMsg;
 					this.add(thisMsg);
 					});
+				this.add(CtkMsg(server, endtime, thisBuf.freeBundle));
+				(thisBuf.closeBundle.notNil).if({
+					this.add(CtkMsg(server, endtime, thisBuf.closeBundle));
+					});
+				thisBuf.load(sync: true);
 				});
-			"Buffer loaded!".postln;
 			});
+		latency.wait;
+		server.sync(cond);
 		}
 		
 	// SC2 it! create OSCscore, add buffers to the score, write it
@@ -1712,7 +1729,8 @@ CtkBuffer : CtkObj {
 		}, {
 			data = collection;
 		});
-		^this.new(size: data.size, numChannels: numChannels, server: server).collection_(data);
+		^this.new(size: data.size, 
+			numChannels: numChannels, server: server).collection_(data);
 	}
 	
 	init {
@@ -1781,12 +1799,20 @@ CtkBuffer : CtkObj {
 	collection_ {arg aCollection;
 		// should probably do some checking here... for now, this is fine
 		collection = aCollection;
+		isPlaying.if({
+			(collection.size < 1026).if({
+				this.set(0.0, 0, collection);
+			}, {
+				this.loadCollection(0.0, 0);
+			})
+		})
 	}
 	
 	load {arg time = 0.0, sync = true, onComplete;
 		SystemClock.sched(time, {
 			Routine.run({
 				var msg;
+				isPlaying = true;
 				completion.notNil.if({
 					bundle = bundle.add(completion)
 					});
@@ -1794,7 +1820,7 @@ CtkBuffer : CtkObj {
 				server.sendBundle(latency, bundle);
 				sync.if({server.sync(cond);});
 				// are there already messages to send? If yes... SYNC!, then send NOW
-				(messages.size > 0).if({
+				((messages.size > 0) or: {collection.notNil}).if({
 					server.sync(cond);
 					messages.do({arg me; 
 						msg = me.messages;
@@ -1803,13 +1829,22 @@ CtkBuffer : CtkObj {
 							});
 						server.sync(cond);
 						});
-					});
+					server.sync(cond);
+					collection.notNil.if({
+						(collection.size < 1025).if({
+							this.set(0.0, 0, collection);
+						}, {
+							this.loadCollection(0.0, 0);
+						})
+					})
+				}, {
+					isPlaying = true;
+				});
 				sync.if({
 					server.sync(cond);
 					("CtkBuffer with bufnum id "++bufnum++" loaded").postln;
 					onComplete.value;
 					});
-				isPlaying = true;
 				})
 			});
 		} 
@@ -1872,6 +1907,49 @@ CtkBuffer : CtkObj {
 		this.bufferFunc(time, bund);
 		}
 	
+	read {arg time = 0.0, path, fileFrameStart = 0, numFrames, bufStartFrame = 0, 
+			leaveOpen = false, completionMessage, action;
+		var bund;
+		bund = [\b_read, bufnum, path, fileFrameStart, (numFrames ? -1).asInt, 
+			bufStartFrame, leaveOpen.binaryValue, completionMessage.value(this)];
+		this.bufferFunc(time, bund, action);
+	}
+	
+	loadCollection { arg time = 0.0, startFrame = 0, action;
+		var msg, cond, path, file, array, sndFile, data;
+		(server.isLocal and: {collection.notNil}).if({
+			{
+				collection.isKindOf(RawArray).not.if({
+					data = collection.collectAs({|item| item}, FloatArray)
+				}, {
+					data = collection;
+				});
+				( collection.size > ((size - startFrame) * numChannels)).if({
+					"Collection larger than available number of Frames".warn 
+				});
+				sndFile = SoundFile.new;
+				sndFile.sampleRate = server.sampleRate;
+				sndFile.numChannels = numChannels;
+				path = PathName.tmp ++ sndFile.hash.asString;
+				sndFile.openWrite(path).if({
+				 	sndFile.writeData(data);
+				 	sndFile.close;
+				 	this.read(time, path, bufStartFrame: startFrame,
+				 		action: {arg ctkBuffer;
+					 		File.delete(path).if({
+						 		path = nil;
+					 		}, {
+						 		("Could not delete data file:" + path).warn;
+					 		});
+							action.value(array, this);
+				 		})
+					});
+			}.forkIfNeeded;
+		}, {
+			"cannot do loadCollection with a non-local Server".warn;
+		});
+	}
+	
 	// write a buffer out to a file. For DiskOut usage in real-time, use openWrite and closeWrite
 	write {arg time = 0.0, path, headerFormat = 'aiff', sampleFormat='int16', 
 			numberOfFrames = -1, startingFrame = 0;	
@@ -1930,18 +2008,46 @@ CtkBuffer : CtkObj {
 		this.set(time, 0, env);
 		}
 	
+	// some methods from Stelios Manousakis for PartConv:
+	
+	// slightly hackish, yes, but tricks a Buffer into writing its contents into a Ctk buffer
+	copyFromBuffer { arg buf, dstStartAt = 0, srcStartAt = 0, numSamples = -1;
+		server.listSendMsg(
+			buf.copyMsg(this, dstStartAt, srcStartAt, numSamples)
+		)
+	}
+	copyMsg { arg buf, dstStartAt = 0, srcStartAt = 0, numSamples = -1;
+		^[\b_gen, buf.bufnum, "copy", dstStartAt, bufnum, srcStartAt, numSamples]
+	}
+	
+	preparePartConv { arg time = 0.001, buf, fftsize;
+		var bund;
+		//server.listSendMsg(["/b_gen", bufnum, "PreparePartConv", buf.bufnum, fftsize]);
+		bund = [\b_gen, bufnum, "PreparePartConv", buf.bufnum, fftsize];
+		this.bufferFunc(time, bund)
+	}
+	
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
-	bufferFunc {arg time, bund;
+	bufferFunc {arg time, bund, action;
+		var cond;
 		isPlaying.if({
-			SystemClock.sched(time, {server.sendBundle(latency, bund)})
-			}, {
-			(time == 0.0).if({
-				completion = bund;
-				}, {
-				messages = messages.add(CtkMsg(server, time ?? {0.0}, bund))
+			SystemClock.sched(time, {
+				Routine.run({
+					cond = Condition.new;
+					server.sendBundle(latency, bund);
+					server.sync(cond);
+					latency.wait;
+					action.value(this);
 				})
-			});
-		}
+			})
+		}, {
+		(time == 0.0).if({
+			completion = bund;
+			}, {
+			messages = messages.add(CtkMsg(server, time ?? {0.0}, bund))
+			})
+		});
+	}
 	
 	duration {
 		duration.isNil.if({
