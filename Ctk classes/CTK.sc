@@ -74,7 +74,7 @@ CtkObj {
 CtkScore : CtkObj {
 	
 	var <endtime = 0, score, <buffers, <ctkevents, <ctkscores, <controls, notes, <others, 
-		<buffermsg, <buffersScored = false, <groups, oscready = false, <messages;
+		<buffermsg, <buffersScored = false, <groups, oscready = false, <messages, <sds;
 	var <masterScore, <allScores, <masterNotes, <masterControls, <masterBuffers, 
 		<masterGroups, <masterMessages, cmdPeriod;
 	
@@ -96,6 +96,7 @@ CtkScore : CtkObj {
 		ctkevents = Array.new;
 		controls = Array.new;
 		others = Array.new;
+		sds = Array.new;
 		events.notNil.if({
 			this.add(events);
 			});
@@ -143,6 +144,16 @@ CtkScore : CtkObj {
 				event.isKindOf(CtkMsg);
 				} {
 				messages = messages.add(event);
+				} {
+				(event.isKindOf(CtkSynthDef) or: {event.isKindOf(CtkNoteObject)})
+				} {
+				sds = sds.add(event);
+				} {
+				event.isKindOf(CtkProtoNotes)
+				} {
+				event.synthdefs.do({arg thisSD;
+					sds = sds.add(thisSD);
+				})
 				} {
 				event.respondsTo(\messages);
 				} {
@@ -197,6 +208,14 @@ CtkScore : CtkObj {
 		this.prepareObjects(false);
 		this.groupTogether;
 		this.objectsToOSC;
+		sds.do({arg thisSD;
+			thisSD.isKindOf(SynthDef).if({
+				score.add([0, [\d_recv, thisSD.asBytes]]);
+			}, {
+				score.add([0, [\d_recv, thisSD.synthdef.asBytes]]);
+			})	
+		});
+		score.sort;
 		score.add([endtime + 0.2, 0]);		
 		path.notNil.if({score.saveToFile(path)});
 		}
@@ -828,7 +847,7 @@ CtkNoteObject {
 		StaticText(w, 40@20)
 			.string_("Phase");
 			
-		x.shift(0, -30);
+		x.shift(0, 30);
 		
 		z = ScrollView(w, Rect.new(0, 0, w.bounds.width, w.bounds.height-60)) ;
 		z.decorator_(y = FlowLayout(z.bounds, 10@10, 20@5));
