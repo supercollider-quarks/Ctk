@@ -136,6 +136,10 @@ CtkScore : CtkObj {
 					this.checkEndTime(event);
 					})
 				} {
+				event.isKindOf(CtkAudio);
+				} {
+				// do nothing, but don't complain either!
+				} {
 				event.isKindOf(CtkScore);
 				} {
 				ctkscores = ctkscores.add(event);
@@ -144,6 +148,7 @@ CtkScore : CtkObj {
 				event.isKindOf(CtkMsg);
 				} {
 				messages = messages.add(event);
+				this.checkEndTime(event);
 				} {
 				(event.isKindOf(CtkSynthDef) or: {event.isKindOf(CtkNoteObject)})
 				} {
@@ -205,6 +210,7 @@ CtkScore : CtkObj {
 		
 	saveToFile {arg path;
 		score = Score.new;
+		
 		this.prepareObjects(false);
 		this.groupTogether;
 		this.objectsToOSC;
@@ -215,6 +221,7 @@ CtkScore : CtkObj {
 				score.add([0, [\d_recv, thisSD.synthdef.asBytes]]);
 			})	
 		});
+
 		score.sort;
 		score.add([endtime + 0.2, 0]);		
 		path.notNil.if({score.saveToFile(path)});
@@ -223,6 +230,7 @@ CtkScore : CtkObj {
 	addBuffers {
 		var data, chunk;
 		buffersScored.not.if({
+			buffersScored = true;
 //			endtime = endtime + 0.1;
 			buffers.do({arg me;
 				this.add(CtkMsg(me.server, 0.0, me.bundle).bufflag_(true));
@@ -264,18 +272,21 @@ CtkScore : CtkObj {
 		masterMessages = Array.new;
 		allReleases = Array.new;
 		allScores = [];
+		rt.not.if({
+			this.addBuffers;
+			});
 		this.concatScores(this);
 		ctkevents.do({arg thisctkev;
 			allScores = allScores.add(thisctkev.score)
 			});
 		allScores.do({arg thisscore;
-			this.grabEvents(thisscore.groups, thisscore.notes, 				thisscore.controls, thisscore.buffers);
+			this.grabEvents(thisscore.groups, thisscore.notes, 				thisscore.controls, thisscore.buffers, thisscore.messages);
 			});
-		rt.not.if({
-			this.addBuffers;
-			});
+//		rt.not.if({
+//			this.addBuffers;
+//			});
+//		masterMessages = masterMessages ++ messages;
 		this.freeGroups;
-		masterMessages = messages;
 		masterGroups.do({arg thisgroup;
 			(thisgroup.messages.size > 0).if({
 				thisgroup.messages.do({arg me;
@@ -388,11 +399,12 @@ CtkScore : CtkObj {
 		^ctkns = ctkns.select({arg me; me.notNil});
 		}
 	
-	grabEvents {arg thesegroups, thesenotes, thesecontrols, thesebuffers;
+	grabEvents {arg thesegroups, thesenotes, thesecontrols, thesebuffers, thesemessages;
 		masterGroups = masterGroups ++ thesegroups.collect({arg me; me});
 		masterNotes = masterNotes ++ thesenotes.collect({arg me; me});
 		masterBuffers = masterBuffers ++ thesebuffers.collect({arg me; me});
 		masterControls = masterControls ++ thesecontrols.collect({arg me; me});
+		masterMessages = masterMessages ++ thesemessages.collect({arg me; me});
 		}
 		
 	groupTogether {
@@ -519,7 +531,7 @@ CtkScore : CtkObj {
 		
 	// SC2 it! create OSCscore, add buffers to the score, write it
 	write {arg path, duration, sampleRate = 44100, headerFormat = "AIFF", 
-			sampleFormat = "int16", options, action;
+			sampleFormat = "int16", options, action, inputFilePath;
 		var tmpfile, stamp;
 		stamp = Date.seed;
 		tmpfile = (thisProcess.platform.name == \windows).if({
@@ -528,7 +540,7 @@ CtkScore : CtkObj {
 			"/tmp/trashme" ++ stamp;
 			});
 		this.saveToFile;
-		score.recordNRT(tmpfile, path, sampleRate: sampleRate, 
+		score.recordNRT(tmpfile, path, inputFilePath, sampleRate: sampleRate, 
 			headerFormat: headerFormat,
 		 	sampleFormat: sampleFormat, options: options, duration: duration,
 		 	action: action);
@@ -1059,7 +1071,6 @@ CtkNode : CtkObj {
 	// an object is inited without a server, Server.default is used
 	watch {arg group;
 		var thisidx;
-//		["Group", group].postln;
 		nodes[server] = nodes[server].add(node);
 		group.isKindOf(CtkGroup).if({
 			this.addGroup(group);
@@ -1613,7 +1624,7 @@ CtkNote : CtkNode {
 
 /* methods common to CtkGroup and CtkNote need to be put into their own class (CtkNode???) */
 CtkGroup : CtkNode {
-	var <>endtime = nil, <>duration, <isGroupPlaying = false, <>children, <>noteDict;
+	var <endtime = nil, <duration, <isGroupPlaying = false, <>children, <>noteDict;
 	
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
@@ -1665,7 +1676,27 @@ CtkGroup : CtkNode {
 	prBundle {
 		^this.bundle;
 		}
-
+		
+	setStarttime {arg newstart;
+		starttime = newstart;
+		releases.do({arg me; me.setStarttime(newstart)});
+		(duration.notNil && (duration != inf)).if({
+			endtime = starttime + duration;
+			})
+		}
+	
+	setDuration {arg newdur;
+		duration = newdur;
+		releases.do({arg me;
+			(me.duration > newdur).if({
+				me.duration_(newdur)
+				})
+			});
+		starttime.notNil.if({
+			endtime = starttime + duration;
+			})
+		}
+		
 	bundle {
 		var thesemsgs;
 		thesemsgs = [];
@@ -1716,7 +1747,7 @@ CtkGroup : CtkNode {
 CtkBuffer : CtkObj {
 	var <bufnum, <path, <size, <startFrame, <numFrames, <numChannels, <server, channels, bundle, 
 		<freeBundle, <closeBundle, <messages, <isPlaying = false, <isOpen = false;
-	var duration, <sampleRate, <starttime = 0.0, completion;
+	var duration, <sampleRate, <starttime = 0.0, completion, <>endTime;
 	var <collection, collPath, send, <label;
 	
 	*new {arg path, size, startFrame = 0, numFrames, numChannels, bufnum, server, channels;
@@ -2374,8 +2405,10 @@ CtkControl : CtkBus {
 	get {arg action;
 		var o;
 		OSCresponderNode(nil, '/c_set', {arg time, resp, msg;
-			action.value(msg[1], msg[2]);
-			resp.remove;
+			(msg[1] == bus).if({
+				action.value(msg[1], msg[2]);
+				resp.remove;
+			})
 		}).add;
 		server.sendMsg(\c_get, bus); 	
 	}
@@ -2389,7 +2422,6 @@ CtkControl : CtkBus {
 	
 	*initClass {
 		var thisctkno;
-//		"Adding Ctk Notes".postln;
 		sddict = CtkProtoNotes.new;
 		sddict.add(
 			SynthDef(\ctkenv, {arg gate = 1, outbus, levelScale = 1, levelBias = 0, 

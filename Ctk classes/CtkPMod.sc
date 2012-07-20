@@ -13,9 +13,11 @@ CtkPMod : CtkObj {
  	var <audioIn, <routebus, <outbus, <numChannels;
  	var <>releaseFunc, <>onReleaseFunc, <responder, <>initFunc, <>internalReleaseFunc;
  	var <slots, <inputOptions;
- 	var <inc, notes, watch, playinit, addAction, target, <group, <wrapGroup, envSynth;
+ 	var <inc, notes, buffers, allBuffers, watch, playinit, addAction, target, <group, <wrapGroup, envSynth, envNode;
  	var <endtime, endtimeud, noFunc = false, cper, <>hasGUI = false, <gui;
  	var <ctkPEvents, <>ampFunc, <routeOut, <routeAmp;
+ 	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
+ 	
  	
  	*new {arg starttime = 0.0, condition, amp = 1, id, outbus = 0, numChannels = 1, 
 	 		audioIn, numInChannels, addAction = 0, target = 1, server;
@@ -29,6 +31,7 @@ CtkPMod : CtkObj {
 	 	target = argTarget.asUGenInput ?? {1};
 	 	server = server ?? {Server.default};
 	 	version = 0;
+	 	scoreCapturePath = "";
 	 	inputOptions = [];
 	 	timer = CtkTimer.new(starttime);
 		(condition.isKindOf(Env) and: {condition.releaseNode.isNil}).if({
@@ -44,6 +47,8 @@ CtkPMod : CtkObj {
 		slots = [];
 		playinit = true;
 		notes = [];
+		buffers = [];
+		allBuffers = [];
 		watch = [];
 		function = function ?? {noFunc = true; {}};
 		numChannels = argNumChannels;
@@ -176,6 +181,15 @@ CtkPMod : CtkObj {
 		isPlaying.if({
 			envSynth.amp_(newAmp);
 		});
+		scoreCapture.if({
+			capturedScore.add(
+				ctkPEvents.notNil.if({
+					CtkMsg(server, ctkPEvents.now, [\n_set, envNode, \amp, newAmp]);
+				}, {
+					CtkMsg(server, timer.now, [\n_set, envNode, \amp, newAmp]);
+				})
+			)
+		});
 		hasGUI.if({
 			gui.updateAmp(newAmp.ampdb, false)
 		});
@@ -215,27 +229,38 @@ CtkPMod : CtkObj {
 					hdr.notNil.if({
 						hdr.record;
 					});
+					clock.notNil.if({
 					clock.sched(starttime + CtkObj.latency, {
-						timer.next_(nil);
-						function.value(this, group, routebus, inc, audioIn, server);
-						// ... set it back again
-						this.run; // plays the notes array
-						this.checkCond.if({
-							timer.next;
-						}, {
-							initSched = (endtime > timer.now).if({endtime - timer.now}, {0.1});
-							timer.clock.notNil.if({
-								timer.clock.sched(initSched, {
-									(group.children.size == 0).if({
-										this.clear;
-									}, {
-										0.1;
-									})
-								})
+						ready.if({	
+							timer.next_(nil);
+							function.value(this, group, routebus, inc, audioIn, server);
+							// ... set it back again
+							this.run; // plays the notes array
+							this.checkCond.if({
+								timer.next;
 							}, {
-								this.clear;
+								initSched = (endtime > timer.now).if({endtime - timer.now}, {0.1});
+								timer.clock.notNil.if({
+									timer.clock.sched(initSched, {
+										(group.children.size == 0).if({
+											this.clear;
+										}, {
+											0.1;
+										})
+									})
+								}, {
+									this.clear;
+								});
 							});
-						});
+	
+					}, {
+					clock.notNil.if({
+						0.02;	
+					}, {
+						nil
+					})
+					})
+				})
 					})
 				})
 			}, {
@@ -258,6 +283,7 @@ CtkPMod : CtkObj {
 				.inbus_(routebus).outbus_(outbus).env_(theEnv).amp_(amp).routeOut_(routeOut)
 				.routeAmp_(routeAmp);
 		);
+		envNode = envSynth.node;
 //		hdr.notNil.if({
 //			hdr.record;
 //		});
@@ -267,8 +293,10 @@ CtkPMod : CtkObj {
 	setup {arg recPath, timeStamp = true, hFormat, sFormat;
 		routebus = CtkAudio.play(outbus.numChans, server: server);
 		wrapGroup = CtkGroup.play(0.0, addAction: addAction, target: target, server: server);
-		["Setup!", wrapGroup.node, target, addAction].postln;
-		group = CtkGroup.play(0.01, addAction: \head, target: wrapGroup, server: server);
+		group = CtkGroup.play(0.001, addAction: \head, target: wrapGroup, server: server);
+		scoreCapture.if({
+			capturedScore.add(wrapGroup.deepCopy, group.deepCopy);
+		});
 		clock = timer.clock;
 		responder.notNil.if({
 			responder.add;
@@ -284,13 +312,43 @@ CtkPMod : CtkObj {
 	}
 	
 	run {
-		isPlaying.if({
-			notes.do({arg me;
-				clock.sched(me.starttime, {me.setStarttime(0.0); me.play(group)});
+		ready = false;
+		Routine.run({
+			var cond;
+			cond = Condition.new;
+			buffers.do({arg thisBuffer;
+				thisBuffer.load(sync: true, onComplete:{cond.test = true; cond.signal;});
+				scoreCapture.if({
+					capturedScore.add(thisBuffer);
+				});
+				cond.test = false;
+				cond.wait;
+				allBuffers = allBuffers.add(thisBuffer);
 			});
+			isPlaying.if({
+				notes.do({arg me;
+					clock.sched(me.starttime, {
+						me.setStarttime(0.0); 
+						me.play(group);
+						scoreCapture.if({
+							var newNote;
+							newNote = me.deepCopy;
+							newNote.node_(me.node);
+							ctkPEvents.notNil.if({
+								newNote.setStarttime(ctkPEvents.now);
+							}, {
+								newNote.setStarttime(timer.now);
+							});
+							capturedScore.add(newNote); // adjust times?
+						});
+					});
+				});
+			});
+			notes = [];
+			buffers = [];
+			inc = inc + 1;
+			ready = true;
 		});
-		notes = [];
-		inc = inc + 1;
 	}
 	
 	routeOut_ {arg newOut;
@@ -389,20 +447,28 @@ CtkPMod : CtkObj {
 		}
 
 	collect {arg ... ctkevents;
-		var thisend;
+		var thisend, theseNotes;
+		theseNotes = [];
 		ctkevents = ctkevents.flat;
+		ctkevents.do({arg thisEv;
+			thisEv.isKindOf(CtkBuffer).if({
+				buffers = buffers.add(thisEv);
+			}, {
+				theseNotes = theseNotes.add(thisEv);
+			});
+		});
 		endtimeud.if({
-			ctkevents.do({arg ev;
-				ev.endtime.notNil.if({
-					thisend = ev.endtime + timer.now;
+			theseNotes.do({arg thisEv;
+				thisEv.endtime.notNil.if({
+					thisend = thisEv.endtime + timer.now;
 					(thisend > endtime).if({
 						endtime = thisend
-						})
 					})
 				})
-			});
-		notes = (notes ++ ctkevents).flat;
- 		}
+			})
+		});
+		notes = (notes ++ theseNotes).flat;
+ 	}
  		
 	free {
 		onReleaseFunc.value;
@@ -440,9 +506,25 @@ CtkPMod : CtkObj {
 
 		CmdPeriod.remove(cper);
 		cper = nil;
+		scoreCapture.if({
+			ctkPEvents.notNil.if({
+				capturedScore.add(CtkMsg(server, ctkPEvents.now + 1.0, 0));
+			}, {
+				capturedScore.add(CtkMsg(server, timer.now + 1.0, 0));
+			});
+//			wrapGroup.setStarttime(0).setDuration(1000);
+//			group.setStarttime(0).setDuration(1000);
+//			capturedScore.add(wrapGroup.deepCopy, group.deepCopy);
+//			allBuffers.do({arg thisBuffer;
+//				var buf;
+//				buf = thisBuffer.deepCopy;
+//				capturedScore.add(buf)		
+//			})
+		});
 		wrapGroup.free;
 		group.free;
 		routebus.free;
+
 		responder.notNil.if({
 			responder.remove;
 		});
@@ -451,26 +533,49 @@ CtkPMod : CtkObj {
 				gui.startButton.value_(0)
 			}.defer;
 		});
-		["Here is the releasefunc!", releaseFunc].postln;
 		releaseFunc.value;
 		internalReleaseFunc.value;
 		isPlaying = false;
 		isReleasing = false;
 		playinit = true;
 		inc = 0;
+		scoreCapture.if({
+//			capturedScore.saveToFile(scoreCapturePath);
+			capturedScore.score;
+			capturedScore.saveToFile(scoreCapturePath);
+		});
 		hdr.notNil.if({hdr.stop; hdr = nil});
-		clock.clear;
-		clock.stop;
-		timer.free;
-	 	timer = CtkTimer.new(starttime);
-		clock = timer.clock;
-		}
+		{
+			allBuffers.do({arg thisBuffer;
+				thisBuffer.free;
+			});
+			allBuffers = [];
+			clock.clear;
+			clock.stop;
+			timer.free;
+		 	timer = CtkTimer.new(starttime);
+			clock = timer.clock;
+		}.defer(0.1)
+	}
 	
 	makeGUI {arg parent, bounds;
 		hasGUI = true;
 		^gui = CtkPModGUI(this, parent, bounds);
 	}
 
+	setupScoreCapture {arg path;
+		this.scoreCapture_(true);
+		scoreCapturePath = path;	
+	}
+	
+ 	scoreCapture_ {arg bool;
+	 	// = false, <capturedScore, ready = true;
+	 	scoreCapture = bool;
+	 	(scoreCapture).if({
+	 		capturedScore = CtkScore.new;
+	 	});
+	}
+ 	
  	*initClass {
  	}
  	
@@ -486,7 +591,8 @@ CtkPModSheet {
 CtkPModGUI {
 	var <ctkPMod, parent, win, dec, width, <height, spec, relFunc, bounds;
 	var <startButton, ampNum, ampSlide, slotMenu, valueBox, values, activeSlot, curSlot, slotField, isGroupSlot;
-	
+	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
+
 	*new {arg ctkPMod, parent, bounds;
 		^super.newCopyArgs(ctkPMod, parent).initCtkPModGUI(bounds);
 	}
@@ -556,9 +662,7 @@ CtkPModGUI {
 			});
 		slotField = TextField(win, ((width * 0.55) - 440) @ 30)
 			.string_(
-//				curParam.postln;
 				curSlot.notNil.if({
-//					ctkPMod.parameters[0].postln;
 					curSlot = ctkPMod.perform(ctkPMod.slots[0]).asCompileString
 				}, {
 				})
@@ -669,6 +773,8 @@ CtkPEvents : CtkObj {
 		<first, <gui, <out, numChannels, scaler, <scalerSynth, <server, cperFunc, <>ampSpec, 
 		show, place, pmodWins, timer, clock, <>onEvent, startTimes, <>ampFunc, <>watchedMods;
 //	var recPath, timeStamp = true, hFormat, sFormat, updateGUI = true;
+ 	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
+
 
 	*new {arg erlisting, amp = 1, out, init, kill, id, lag = 0.1;
 	 	^super.newCopyArgs(Dictionary.new, nil, id, amp, lag).initCtkPEvents(erlisting, out, init, kill);
@@ -916,6 +1022,20 @@ CtkPEvents : CtkObj {
 	at {arg id;
 		^eventDict[id]
 	}
+	
+	setupScoreCapture {arg path;
+		this.scoreCapture_(true);
+		scoreCapturePath = path;	
+	}
+	
+ 	scoreCapture_ {arg bool;
+	 	// = false, <capturedScore, ready = true;
+	 	scoreCapture = bool;
+	 	(scoreCapture).if({
+	 		capturedScore = CtkScore.new;
+	 	});
+	}
+
 }
 
 CtkPEventsGUI {
