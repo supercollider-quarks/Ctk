@@ -1280,13 +1280,12 @@ CtkNote : CtkNode {
 		}
 
 	initCN {arg argstarttime, argduration, argsynthdefname, argnoMaps;
+		server = server ?? {Server.default};
 		target.isKindOf(CtkNode).if({
 			(target.server != server).if({
 				"Mismatch between target Server and this CtkNode's server, setting to target's server".warn;
 				server = target.server;
 			})
-		}, {
-			server = server ?? {Server.default};
 		});
 		starttime = argstarttime;
 		duration = argduration;
