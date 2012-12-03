@@ -2421,7 +2421,7 @@ CtkControl : CtkBus {
 
 	*initClass {
 		var thisctkno;
-		Startup.add({
+		StartUp.add({
 			sddict = CtkProtoNotes.new;
 			sddict.add(
 				SynthDef(\ctkenv, {arg gate = 1, outbus, levelScale = 1, levelBias = 0,
