@@ -256,7 +256,7 @@ CtkScore : CtkObj {
 
 	freeGroups {
 		masterGroups.do({arg me;
-			//me.freeAll(endtime)
+			me.freeAll(endtime)
 			})
 		}
 	// builds everything except the buffers since they act
@@ -280,20 +280,21 @@ CtkScore : CtkObj {
 			allScores = allScores.add(thisctkev.score)
 			});
 		allScores.do({arg thisscore;
-			this.grabEvents(thisscore.groups, thisscore.notes, 				thisscore.controls, thisscore.buffers, thisscore.messages);
+			this.grabEvents(thisscore.groups, thisscore.notes,
+				thisscore.controls, thisscore.buffers, thisscore.messages);
 			});
 //		rt.not.if({
 //			this.addBuffers;
 //			});
 //		masterMessages = masterMessages ++ messages;
-		this.freeGroups;
+/*		this.freeGroups;
 		masterGroups.do({arg thisgroup;
 			(thisgroup.messages.size > 0).if({
 				thisgroup.messages.do({arg me;
 					masterMessages = masterMessages.add(me);
 					})
 				});
-			});
+			});*/
 		masterControls.do({arg thiscontrol;
 			(thiscontrol.messages.size > 0).if({
 				thiscontrol.messages.do({arg me;
@@ -305,6 +306,7 @@ CtkScore : CtkObj {
 			var bundle, endmsg, oldval, refsSort;
 			endmsg = thisnote.getFreeMsg;
 			endmsg.notNil.if({
+				this.checkEndTime(endmsg);
 				masterMessages = masterMessages.add(endmsg);
 				});
 			thisnote.refsDict.do({arg key, val;
@@ -351,6 +353,7 @@ CtkScore : CtkObj {
 				});
 			(thisnote.messages.size > 0).if({
 				thisnote.messages.reverseDo({arg me;
+					this.checkEndTime(me);
 					masterMessages = masterMessages.add(me);
 					})
 				});
@@ -374,6 +377,14 @@ CtkScore : CtkObj {
 				});
 			});
 		masterNotes = masterNotes ++ allReleases;
+		this.freeGroups;
+		masterGroups.do({arg thisgroup;
+			(thisgroup.messages.size > 0).if({
+				thisgroup.messages.do({arg me;
+					masterMessages = masterMessages.add(me);
+					})
+				});
+			});
 //		rt.if({
 //			"Not rt!".postln;
 //			masterBuffers.do({arg thisbuffer;
@@ -1735,7 +1746,7 @@ CtkGroup : CtkNode {
 		}
 
 	deepFree {arg time = 0.0;
-		//this.freeAll(time);
+		this.freeAll(time);
 		}
 
 	}
@@ -2826,7 +2837,8 @@ CtkEvent : CtkObj {
 	// the CtkScore ... or WOW! I THINK IT WILL JUST WORK!)
 
 	score {arg sustime = 0;
-		var curtime, idx, eventEnd;
+		var curtime, idx, eventEnd, localEndtime;
+		localEndtime = 0.0;
 		// check first to make sure the condition, if it is an Env, has a definite duration
 		condition.isKindOf(Env).if({
 			condition.releaseNode.notNil.if({
@@ -2867,9 +2879,17 @@ CtkEvent : CtkObj {
 					(me.starttime > eventEnd).if({
 						score.notes.remove(me)
 						}, {
+							(me.endtime < localEndtime).if({
+
+								localEndtime = me.endtime
+							});
 						score.add(me)
 						});
 					}, {
+						(me.endtime < localEndtime).if({
+
+								localEndtime = me.endtime
+						});
 					score.add(me)
 					})
 				});
@@ -2878,7 +2898,7 @@ CtkEvent : CtkObj {
 			this.checkCond;
 			});
 		group.setStarttime(starttime);
-		group.setDuration(score.endtime);
+		group.endtime_(score.endtime);
 		score.add(group);
 		this.scoreClear;
 		^score;
