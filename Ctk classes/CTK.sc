@@ -256,7 +256,7 @@ CtkScore : CtkObj {
 
 	freeGroups {
 		masterGroups.do({arg me;
-			me.freeAll(endtime)
+			//me.freeAll(endtime)
 			})
 		}
 	// builds everything except the buffers since they act
@@ -1623,7 +1623,7 @@ CtkNote : CtkNode {
 
 /* methods common to CtkGroup and CtkNote need to be put into their own class (CtkNode???) */
 CtkGroup : CtkNode {
-	var <endtime = nil, <duration, <isGroupPlaying = false, <>children, <>noteDict;
+	var <>endtime = nil, <duration, <isGroupPlaying = false, <>children, <>noteDict;
 
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)
@@ -1735,7 +1735,7 @@ CtkGroup : CtkNode {
 		}
 
 	deepFree {arg time = 0.0;
-		this.freeAll(time);
+		//this.freeAll(time);
 		}
 
 	}
@@ -2843,7 +2843,7 @@ CtkEvent : CtkObj {
 		score = CtkScore.new;
 		this.setup;
 		group.node;
-		[group, envbus, envsynth].do({arg me;
+		[envbus, envsynth].do({arg me;
 			me.notNil.if({
 				me.setStarttime(starttime);
 				score.add(me)
@@ -2877,11 +2877,9 @@ CtkEvent : CtkObj {
 			inc = inc + by;
 			this.checkCond;
 			});
-		/*
-		group.notNil.if({
-			group.endtime_(score.endtime)
-			});
-		*/
+		group.setStarttime(starttime);
+		group.setDuration(score.endtime);
+		score.add(group);
 		this.scoreClear;
 		^score;
 		}
