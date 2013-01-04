@@ -2877,9 +2877,11 @@ CtkEvent : CtkObj {
 			inc = inc + by;
 			this.checkCond;
 			});
+		/*
 		group.notNil.if({
 			group.endtime_(score.endtime)
 			});
+		*/
 		this.scoreClear;
 		^score;
 		}
