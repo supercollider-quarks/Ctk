@@ -1848,6 +1848,7 @@ CtkBuffer : CtkObj {
 				path.isNil && size.notNil
 				} {
 				numChannels = numChannels ?? {1};
+				numFrames = size / numChannels;
 				bundle = [\b_alloc, bufnum, size, numChannels];
 				};
 			freeBundle = [\b_free, bufnum];
@@ -2167,18 +2168,21 @@ CtkBuffer : CtkObj {
 
 }
 
-CtkBus : CtkObj {}
+CtkBus : CtkObj {
+	var <server, <bus, <numChans;
+}
 
 CtkControl : CtkBus {
-	var <server, <numChans, <bus, <initValue, <starttime, <messages, <isPlaying = false,
+	var <initValue, <starttime, <messages, <isPlaying = false,
 	<endtime = 0.0, <duration; //may want to get rid of setter later
 	var <env, <ugen, <freq, <phase, <high, <low, <ctkNote, free, <>isScored = false, buffer,
 	<isLFO = false, <isEnv = false, <isKBuf = false;
 	var <timeScale, <levelBias, <levelScale, <doneAction, <>isARelease = false, <label;
 
 	classvar <ctkEnv, <sddict;
+
 	*new {arg numChans = 1, initVal = 0.0, starttime = 0.0, bus, server;
-		^this.newCopyArgs(Dictionary.new, nil, server, numChans, bus, initVal.asArray, starttime).initThisClass;
+		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans, initVal.asArray, starttime).initThisClass;
 		}
 
 	/* calling .play on an object tells the object it is being used in real-time
@@ -2423,9 +2427,10 @@ CtkControl : CtkBus {
 		server.sendMsg(\c_get, bus);
 	}
 
+
 	+ {arg offset;
-		^this.new(1, bus + offset, server);
-		}
+		^CtkControl.new(numChans, initValue, starttime, bus + offset, server);
+	}
 
 	asUGenInput {^bus}
 	asMapInput {^(\c++bus).asSymbol}
@@ -2475,7 +2480,7 @@ CtkControl : CtkBus {
 
 // not really needed... but it does most of the things that CtkControl does
 CtkAudio : CtkBus {
-	var <server, <bus, <numChans, <isPlaying = false, <label;
+	var <isPlaying = false, <label;
 	*new {arg numChans = 1, bus, server;
 		^this.newCopyArgs(Dictionary.new, nil, server, bus, numChans).init;
 		}
@@ -2506,9 +2511,10 @@ CtkAudio : CtkBus {
 		bus = bus ?? {server.audioBusAllocator.alloc(numChans)};
 		}
 
+
 	+ {arg offset;
-		^this.new(1, bus + offset, server);
-		}
+		^CtkAudio.new(numChans, bus + offset, server);
+	}
 
 	asUGenInput {^bus}
 	asMapInput {^(\a++bus).asSymbol}
