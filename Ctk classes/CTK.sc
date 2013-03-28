@@ -1751,6 +1751,14 @@ CtkGroup : CtkNode {
 
 	}
 
+CtkPGroup : CtkGroup {
+	buildBundle {
+		var bundlearray = [\p_new, this.node, addActions[addAction], target.asUGenInput];
+		^bundlearray;
+	}
+}
+
+
 // if a CtkBuffer is loaded to a server, its 'isPlaying' instance var will be set to true, and
 // the CtkBuffer will be considered live.
 
@@ -2427,9 +2435,13 @@ CtkControl : CtkBus {
 		server.sendMsg(\c_get, bus);
 	}
 
+	+ { arg index;
+		^this.at(index)
+	}
 
-	+ {arg offset;
-		^CtkControl.new(numChans, initValue, starttime, bus + offset, server);
+	at {arg index;
+		if (index >= numChans) { Error("CtkControl-at: index out of range").throw };
+		^CtkControl.new(1, initValue, starttime, bus + index, server);
 	}
 
 	asUGenInput {^bus}
@@ -2511,9 +2523,13 @@ CtkAudio : CtkBus {
 		bus = bus ?? {server.audioBusAllocator.alloc(numChans)};
 		}
 
+	+ { arg index;
+		^this.at(index)
+	}
 
-	+ {arg offset;
-		^CtkAudio.new(numChans, bus + offset, server);
+	at { arg index;
+		if (index >= numChans) { Error("CtkAudio-at: index out of range").throw };
+		^CtkAudio.new(1, bus + index, server);
 	}
 
 	asUGenInput {^bus}
