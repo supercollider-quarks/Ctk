@@ -452,7 +452,7 @@ CtkScore : CtkObj {
 		}
 
 	// create the OSCscore, load buffers, play score
-	play {arg server, clock, quant = 0.0;
+	play {arg server, clock, quant = 0.0, startPoint = 0.0, endPoint = -1.0;
 		server = server ?? {Server.default};
 		server.boot;
 		server.waitForBoot({
@@ -464,6 +464,16 @@ CtkScore : CtkObj {
 				this.objectsToOSC;
 				latency.wait;
 				server.sync(cond);
+				(startPoint > 0.0).if({
+					(endPoint > startPoint).if({
+						score = score.section(startPoint, endPoint);
+						endtime = endPoint - startPoint;
+						}, {
+						score = score.section(startPoint);
+							endtime = endtime - startPoint;
+					})
+
+				});
 				score.play;
 				cmdPeriod = {
 					var items;
@@ -2275,7 +2285,7 @@ CtkControl : CtkBus {
 			env.times.sum * timeScale;
 			});
 		// the ctk note object for generating the env
-		ctkNote = sddict[\ctkenv].note(starttime, duration, argAddAction, argTarget,
+		ctkNote = sddict.dict[\ctkenv].note(starttime, duration, argAddAction, argTarget,
 			server).myenv_(env).outbus_(bus).levelScale_(levelScale).levelBias_(levelBias)
 			.timeScale_(timeScale).doneAction_(doneAction);
 		}
@@ -2308,7 +2318,7 @@ CtkControl : CtkBus {
 		isKBuf = true;
 		duration = timeScale;
 		// the ctk note object for generating the env
-		ctkNote = sddict[\ctkkbuffer].note(starttime, timeScale, argAddAction, argTarget,
+		ctkNote = sddict.dict[\ctkkbuffer].note(starttime, timeScale, argAddAction, argTarget,
 			server).buffer_(buffer).outbus_(bus).levelScale_(levelScale).levelBias_(levelBias)
 			.timeScale_(timeScale);
 		}
@@ -2330,7 +2340,7 @@ CtkControl : CtkBus {
 		free = false;
 		messages = [];
 		isLFO = true;
-		thisctkno = sddict[("CTK"++ugen.class).asSymbol];
+		thisctkno = sddict.dict[("CTK"++ugen.class).asSymbol];
 		case
 			{
 			[LFNoise0, LFNoise1, LFNoise2].indexOf(ugen).notNil;
