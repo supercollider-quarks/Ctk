@@ -621,11 +621,11 @@ CtkProtoNotes {
 		sds.do({arg me;
 			case
 				{me.isKindOf(SynthDef)}
-				{dict.add(me.name -> CtkNoteObject.new(me))}
+				{dict.add(me.name.asSymbol -> CtkNoteObject.new(me))}
 				{me.isKindOf(SynthDescLib)}
 				{me.read;
 				me.synthDescs.do({arg thissd;
-					dict.add(thissd.name -> CtkNoteObject.new(thissd.name.asSymbol))
+					dict.add(thissd.name.asSymbol -> CtkNoteObject.new(thissd.name.asSymbol))
 					});
 				}
 			})
@@ -648,7 +648,7 @@ CtkProtoNotes {
 //	}
 
 	at {arg id;
-		^dict[id.asString]
+		^dict[id.asSymbol]
 		}
 
 	add {arg ... newsynthdefs;
@@ -2460,6 +2460,7 @@ CtkControl : CtkBus {
 	*initClass {
 		var thisctkno;
 		StartUp.add({
+			"Ctk init class runs".postln;
 			sddict = CtkProtoNotes.new;
 			sddict.add(
 				SynthDef(\ctkenv, {arg gate = 1, outbus, levelScale = 1, levelBias = 0,

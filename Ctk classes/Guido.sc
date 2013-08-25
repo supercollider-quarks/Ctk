@@ -1,6 +1,6 @@
 GuidoObj {
 	classvar keyConvert;
-	
+
 	*initClass {
 		keyConvert = Dictionary[
 			\c -> -3,
@@ -31,7 +31,7 @@ GuidoObj {
 			\Bf -> -2,
 			\b -> 2,
 			\B -> 5,
-			\Cf -> -7 
+			\Cf -> -7
 			]
 		}
 	}
@@ -42,11 +42,11 @@ GuidoScore : GuidoObj {
 	*new {
 		^super.new.init;
 		}
-		
+
 	init {
 		score = []; // Dictionary.new;
 		}
-	
+
 	// add a voice to the score
 	add {arg aVoice;
 		aVoice.isKindOf(GuidoPart).if({
@@ -56,23 +56,23 @@ GuidoScore : GuidoObj {
 			"GuidoScore can only add GuidoParts".warn;
 			})
 		}
-		
+
 	remove {arg anID;
 		(score.at(anID).notNil).if({
 			score.removeAt(anID)}, {
 			"No voice with that ID found".warn;
 			})
 		}
-		
+
 	output {arg pathname, mode = "w";
 		var string, eventstring;
 		file = File.new(pathname, mode);
 		file.write("%% SuperCollider output from " ++ Date.localtime ++ "\n");
 		file.write("%% Comments (%) after musical objects denote measure, beat (if supplied) \n");
 		file.write("{\n");
-		score.do({arg me, i; 
+		score.do({arg me, i;
 			file.write("%%Voice" ++ i ++ "\n");
-			me.output(file); 
+			me.output(file);
 			(i != (score.size - 1)).if({file.write(",")});
 			});
 		file.write("}");
@@ -80,7 +80,7 @@ GuidoScore : GuidoObj {
 		}
 	}
 
-/* 
+/*
 
 each GuidoPart must have a unique id. More then one GuidoPart can exist on a staff (in other words, two GuidoParts with different id can share a staffid. To differentiate two lines on one staff, you may want to specify one \stemsUp and the other \stemsDown
 
@@ -99,7 +99,7 @@ GuidoPart : GuidoObj {
 		events = events ? [];
 		^super.newCopyArgs(id, instr, events, stemdir, staffid).initGuidoPart(clef, key, timeSig);
 		}
-		
+
 	initGuidoPart {arg argClef, argKey, argTimeSig;
 		timeSig = argTimeSig ?? {GuidoTimeSig(4, 4).measure_(1)};
 		key = argKey ?? {GuidoKeySig(0).measure_(1)};
@@ -108,7 +108,7 @@ GuidoPart : GuidoObj {
 			events = events.addFirst(me);
 			})
 		}
-	
+
 	// add anEvent or an array of events
 	add {arg ... anEvent;
 		anEvent.flat.do({arg thisEv;
@@ -129,7 +129,7 @@ GuidoPart : GuidoObj {
 		file.write("\\"++stemdir.asString++" \n");
 		events.do{arg me; me.output(file)};
 		file.write("]\n");
-		}	
+		}
 	}
 
 GuidoEvent : GuidoObj {
@@ -145,16 +145,16 @@ GuidoEvent : GuidoObj {
 			});
 		string = this.outputString ++ append ++"\n";
 		file.write(string);
-		string.postln;
+		//string.postln;
 		}
-		
+
 	calcRhyDur {arg duration;
 		duration.isKindOf(Symbol).if({
 			duration = rhythmToDur[duration]
 			});
 		^(duration).asFraction(50, false);
 		}
-		
+
 	*initClass {
 		rhythmToDur = IdentityDictionary[
 			\q -> 0.25,
@@ -189,9 +189,9 @@ GuidoEvent : GuidoObj {
 			\ldd -> 4.0
 			];
 		timeToDots = IdentityDictionary[
-			0.25 -> 0,			
-			0.375 -> 1,			
-			0.4375 -> 2,			
+			0.25 -> 0,
+			0.375 -> 1,
+			0.4375 -> 2,
 			0.125 -> 0,
 			0.1875 -> 1,
 			0.21875 -> 2,
@@ -222,9 +222,9 @@ GuidoEvent : GuidoObj {
 			7.0 -> 2
 			];
 		timeToDur = IdentityDictionary[
-			0.25 -> 0.25,			
-			0.375 -> 0.25,			
-			0.4375 -> 0.25,			
+			0.25 -> 0.25,
+			0.375 -> 0.25,
+			0.4375 -> 0.25,
 			0.125 -> 0.125,
 			0.1875 -> 0.125,
 			0.21875 -> 0.125,
@@ -262,14 +262,14 @@ GuidoNote : GuidoEvent {
 	*new {arg aPitchClass = 60, duration = 0.25, marks;
 		^super.new.initGuidoNote(aPitchClass, duration, marks.asArray);
 		}
-	
+
 	initGuidoNote {arg argNote, argDur, argMarks;
 		duration = argDur;
 		marks = argMarks;
 		chord = false;
 		this.note_(argNote);
 		}
-		
+
 	note_ {arg aPitchClass;
 		aPitchClass.isKindOf(Array).if({
 			chord = true
@@ -278,15 +278,15 @@ GuidoNote : GuidoEvent {
 			this.convertToPC(me);
 			});
 		}
-	
+
 	addDynamic {arg dynamic;
 		marks = marks.add(GuidoDynamic(\i, dynamic))
 		}
-		
+
 	addArticulation {arg articulation;
 		marks = marks.add(GuidoArticulation(articulation))
 		}
-		
+
 	convertToPC {arg aPitchClass;
 		var rem;
 		case
@@ -310,7 +310,7 @@ GuidoNote : GuidoEvent {
 		markstring = "";
 		marks.do({arg me; me.isKindOf(GuidoArticulation).if({articulation = articulation + 1})});
 		(marks.size > 0).if({
-			marks.do({arg me; 
+			marks.do({arg me;
 					markstring = markstring ++ me.outputString
 				})
 			});
@@ -339,21 +339,21 @@ GuidoNote : GuidoEvent {
 		}
 	}
 
-// Use GuidoTimeSig to set up Time signatures. GuidoTimeSig is used internally for reading 
+// Use GuidoTimeSig to set up Time signatures. GuidoTimeSig is used internally for reading
 // GuidoTimeSigs
 
 GuidoTimeSig : GuidoEvent {
 	var <>upper, <>lower;
-	
+
 	*new {arg upper, lower;
 		^super.new.initGuidoTimeSig(upper, lower);
 		}
-	
+
 	initGuidoTimeSig {arg argUpper, argLower;
 		upper = argUpper;
 		lower = argLower;
 		}
-		
+
 	outputString {arg file;
 		^"\t\\meter<\""++upper++"/"++lower++"\">";
 		}
@@ -361,11 +361,11 @@ GuidoTimeSig : GuidoEvent {
 
 GuidoKeySig : GuidoEvent {
 	var key;
-	
+
 	*new {arg key;
 		^super.new.initGuidoKeySig(key);
 		}
-		
+
 	initGuidoKeySig {arg argKey;
 		key = argKey.isKindOf(Integer).if({
 			argKey
@@ -373,14 +373,14 @@ GuidoKeySig : GuidoEvent {
 			keyConvert[argKey]
 			});
 		}
-		
+
 	outputString {
 		^"\t\\key<"++key++">"
 		}
 }
 
 /*
-clef is \g, \f or \c 
+clef is \g, \f or \c
 optionally, you can specify a line to place the note indication of the clef on (1 bottom, 5 top)
 \g2 is standard treble
 \c3 is standard alto
@@ -394,15 +394,15 @@ and these are also valid: \treble, \bass, \alto and \tenor
 
 GuidoClef : GuidoEvent {
 	var clef;
-	
+
 	*new {arg clef;
 		^super.new.initGuidoClef(clef);
 		}
-		
+
 	initGuidoClef	{arg argClef;
 		clef = argClef;
 		}
-		
+
 	outputString {
 		^"\t\\clef<\""++clef.asString++"\">";
 		}
@@ -420,11 +420,11 @@ GuidoClef : GuidoEvent {
 
 GuidoSpanner : GuidoEvent {
 	var <>arrGuidoNotes, <>beat, <>spanner;
-	
+
 	*new {arg arrGuidoNotes, spanner;
 		^super.newCopyArgs(arrGuidoNotes, spanner);
 		}
-		
+
 	outputString {
 		var string;
 		string = "\\"++spanner.asString++"(\n";
@@ -433,9 +433,9 @@ GuidoSpanner : GuidoEvent {
 			});
 		string = string ++"\t)"
 		^"\t"++string;
-	}	
+	}
 }
-	
+
 GuidoMark {
 	*new {
 		^super.new;
@@ -468,15 +468,15 @@ GuidoDynamic : GuidoMark {
 			^nil;
 			})
 		}
-	
+
 	init {
 		dynamic = dynamic.isNil.if({
 			" "
 			}, {
 			"<\""++dynamic++"\"> "
-			}); 
+			});
 		}
-		
+
 	outputString {
 		^"\\"++tag.asString++dynamic;
 		}
@@ -493,7 +493,7 @@ Tempo tags are
 tempoString is a direction i.e. "Moderato"
 absTempoString is in the form of x/y=n i.e 1/4=120
 */
-	
+
 GuidoTempo : GuidoMark {
 	var tag, tempoString, absTempoString, string;
 	*new {arg tag, tempoString, absTempoString;
@@ -504,7 +504,7 @@ GuidoTempo : GuidoMark {
 			^nil;
 			})
 		}
-		
+
 	init {
 		string = (tempoString.isNil && absTempoString.isNil).if({
 				"\\"++ tag++" ";
@@ -521,7 +521,7 @@ GuidoTempo : GuidoMark {
 		^string;
 		}
 	}
-	
+
 // articulations
 /*
 
@@ -548,16 +548,16 @@ GuidoArticulation : GuidoMark {
 			^nil;
 			})
 		}
-		
+
 	outputString {
 		([\trem, \grace, \alter].indexOf(tag).notNil && val.notNil).if({
-			^"\\"++tag.asString++"<"++val++">( ";		
+			^"\\"++tag.asString++"<"++val++">( ";
 			}, {
 			^"\\"++tag.asString++"( ";
 			})
 		}
 	}
-	
+
 GuidoArt {
 	*new {arg tag, val;
 		^GuidoArticulation.new(tag, val);
@@ -569,11 +569,11 @@ GuidoArt {
 // if a measure is left out, the previous measures timesig will be used
 //GuidoTimeSig {
 //	var <>timesigArray, <timesigDict;
-//	
+//
 //	*new {arg timesigArray;
 //		^super.newCopyArgs(timesigArray).init;
 //		}
-//		
+//
 //	init {
 //		var measure, meter;
 //		timesigDict = Dictionary.new;
@@ -582,7 +582,7 @@ GuidoArt {
 //			timesigDict.add(measure -> meter);
 //			}
 //		}
-//		
+//
 //	// create an array of meters for use in parsing voices... remember, measure one is at index 0!
 //	fillMeters {arg numMeasures;
 //		var curmeter, newmeter;
@@ -593,21 +593,21 @@ GuidoArt {
 //			curmeter;
 //			})
 //		}
-//	
+//
 //	meterAt {arg measure = 1;
 //		var measures;
 //		measures = this.fillMeters(measure);
 //		^measures.last;
 //		}
-//		
+//
 //	numBeatsAt {arg measure = 1;
 //		^this.meterAt(measure)[0]
 //		}
-//		
+//
 //	divAt {arg measure = 1;
 //		^this.meterAt(measure)[1]
 //		}
-//	
+//
 //	// returns which measure a beat occurs in, and the beat in that measure.
 //	// beats assumed to be quarter for now
 //	measureFromBeat {arg beat;
@@ -625,49 +625,49 @@ GuidoArt {
 //
 //GuidoTime {
 //	var <>now, <>tollerance;
-//	
+//
 //	*new {arg curtime = 1.0, tollerance = 0.98;
 //		^this.newCopyArgs(curtime, tollerance)
 //		}
-//		
+//
 //	add {arg timeval;
 //		var temp;
 //		temp = now + timeval;
 //		now = this.check(temp);
 //		}
-//	
+//
 //	// this.check should be run everytime 'now' is updated
 //	check {arg timeval;
 //		^(((timeval % 1) >= tollerance).if({timeval.round}, {timeval}));
 //		}
-//		
+//
 //	value {
 //		^now;
 //		}
-//		
+//
 //	+ {arg aVal;
 //		aVal = (aVal.isKindOf(GuidoTime)).if({aVal.now}, {aVal});
 //		^now + aVal;
 //		}
-//	
+//
 //	- {arg aVal;
 //		^now - aVal;
 //		}
-//	
+//
 //	* {arg aVal;
 //		^now * aVal;
 //		}
 //	/ {arg aVal;
 //		^now / aVal
 //		}
-//		
+//
 //	+= {arg aVal;
 //		var temp;
 //		temp = this.check(now + aVal);
 //		now = temp;
 //		^temp
 //		}
-//	
-		
+//
+
 //}
 

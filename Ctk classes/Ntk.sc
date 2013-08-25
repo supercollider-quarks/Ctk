@@ -1,7 +1,7 @@
 // Notation tool kit - abstract wrappers to GUIDO, LilyPond and (eventually) MusicXML
 NtkObj {
 	classvar rhyToSym, symToRhy, clefs, rhythmToDur, timeToDots, timeToDur;
-	
+
 	*initClass {
 		clefs = [\perc, \g, \f, \c];
 		rhythmToDur = IdentityDictionary[
@@ -37,9 +37,9 @@ NtkObj {
 			\ldd -> 4.0
 			];
 		timeToDots = IdentityDictionary[
-			0.25 -> 0,			
-			0.375 -> 1,			
-			0.4375 -> 2,			
+			0.25 -> 0,
+			0.375 -> 1,
+			0.4375 -> 2,
 			0.125 -> 0,
 			0.1875 -> 1,
 			0.21875 -> 2,
@@ -70,9 +70,9 @@ NtkObj {
 			7.0 -> 2
 			];
 		timeToDur = IdentityDictionary[
-			0.25 -> 0.25,			
-			0.375 -> 0.25,			
-			0.4375 -> 0.25,			
+			0.25 -> 0.25,
+			0.375 -> 0.25,
+			0.4375 -> 0.25,
 			0.125 -> 0.125,
 			0.1875 -> 0.125,
 			0.21875 -> 0.125,
@@ -103,23 +103,23 @@ NtkObj {
 			];
 		}
 	}
-	
+
 NtkScore : NtkObj {
 	var <parts, partIdx;
-	
+
 	*new {
 		^super.new.initNtkScore;
 		}
-		
+
 	*open {arg path;
 		this.readArchive(path);
 		}
-		
+
 	initNtkScore {
 		parts = IdentityDictionary.new;
 		partIdx = 0;
 		}
-	
+
 	add {arg ... newParts;
 		newParts.do({arg aPart;
 			aPart.isKindOf(NtkPart).if({
@@ -128,12 +128,12 @@ NtkScore : NtkObj {
 			partIdx = partIdx + 1;
 			});
 		}
-	
-	// just outputs an archive of parts -> voices -> note data		
+
+	// just outputs an archive of parts -> voices -> note data
 	output {arg path;
 		this.writeArchive(path);
 		}
-	
+
 	sortParts {
 		var theseParts, sortParts;
 		theseParts = [];
@@ -144,7 +144,7 @@ NtkScore : NtkObj {
 		sortParts = theseParts.collect({arg me; me[0]});
 		^sortParts;
 		}
-		
+
 	asGuidoScore {
 		var guidoScore, theseParts;
 		guidoScore = GuidoScore.new;
@@ -158,18 +158,18 @@ NtkScore : NtkObj {
 			});
 		^guidoScore;
 		}
-	
+
 	asLPScore {
 		var lpScore, theseParts;
 		lpScore = LPScore.new;
 		theseParts = this.sortParts;
 		theseParts.do({arg aPart;
 			var lpPart;
-			aPart.splitAtBarline;		
+			aPart.splitAtBarline;
 			aPart.fillWithRests;
 			lpPart = aPart.asLPPart;
 			lpScore.add(lpPart);
-			});		
+			});
 		^lpScore;
 		}
 	}
@@ -179,13 +179,13 @@ NtkPart : NtkObj {
 	// notes are notes and rests
 	var <id, <measures, <voices, <notes, <clef, <key, <timeSig, <tempo, <tempoEnv;
 	var <timeSigs, <>instrumentName;
-	
+
 	*new {arg id, clef, key, timeSig, tempo;
 		^super.new.initNtkPart(id, clef, key, timeSig, tempo);
 		}
-		
+
 	// init the part, and create the first measure
-	
+
 	initNtkPart {arg argId, argClef, argKey, argTimeSig, argTempo;
 		id = argId;
 		// create the default voice, add any values above to the events array
@@ -197,26 +197,26 @@ NtkPart : NtkObj {
 		timeSigs = Array.with(timeSig);
 		// tempo is an Env that can be accessed by index?s		// users add to it with NtkTempos, but internally, all goes through the Env
 		}
-	
+
 	timeSig_ {arg anNtkTimeSig;
 		var measure;
 		var lastTimeSig;
 		lastTimeSig = timeSigs[timeSigs.size - 1];
 		anNtkTimeSig = anNtkTimeSig ?? {
-			NtkTimeSig(lastTimeSig.measure + 1,lastTimeSig.upper, 
+			NtkTimeSig(lastTimeSig.measure + 1,lastTimeSig.upper,
 				lastTimeSig.lower, lastTimeSig.compound)};
 		measure = anNtkTimeSig.measure;
 		(measure >= timeSigs.size).if({
 			(measure - 1 - timeSigs.size).do({arg i;
 				timeSigs = timeSigs.add(
-					NtkTimeSig.new(lastTimeSig.measure + i + 1, 
+					NtkTimeSig.new(lastTimeSig.measure + i + 1,
 						lastTimeSig.upper, lastTimeSig.lower, lastTimeSig.compound)
 					);
 				});
 			});
 		timeSigs = timeSigs.add(anNtkTimeSig);
 		}
-		
+
 	timeSigAt {arg measure;
 		^timeSigs[measure];
 		}
@@ -232,7 +232,7 @@ NtkPart : NtkObj {
 			thisMeasure.do({arg thisVoice, v;
 				// are there notes?
 				(thisVoice.size > 0).if({
-					// is the first note on beat 0.0? If not - 
+					// is the first note on beat 0.0? If not -
 					//	fill in the rest according to the beat
 					((first = thisVoice[0].beat) != 0.0).if({
 						// fill in full beats
@@ -250,7 +250,7 @@ NtkPart : NtkObj {
 							(first.floor == note2.beat.floor).if({
 								rests[v] = rests[v].add(
 									NtkNote(\r, (note2.beat - first) * rlower, i, first));
-								// otherwise - fill in the rest of this beat - 
+								// otherwise - fill in the rest of this beat -
 								// all complete beats, and the begining of the next
 								}, {
 								// is there some beat left over?
@@ -297,7 +297,7 @@ NtkPart : NtkObj {
 			this.sortVoice(i)
 			});
 		}
-	
+
 	splitAtBarline {
 		voices.do({arg thisVoice, i;
 			var thisTimeSig, endBeat, oldDur, diff, lower, upper, adds;
@@ -308,7 +308,7 @@ NtkPart : NtkObj {
 				upper = thisTimeSig.upper;
 				((endBeat = note.beat + (note.duration * lower)) > (upper)).if({
 					diff = endBeat - upper;
-					[diff, upper - note.beat / lower].postln;
+					//[diff, upper - note.beat / lower].postln;
 					note.rhythm_((upper - note.beat) / lower);
 					note.tie_(\start);
 					adds = adds.add(
@@ -319,7 +319,7 @@ NtkPart : NtkObj {
 			this.sortVoice(i)
 			});
 		}
-	
+
 	// there has to be a more efficient way to do this
 	// but this should work for now;
 	eventsForMeasure {arg measure, voice;
@@ -341,7 +341,7 @@ NtkPart : NtkObj {
 				^theseVoices
 				});
 		}
-		
+
 	notesForMeasure {arg measure, voice;
 		var theseVoices, theseNotes, tmp;
 		theseVoices = this.eventsForMeasure(measure, voice);
@@ -356,14 +356,14 @@ NtkPart : NtkObj {
 			});
 		^theseNotes;
 		}
-		
+
 	// accessing events
 	at {arg measure, beat, voice;
 		var testIdx;
 		testIdx = measure + (beat * 0.001);
-		
+
 		}
-	
+
 	addVoice {arg voiceNum;
 		(voices.size < voiceNum).if({
 			(voiceNum - voices.size).do({arg i;
@@ -371,11 +371,11 @@ NtkPart : NtkObj {
 				});
 			})
 		}
-		
+
 	add {arg ... events;
 		this.addToVoice(0, *events);
 		}
-	
+
 	addToVoice {arg voice ... events;
 		voices[voice] = voices[voice] ++ events;
 		events.do({arg me;
@@ -386,14 +386,14 @@ NtkPart : NtkObj {
 				})
 			})
 		}
-		
+
 	sortVoice {arg voice = 0;
 		voices[voice].sort({arg a, b; a.isKindOf(NtkPriorityOneEvent)});
 		voices[voice].sort({arg a, b; a.index <= b.index});
 		}
-		
+
 	buildTempoEnv {
-	
+
 		}
 
 	// figure out how to pass in all the 'part' based components
@@ -410,7 +410,7 @@ NtkPart : NtkObj {
 			});
 		^part;
 		}
-		
+
 	asLPPart {
 		var part;
 		part = LPPart.new(id, clef: clef.asLPEvent, keySig: key.asLPEvent, timeSig: timeSig.asLPEvent);
@@ -423,19 +423,19 @@ NtkPart : NtkObj {
 				part.addToVoice(i, thisEv.asLPEvent)
 				});
 			});
-		^part; 
+		^part;
 		}
-	
+
 	}
 
 // users do not see this
 NtkEvent : NtkObj {
 	var <measure, <beat, <rhythm, <tuplet, <dots, <event, <index, <duration;
-	
+
 	*new {arg measure = 1, beat = 1, rhythm, tuplet;
 		^super.new.initNtkEvent(measure, beat, rhythm, tuplet);
 		}
-		
+
 	initNtkEvent {arg argMeasure, argBeat, argRhythm, argTuplet;
 		measure = argMeasure;
 		beat = argBeat;
@@ -449,11 +449,11 @@ NtkEvent : NtkObj {
 //			});
 		this.calcIndex;
 		}
-	
+
 	calcIndex {
 		index = measure + (beat * 0.001);
 		}
-	
+
 	rhythm_ {arg aRhythm;
 		rhythm = aRhythm;
 		duration = rhythm.isKindOf(Symbol).if({
@@ -462,27 +462,27 @@ NtkEvent : NtkObj {
 			rhythm
 			})
 		}
-		
+
 	measure_ {arg newMeasure;
 		measure = newMeasure;
 		this.calcIndex;
 		}
-		
+
 	beat_ {arg newBeat;
 		beat = newBeat;
 		this.calcIndex;
 		}
-		
+
 	asGuidoEvent { }
 	asLPEvent { }
 	}
-	
+
 NtkNote : NtkEvent {
 	var <pitch, <dynamic, <articulation, <>tie;
 	*new {arg pitch, rhythm, measure, beat;
 		^super.new(measure, beat, rhythm).initNtkNote(pitch);
 		}
-		
+
 	initNtkNote {arg argPitch;
 		pitch = argPitch;
 		}
@@ -490,12 +490,16 @@ NtkNote : NtkEvent {
 	addDynamic {arg dynamicSym, above = false;
 		dynamic = [dynamicSym, above];
 		}
-		
+
 	addArticulation {arg articulationName;
 		articulation = articulationName;
 		}
-		
-	asGuidoEvent { 
+
+	adjustPitch {arg newPitch;
+		pitch = newPitch;
+	}
+
+	asGuidoEvent {
 		var note;
 		note = GuidoNote.new(pitch, rhythm).beat_(beat).measure_(measure);
 		dynamic.notNil.if({
@@ -507,10 +511,10 @@ NtkNote : NtkEvent {
 		tie.notNil.if({
 			note.tie_(tie)
 			});
-		^note;		
+		^note;
 		}
-	
-	asLPEvent { 
+
+	asLPEvent {
 		var note;
 		note = LPNote.new(pitch, rhythm).beat_(beat).measure_(measure);
 		dynamic.notNil.if({
@@ -527,18 +531,18 @@ NtkNote : NtkEvent {
 NtkPriorityOneEvent : NtkEvent {
 
 	}
-	
+
 NtkClef : NtkPriorityOneEvent {
 	var <clef, <line, <name;
-	
+
 	*new {arg measure, beat, clef, line, name;
 		^super.new(measure, beat).initNtkClef(clef, line, name);
 		}
-	
+
 	*treble {arg measure, beat;
 		^this.new(measure, beat, \g, 2, \treble)
 		}
-		
+
 	*bass {arg measure, beat;
 		^this.new(measure, beat, \f, 4, \bass)
 		}
@@ -546,28 +550,28 @@ NtkClef : NtkPriorityOneEvent {
 	*alto {arg measure, beat;
 		^this.new(measure, beat, \c, 3, \alto)
 		}
-		
+
 	*tenor {arg measure, beat;
 		^this.new(measure, beat, \c, 4, \tenor)
 		}
-		
+
 	*soprano {arg measure, beat;
 		^this.new(measure, beat, \c, 1, \soprano)
 		}
-		
+
 	initNtkClef {arg argClef, argLine, argName;
 		clef = argClef;
 		line = argLine;
 		name = argName;
 		}
-		
+
 	asGuidoEvent { ^GuidoClef(name).measure_(measure).beat_(beat) }
 	asLPEvent { ^LPClef(name).measure_(measure).beat_(beat) }
 	}
-	
+
 NtkTimeSig : NtkPriorityOneEvent {
 	var <upper, <lower, <compound, <totalDur;
-	
+
 	*new {arg measure, upper, lower, compound = false;
 		^super.new(measure, 1).initNtkTimeSig(upper, lower, compound);
 		}
@@ -584,9 +588,9 @@ NtkTimeSig : NtkPriorityOneEvent {
 				})
 			})
 		}
-	
+
 	numBeats {
-		case 
+		case
 			{upper.isKindOf(Array)}
 			{^upper.size}
 			{compound}
@@ -594,7 +598,7 @@ NtkTimeSig : NtkPriorityOneEvent {
 			{true}
 			{^upper};
 		}
-		
+
 	beatDur {arg beat;
 		case
 			{upper.isKindOf(Array)}
@@ -606,26 +610,26 @@ NtkTimeSig : NtkPriorityOneEvent {
 			{true}
 			{^1/lower};
 		}
-	
+
 	beatMul {arg beat;
-		case 
+		case
 			{compound}
 			{^3 * lower}
 			{true}
 			{^lower};
 		}
-			
+
 	asGuidoEvent { ^GuidoTimeSig(upper, lower).measure_(measure) }
 	asLPEvent { ^LPTimeSig(upper, lower).measure_(measure) }
 	}
-	
+
 NtkKeySig : NtkPriorityOneEvent {
 	var <tonic, <mode;
 
 	*new {arg measure, beat, tonic, mode;
 		^super.new(measure, beat).initNtkKeySig(tonic, mode);
 		}
-	
+
 	*major {arg measure, beat, tonic;
 		^this.new(measure, beat, tonic, \major);
 		}
@@ -633,21 +637,21 @@ NtkKeySig : NtkPriorityOneEvent {
 	*minor {arg measure, beat, tonic;
 		^this.new(measure, beat, tonic, \minor);
 		}
-				
+
 	initNtkKeySig {arg argTonic, argMode;
 		tonic = argTonic;
 		mode = argMode;
 		}
-		
+
 	asGuidoEvent { var gTonic;
 		gTonic = (mode == \major).if({
 			tonic.asString.toUpper.asSymbol;
 			}, {
 			tonic.asString.toLower.asSymbol;
 			});
-		^GuidoKeySig(gTonic).measure_(measure).beat_(beat); 
+		^GuidoKeySig(gTonic).measure_(measure).beat_(beat);
 		}
-		
+
 	asLPEvent { ^LPKeySig(tonic, mode).measure_(measure).beat_(beat) }
 	}
 	
