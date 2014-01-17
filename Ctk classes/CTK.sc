@@ -1140,6 +1140,9 @@ CtkNode : CtkObj {
 		resps = Dictionary.new;
 		servers = Dictionary.new;
 		nodes = Dictionary.new;
+		this.isKindOf(CtkGroup).if({
+			this.isGroupPlaying = false;
+		});
 		cmd = true;
 		}
 
@@ -1644,7 +1647,7 @@ CtkNote : CtkNode {
 
 /* methods common to CtkGroup and CtkNote need to be put into their own class (CtkNode???) */
 CtkGroup : CtkNode {
-	var <>endtime = nil, <duration, <isGroupPlaying = false, <>children, <>noteDict;
+	var <>endtime = nil, <duration, <>isGroupPlaying = false, <>children, <>noteDict;
 
 	*new {arg starttime = 0.0, duration, node, addAction = 0, target = 1, server;
 		^super.newCopyArgs(Dictionary.new, nil, addAction, target, server, node)

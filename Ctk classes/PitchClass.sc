@@ -909,7 +909,7 @@ PitchCollection {
 
 	// takes a keynum, returns the PitchClass closest to that keynum (under octave equivalence)
 	filterKeynum {arg keynum;
-		var baseKeynum, closestKey, member, thisSortedBase, thisIndex;
+		var baseKeynum, closestKey, member, thisSortedBase, thisIndex, tmp;
 		// round out the octaves
 		thisSortedBase = sortedBase ++ (sortedBase[0] + octaveSize);
 		// get the mod for searching purposes
@@ -922,7 +922,8 @@ PitchCollection {
 		member = pitchCollection[thisIndex];
 		// return a new PitchClass with the appropriate octave... check for nums close
 		// to the next octave at C with the round
-		^PitchClass.new((member.note ++ member.acc), (keynum.round / 12).floor - 1);
+		tmp = PitchClass.new(keynum + (((member.keynum % 12) - (keynum % 12)) % 12));
+		^PitchClass.new((member.note ++ member.acc), tmp.octave); //(keynum.round / 12).floor - 1);
 		}
 
 	at {arg idx;
