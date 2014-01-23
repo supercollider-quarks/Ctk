@@ -454,6 +454,7 @@ CtkScore : CtkObj {
 	// create the OSCscore, load buffers, play score
 	play {arg server, clock, quant = 0.0, startPoint = 0.0, endPoint = -1.0;
 		server = server ?? {Server.default};
+		endtime = endtime + 0.2;
 		server.boot;
 		server.waitForBoot({
 			score = Score.new;
@@ -470,7 +471,7 @@ CtkScore : CtkObj {
 						endtime = endPoint - startPoint;
 						}, {
 						score = score.section(startPoint);
-							endtime = endtime - startPoint;
+							endtime = endtime - startPoint + 0.2;
 					})
 
 				});
@@ -552,21 +553,24 @@ CtkScore : CtkObj {
 
 	// SC2 it! create OSCscore, add buffers to the score, write it
 	write {arg path, duration, sampleRate = 44100, headerFormat = "AIFF",
-			sampleFormat = "int16", options, action, inputFilePath;
+		sampleFormat = "int16", options, action, inputFilePath, oscFilePath;
 		var tmpfile, stamp;
-		stamp = Date.seed;
-		tmpfile = (thisProcess.platform.name == \windows).if({
-			"/windows/temp/trashme" ++ stamp;
+		oscFilePath.isNil.if({
+			stamp = Date.seed;
+			tmpfile = (thisProcess.platform.name == \windows).if({
+				"/windows/temp/trashme" ++ stamp;
 			}, {
-			"/tmp/trashme" ++ stamp;
+				"/tmp/trashme" ++ stamp;
 			});
+		},{
+			tmpfile = oscFilePath;
+		});
 		this.saveToFile;
 		score.recordNRT(tmpfile, path, inputFilePath, sampleRate: sampleRate,
 			headerFormat: headerFormat,
 		 	sampleFormat: sampleFormat, options: options, duration: duration,
 		 	action: action);
 		}
-
 	// add a time to all times in a CtkScore
 	/* will probably have to add events and controls here soon */
 	/* returns a NEW score with the events offset */
