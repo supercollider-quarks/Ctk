@@ -143,6 +143,7 @@ CtkScore : CtkObj {
 				event.isKindOf(CtkScore);
 				} {
 				ctkscores = ctkscores.add(event);
+				buffers = buffers.addAll(event.buffers);
 				this.checkEndTime(event);
 				} {
 				event.isKindOf(CtkMsg);
