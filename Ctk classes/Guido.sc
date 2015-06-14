@@ -64,6 +64,21 @@ GuidoScore : GuidoObj {
 			})
 		}
 
+	outputString {
+		var out, string, eventstring;
+		out = [];
+		out = out.add("%% SuperCollider output from " ++ Date.localtime ++ "\n");
+		out = out.add("%% Comments (%) after musical objects denote measure, beat (if supplied) \n");
+		out = out.add("{\n");
+		score.do({arg me, i;
+			out = out.add("%%Voice" ++ i ++ "\n");
+			out = out.add(me.outputString);
+			(i != (score.size - 1)).if({out = out.add(",")});
+			});
+		out = out.add("}");
+		^out.join("");
+		}
+
 	output {arg pathname, mode = "w";
 		var string, eventstring;
 		file = File.new(pathname, mode);
@@ -118,6 +133,19 @@ GuidoPart : GuidoObj {
 				"It appears you are trying to add a non-GuidoEvent to a GuidoPart or GuidoPart".warn;
 				});
 			})
+		}
+
+	outputString {
+		var out, string, eventstring, initMeter, currentMeter, currentMeasure, theseevents;
+		out = [];
+		out = out.add("[\n");
+		out = out.add("\\staff<\""++staffid.asString++"\"> ");
+		instr.notNil.if({ out.add("\\instr<\""++instr.asString++"\"> ") });
+		currentMeasure = 1;
+		out = out.add("\\"++stemdir.asString++" \n");
+		events.do{arg me; out = out.add(me.outputString)};
+		out = out.add("]\n");
+		^out.join("");
 		}
 
 	output {arg file;
