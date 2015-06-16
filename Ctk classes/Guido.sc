@@ -82,15 +82,7 @@ GuidoScore : GuidoObj {
 	output {arg pathname, mode = "w";
 		var string, eventstring;
 		file = File.new(pathname, mode);
-		file.write("%% SuperCollider output from " ++ Date.localtime ++ "\n");
-		file.write("%% Comments (%) after musical objects denote measure, beat (if supplied) \n");
-		file.write("{\n");
-		score.do({arg me, i;
-			file.write("%%Voice" ++ i ++ "\n");
-			me.output(file);
-			(i != (score.size - 1)).if({file.write(",")});
-			});
-		file.write("}");
+		file.write(this.outputString);
 		file.close;
 		}
 	}
@@ -149,14 +141,7 @@ GuidoPart : GuidoObj {
 		}
 
 	output {arg file;
-		var string, eventstring, initMeter, currentMeter, currentMeasure, theseevents;
-		file.write("[\n");
-		file.write("\\staff<\""++staffid.asString++"\"> ");
-		instr.notNil.if({file.write("\\instr<\""++instr.asString++"\"> ")});
-		currentMeasure = 1;
-		file.write("\\"++stemdir.asString++" \n");
-		events.do{arg me; me.output(file)};
-		file.write("]\n");
+		file.write(this.outputString);
 		}
 	}
 
