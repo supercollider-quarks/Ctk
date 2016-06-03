@@ -2474,6 +2474,15 @@ CtkControl : CtkBus {
 		server.sendMsg(\c_get, bus);
 	}
 
+	// indexOffset is for multichannel busses
+	getSynchronous { |indexOffset=0|
+		^try {
+			server.getControlBusValue(bus+indexOffset)
+		} { |error|
+			error.errorString.postln; nil
+		}
+	}
+
 	+ { arg index;
 		^this.at(index)
 	}
