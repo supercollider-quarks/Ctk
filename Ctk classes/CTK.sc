@@ -420,13 +420,21 @@ CtkScore : CtkObj {
 		}
 
 	groupTogether {
+		var maxEventsAtOneTime = 30;
+		var masterScore_tmp = [];
+
 		masterScore = masterGroups ++ masterNotes ++ masterMessages;
+		// sort all events by start time
 		masterScore.sort({arg a, b;
 			a.starttime < b.starttime;
 			});
+
+		// clump all events together that are within 1.0e-07 apart
 		masterScore = masterScore.separate({arg a, b;
 			a.starttime.fuzzyEqual(b.starttime, 1.0e-07) == 0;
 			});
+
+		// re-order each clump of events so events' targets precede them, and pack buffer messages to the front
 		masterScore.do({arg thisTimesEvents;
 			(thisTimesEvents.size > 1).if({
 				thisTimesEvents.sort({arg a, b;
@@ -434,6 +442,19 @@ CtkScore : CtkObj {
 					})
 				})
 			});
+
+		masterScore.do({arg thisTimesEvents;
+			(thisTimesEvents.size > maxEventsAtOneTime).if({
+				var clumps;
+				clumps= thisTimesEvents.clump(maxEventsAtOneTime);
+				clumps.do{|eventsClump|
+					masterScore_tmp = masterScore_tmp.add(eventsClump)
+				}
+			},{
+				masterScore_tmp = masterScore_tmp.add(thisTimesEvents)
+			})
+		});
+		masterScore = masterScore_tmp;
 		}
 
 	concatScores {arg aScore;
@@ -3013,4 +3034,3 @@ CtkMsg : CtkObj{
 		^bundle;
 		}
 	}
-
