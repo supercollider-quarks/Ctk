@@ -1,0 +1,67 @@
+TITLE:: CtkNoteObject
+summary:: A prototyping system based on SynthDefs
+categories:: Libraries>CTK
+related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent
+
+DESCRIPTION::
+Part of the Composer's Tool Kit (Ctk) system. See link::Overviews/Ctk:: for more details.
+
+CtkSynthDef and link::Classes/CtkProtoNotes:: are the two prototyping classes for creating instances of link::Classes/CtkNote::.
+
+In general, you will not need to create instances of CtkNoteObj. CtkProtoNotes will do it for you. The main purpose of this class is the creation of new instances of CtkNote based on a CtkNoteObject prototype.
+
+
+CLASSMETHODS::
+
+METHOD:: new
+Create new instance
+
+ARGUMENT:: synthdef
+a SynthDef to base the new instance on.
+
+ARGUMENT:: server
+
+INSTANCEMETHODS::
+
+METHOD:: args
+get a list of controls and defaults
+
+ARGUMENT:: post
+if 'post' is true, post a list of controls and defaults to the post window.
+
+returns:: The Dictionary containing the argument names as keys and default values.
+
+
+EXAMPLES::
+note::The following is just for reference. Usually you'd want to use CtkSynthDef or CtkProtoNotes instead.::
+code::
+(
+a = CtkNoteObject.new(
+	SynthDef(\test2, {arg gate = 1, freq, amp;
+		var env, envgen, src;
+		env = Control.names([\env]).kr(Env.newClear(8));
+		envgen = EnvGen.kr(env, gate, doneAction: 2);
+		src = BPF.ar(WhiteNoise.ar(amp), freq, 0.01, amp * envgen);
+		Out.ar(0, Pan2.ar(src, Rand(-1.0, 1.0)));
+	})
+);
+)
+
+// show the args
+a.args;
+
+// create a new instance of CtkNote based on this prototype
+b = a.note;
+
+// set values for its arguments. See the CtkNote helpfile for more info on arguments
+b.freq_(440).amp_(1.0).env_(Env([0, 1, 0], [0.5, 0.5], \sin, 1));
+
+// play it
+b.play;
+
+// create a second instance with different args ...
+c = a.note.freq_(660).amp_(1.0).env_(Env([0, 1, 0], [5, 5], \sin, 1)).play;
+
+// release both
+b.release; c.release;
+::
