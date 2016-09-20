@@ -1,10 +1,10 @@
 TITLE:: CtkScore
-summary:: A system for rendering Scores with the Ctk objects
+summary:: A system for rendering Scores with the CTK objects
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent
 
 DESCRIPTION::
-Part of the Composer's Tool Kit (Ctk) system. See link::Overviews/Ctk:: for more details.
+Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more details.
 
 CtkScore enables rendering Scores with Ctk objects. Examples below show how to populate an instance of CtkScore. The CtkScore can then be rendered in NRT, played or saved as a file.
 
