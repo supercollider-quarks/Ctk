@@ -2196,6 +2196,11 @@ CtkBuffer : CtkObj {
 
 CtkBus : CtkObj {
 	var <server, <bus, <numChans;
+
+	// synonyms
+	numChannels {^numChans}
+	busnum {^bus}
+	index {^bus}
 }
 
 CtkControl : CtkBus {
