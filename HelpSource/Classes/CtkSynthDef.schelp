@@ -1,7 +1,7 @@
 TITLE:: CtkSynthDef
 summary:: A prototyping system based on SynthDefs
 categories:: Libraries>CTK
-related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent
+related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 
 DESCRIPTION::
 Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more details.

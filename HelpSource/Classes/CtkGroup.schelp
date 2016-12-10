@@ -1,0 +1,149 @@
+TITLE:: CtkGroup
+summary:: A Group implementation for use with CTK
+categories:: Libraries>CTK
+related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
+
+DESCRIPTION::
+Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more details.
+
+CtkGroup is a wrapper for a link::Classes/Group:: suitable for use with CTK objects.
+
+
+CLASSMETHODS::
+
+METHOD:: new
+Create new instance - for use with CtkScore or to enable it for real-time use at a later time (see link::#-play::)
+
+ARGUMENT:: starttime
+in NRT or CtkScore rendering mode, the starttime of an CtkGroup event. In real-time mode, this parameter is ignored (defaults to nil).
+
+ARGUMENT:: duration
+a duration for the CtkGroup. If not nil, the group will be freed after the given time
+
+ARGUMENT:: node
+an id for this instance of CtkGroup. Defaults to nil, and one will be allocated for you.
+
+ARGUMENT:: addAction
+a symbol (\head, \tail, \before, \after or \replace) or an addAction id (see link::Reference/Server-Command-Reference#/g_new:: for a more in-depth description)
+
+ARGUMENT:: target
+a node ID (synth or group) or an instance of CtkGroup or CtkNote
+
+ARGUMENT:: server
+the server to execute the node on. Defaults to Server.default for real-time performance
+
+returns:: a CtkGroup
+
+METHOD:: play
+create and immediately place a group on the server; see link::#*new:: for the description of arguments
+
+
+INSTANCEMETHODS::
+
+METHOD:: freeAll
+(describe method here)
+
+ARGUMENT:: time
+(describe argument here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: prBundle
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: msgBundle
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: newBundle
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: init
+(describe method here)
+
+ARGUMENT:: argstarttime
+(describe argument here)
+
+ARGUMENT:: argduration
+(describe argument here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: setDuration
+(describe method here)
+
+ARGUMENT:: newdur
+(describe argument here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: setStarttime
+(describe method here)
+
+ARGUMENT:: newstart
+(describe argument here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: bundle
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: deepFree
+(describe method here)
+
+ARGUMENT:: time
+(describe argument here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: play
+(describe method here)
+
+ARGUMENT:: neg
+(describe argument here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: endtime
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: children
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: buildBundle
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: noteDict
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: duration
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+METHOD:: isGroupPlaying
+(describe method here)
+
+returns:: (describe returnvalue here)
+
+
+EXAMPLES::
+
+code::
+(some example code)
+::

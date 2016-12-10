@@ -13,11 +13,12 @@ LIST::
 ##link::Classes/CtkControl::
 ##link::Classes/CtkAudio::
 ##link::Classes/CtkEvent::
+##link::Classes/CtkGroup::
 ::
 
-The Ctk Objects can be used as a replacement for the Object oriented Classes in the standard SuperCollider distribution (Synth, Buffer, Group,  and Bus). The main difference is that these classes can easily be used to populate a CtkScore for NRT synthesis.
+The CTK Objects can be used as a replacement for the Object oriented Classes in the standard SuperCollider distribution (Synth, Buffer, Group,  and Bus). The main difference is that these classes can easily be used to populate a CtkScore for NRT synthesis.
 
-Ctk classes were originally developed by Josh Parmenter. These help files are converted from Josh's old help files with an attemp to update information/code where needed.
+CTK classes were originally developed by Josh Parmenter. These help files are converted from Josh's old help files with an attemp to update information/code where needed.
 
 subsection:: Disadvantages to the standard Object classes:
 

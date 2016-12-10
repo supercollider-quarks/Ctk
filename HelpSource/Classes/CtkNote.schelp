@@ -1,7 +1,7 @@
 TITLE:: CtkNote
 summary:: A note prototyping system
 categories:: Libraries>CTK
-related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent
+related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 
 DESCRIPTION::
 Part of the Composer's Tool Kit (Ctk) system. See link::Overviews/Ctk:: for more details.
@@ -10,12 +10,14 @@ CtkNotes are most easily created through the use of link::Classes/CtkProtoNotes:
 
 In addition, getter and setter arguments are created for each instance of CtkNote based on a SynthDefs arguments.
 
-NOTE::In order to ensure proper timing of scheduled events, CTK sends messages to the server as OSC bundles with a default latency of 0.1s (see link::Guides/ServerTiming::). This is settable in link::Classes/CtkObj#*latency:: class variable.::
+NOTE::In order to ensure proper timing of scheduled events, CTK sends messages to the server as OSC bundles with a default latency of 0.1s (see link::Guides/ServerTiming::). This is settable in link::Classes/CtkObj#*latency:: class variable.
+When CTK messages are meant to be set in real-time with external controllers (MIDI, GUI etc), setting the link::Classes/CtkObj#*latency:: to code::nil:: will result in processing the messages as soon as possible.
+::
 
 CLASSMETHODS::
 
 METHOD:: new
-new instances are best created through instances of CtkNoteObject or CtkProtoNotes (see the example)
+new instances are best created through instances of link::Classes/CtkNoteObject:: or link::Classes/CtkProtoNotes:: (see the example)
 
 ARGUMENT:: starttime
 in NRT or CtkScore rendering mode, the starttime of an CtkNote event. In real-time mode, this parameter will schedule the event for starttime seconds in the future.
@@ -120,7 +122,9 @@ a = CtkNoteObject.new(
 	})
 );
 
-/* REAL TIME USES */
+::
+subsection:: Real-time uses
+code::
 // show the args
 a.args;
 
@@ -142,7 +146,10 @@ c = a.note.freq_(660).amp_(1.0).env_(Env([0, 1, 0], [5, 5], \sin, 1)).play;
 b.release;
 c.release;
 
-//Examples that create new instances of a SynthDef directly from CtkProtoNotes:
+
+::
+subsection:: Examples that create new instances of a SynthDef directly from CtkProtoNotes
+code::
 
 s = Server.internal.boot;
 Server.default = s;
@@ -205,8 +212,10 @@ b = a[\test2].note
 
 b.release(4)
 
-//Examples that populate an instance of CtkScore. The CtkScore can then be rendered in NRT, played or saved as a file. See CtkScore for more examples.
-
+::
+subsection:: Examples that populate an instance of CtkScore. The CtkScore can then be rendered in NRT, played or saved as a file.
+See link::Classes/CtkScore:: for more examples.
+code::
 (
 var scpn, score, grainfun, gliss;
 

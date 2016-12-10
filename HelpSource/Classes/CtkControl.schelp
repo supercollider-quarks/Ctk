@@ -1,12 +1,12 @@
 TITLE:: CtkControl
 summary:: Allocate and send values to a control bus for CTK objects
 categories:: Libraries>CTK
-related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent
+related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 
 DESCRIPTION::
 Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more details.
 
-CtkControl is a wrapper for a link::Classes/Bus:: suitable for use with Ctk objects.
+CtkControl is a wrapper for a control link::Classes/Bus:: suitable for use with CTK objects.
 
 CLASSMETHODS::
 

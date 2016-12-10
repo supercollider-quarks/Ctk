@@ -1,7 +1,7 @@
 TITLE:: CtkBuffer
 summary:: A Buffer implementation for CTK
 categories:: Libraries>CTK
-related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent
+related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 
 DESCRIPTION::
 Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more details.
@@ -362,6 +362,32 @@ an Env to convert into Signal or Wavetable
 
 ARGUMENT:: wavetable
 'wavetable' specifies whether or not the buffer should use Wavetable format (defaults to 	0, set to 1 for Wavetables)
+
+private::asUGenInput
+private::bufferFunc
+private::bufnum
+private::bundle
+private::closeBundle
+private::collection
+private::copyFromBuffer
+private::copyMsg
+private::endTime
+private::freeBundle
+private::isOpen
+private::isPlaying
+private::label
+private::loadCollection
+private::loadToFloatArray
+private::messages
+private::numFrames
+private::path
+private::server
+private::size
+private::startFrame
+private::starttime
+
+preparePartConv (time: 0.001, buf, fftsize)
+read (time: 0, path, fileFrameStart: 0, numFrames, bufStartFrame: 0, leaveOpen: false, completionMessage, action)
 
 
 EXAMPLES::
