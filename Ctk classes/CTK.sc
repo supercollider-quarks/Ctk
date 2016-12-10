@@ -1739,9 +1739,10 @@ CtkGroup : CtkNode {
 	play {arg neg = 0.01; // neg helps insure that CtkGroups will be created first
 		var bundle = this.buildBundle;
 		starttime.notNil.if({
-			SystemClock.sched(starttime, {server.sendBundle(latency - neg, bundle)});
+			// SystemClock.sched(starttime, {server.sendBundle(latency - neg, bundle)});
+			SystemClock.sched(starttime, {server.sendBundle(latency !? {latency - neg}, bundle)}); //fix for using nil as latency
 			}, {
-			server.sendBundle(latency - neg, bundle);
+			server.sendBundle(latency !? {latency - neg}, bundle); //fix for using nil as latency
 			});
 		duration.notNil.if({
 			SystemClock.sched(duration, {this.freeAll})
