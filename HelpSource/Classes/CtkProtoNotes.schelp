@@ -1,0 +1,67 @@
+CLASS::CtkProtoNotes
+summary::A prototyping system based on SynthDefs.
+categories::Libraries>Composition ToolKit
+keyword::Ctk
+
+CtkProtoNotes - A dictionary of CtkNoteObjetcs created from SynthDefs
+
+CLASSMETHODS::
+
+method::new
+An instance or many instances of SynthDef. These SynthDefs will be loaded to the default server for use in NRT and RT use.  Instances of CtkNoteObject are created from the SynthDefs to be used for creating instances of CtkNotes. SynthDefs can also be a SynthDescLib.
+
+argument::... synthdefs
+A List of SynthDefs to be wrapped by CtkNoteObject.
+
+INSTANCEMETHODS::
+method::add
+Add additional SynthDefs to an instance of CtkProtoNotes.
+argument::... newsynthdefs
+
+method::at
+Access an instance of CtkNoteObject stored within an instance of CtkProtoNotes. 'id' is the name of a SynthDef loaded into an instance of CtkProtoNotes
+argument::id
+The name of the SynthDef.
+
+Examples::
+
+code::
+a = CtkProtoNotes(
+	SynthDef(\test, {arg gate = 1, freq, amp;
+		var env, envgen, src;
+		env = Control.names([\env]).kr(Env.newClear(8));
+		envgen = EnvGen.kr(env, gate, doneAction: 2);
+		src = SinOsc.ar(freq, 0, amp * envgen);
+		Out.ar(0, Pan2.ar(src, Rand(-1.0, 1.0)));
+		}),
+	SynthDef(\control, {arg outbus, rate, low, hi;
+		Out.kr(outbus, LFNoise2.kr(rate).range(low, hi))
+		})
+	);
+
+a.add(
+	SynthDef(\test2, {arg gate = 1, freq, amp;
+		var env, envgen, src;
+		env = Control.names([\env]).kr(Env.newClear(8));
+		envgen = EnvGen.kr(env, gate, doneAction: 2);
+		src = BPF.ar(WhiteNoise.ar(amp), freq, 0.01, amp * envgen);
+		Out.ar(0, Pan2.ar(src, Rand(-1.0, 1.0)));
+		})
+	);
+
+// access the CtkNoteObject prototype
+
+a[\test];
+a[\test].args;
+
+a[\control];
+a[\control].args;
+
+a[\test2];
+a[\test2].args;
+
+// or, create a CtkProtoNotes from a SynthDescLib
+a = CtkProtoNotes(SynthDescLib.global);
+a[\default]; // returns the CtkNoteObject from the SynthDef \default
+a[\default].args;
+::
