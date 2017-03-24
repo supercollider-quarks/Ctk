@@ -4,7 +4,7 @@
 	\path: 		"Ctk",
 	\summary:	"Composer's Tool Kit - objects for real-time and NRT composition",
 //\helpdoc: "Ctk Help/Ctk.htm",
-	\helpdoc: "HelpSource/Guides/Ctk.schelp",
+	\schelp: "HelpSource/Guides/Ctk.schelp",
 	\author: 		"Joshua Parmenter",
 	\dependencies: [("XML" -> 0.21)]
 )

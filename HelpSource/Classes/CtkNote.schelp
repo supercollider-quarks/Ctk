@@ -11,7 +11,7 @@ CtkNotes are most easily created through the use of link::Classes/CtkProtoNotes:
 In addition, getter and setter arguments are created for each instance of CtkNote based on a SynthDefs arguments.
 
 NOTE::In order to ensure proper timing of scheduled events, CTK sends messages to the server as OSC bundles with a default latency of 0.1s (see link::Guides/ServerTiming::). This is settable in link::Classes/CtkObj#*latency:: class variable.
-When CTK messages are meant to be set in real-time with external controllers (MIDI, GUI etc), setting the link::Classes/CtkObj#*latency:: to code::nil:: will result in processing the messages as soon as possible.
+When CTK messages are meant to be set in real-time with external controllers (MIDI, GUI etc), setting the link::Classes/CtkObj#*latency:: to code::0:: will result in processing the messages as soon as possible (but printing the "late" messages from the server as well).
 ::
 
 CLASSMETHODS::

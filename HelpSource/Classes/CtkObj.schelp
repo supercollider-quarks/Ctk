@@ -9,7 +9,7 @@ DESCRIPTION::
 CLASSMETHODS::
 
 METHOD:: latency
-Sets default latency for sending OSC bundles. Setting this too low will result in inconsistent timing of events scheduled with Tasks nad Routines (and "late" messages from the server). When set to code::nil::, events from external controllers (MIDI, GUI etc.) will be processed as soon as possible. Also see link::Guides/ServerTiming::.
+Sets default latency for sending OSC bundles. Setting this too low will result in inconsistent timing of events scheduled with Tasks nad Routines (and "late" messages from the server). When set to code::0::, events from external controllers (MIDI, GUI etc.) will be processed as soon as possible, however "late" messages will be printed. Also see link::Guides/ServerTiming::.
 
 INSTANCEMETHODS::
 

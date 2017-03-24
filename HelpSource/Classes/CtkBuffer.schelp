@@ -250,6 +250,21 @@ ARGUMENT:: maxval
 ARGUMENT:: parent
 ARGUMENT:: labels
 
+METHOD:: preparePartConv
+Preapre buffer of spectra for use with PartConv
+
+ARGUMENT:: time
+
+ARGUMENT:: buf
+impulse response buffer
+
+ARGUMENT:: fftsize
+spectral convolution partition size
+
+returns::
+CtkBuffer for use with PartConv
+
+
 
 subsection:: Wave Fill Commands
 See link::Reference/Server-Command-Reference#Wave Fill Commands:: for more information.
@@ -273,8 +288,6 @@ ARGUMENT:: clear
 
 ARGUMENT::  ... args
 The format of args is dependent on the wave command
-
-
 
 
 METHOD:: sine1
@@ -363,6 +376,7 @@ an Env to convert into Signal or Wavetable
 ARGUMENT:: wavetable
 'wavetable' specifies whether or not the buffer should use Wavetable format (defaults to 	0, set to 1 for Wavetables)
 
+
 private::asUGenInput
 private::bufferFunc
 private::bufnum
@@ -385,9 +399,6 @@ private::server
 private::size
 private::startFrame
 private::starttime
-
-preparePartConv (time: 0.001, buf, fftsize)
-read (time: 0, path, fileFrameStart: 0, numFrames, bufStartFrame: 0, leaveOpen: false, completionMessage, action)
 
 
 EXAMPLES::
