@@ -1,0 +1,329 @@
+CLASS::CtkControl
+summary::allocate and send values to a control bus
+categories::Libraries>Composition ToolKit
+keyword::Ctk
+
+Part of the CompositionToolKit (Ctk) system. See Ctk help for more details
+
+CLASSMETHODS::
+
+method::new
+
+argument::numChans
+The number of channels to allocate. Defaults to 1.
+argument::initVal
+The initial value to be placed on a bus. Defaults to 0.0.
+argument::starttime
+If used in a CtkScore, specifies a time to write the initVal to the bus. Defaults to 0.0.
+argument::bus
+The bus id to write values to. Defaults to nil, where an id will be allocated for you.
+argument::server
+An instance of Server to write control values out to. Defaults to Server.default.
+
+method::play
+Create a new CtkControl and immediately make it available for real time use.
+argument::numChans
+The number of channels to allocate. Defaults to 1.
+argument::initVal
+The initial value to be placed on a bus. Defaults to 0.0.
+argument::bus
+The bus id to write values to. Defaults to nil, where an id will be allocated for you.
+argument::server
+An instance of Server to write control values out to. Defaults to Server.default.
+
+method::env
+
+argument::env
+An instnace of Env (envelope) to be passed to a synth as the argument for an EnvGen.
+argument::starttime
+If used in a CtkScore, specifies a time to write the initVal to the bus. Defaults to 0.0.
+argument::addAction
+A symbol (\head, \tail, \before, \after or \replace) or an addAction id (see Server-Command-Reference).
+argument::target
+A node ID (synth or group) or an instance of CtkGroup or CtkNote.
+argument::bus
+The bus id to write values to. Defaults to nil, where an id will be allocated for you.
+argument::server
+An instance of Server to write control values out to. Defaults to Server.default.
+argument::levelScale
+The levelScale argument to be supplied to EnvGen.  Defaults to 1.
+argument::levelBias
+The levelBias argument to be supplied to EnvGen.  Defaults to 0.
+argument::timeScale
+The timeScale argument to be supplied to EnvGen.  Defaults to 1.
+argument::doneAction
+The doneAction argument to be supplied to EnvGen.  Defaults to 0.
+
+method::lfo
+Low Frequency Oscillator - Creates a synth with any one of the below UGens
+argument::ugen
+An oscillating Ugen. Choose from: LFNoise0, LFNoise1, LFNoise2,SinOsc, Impulse, LFSaw, LFPar, LFTri, LFCub.
+argument::freq
+The frequency of oscillation.  Defaults to 1.
+argument::low
+The low bounds of oscillation.  Defaults to -1.
+argument::high
+The upper bonds of oscillation.  Defaults to 1.
+argument::phase
+The starting phase of the oscillator.  Defaults to 0.
+argument::starttime
+If used in a CtkScore, specifies a time to write the initVal to the bus. Defaults to 0.0.
+argument::duration
+The duration of the control bus.
+argument::addAction
+A symbol (\head, \tail, \before, \after or \replace) or an addAction id (see Server-Command-Reference).
+argument::target
+A node ID (synth or group) or an instance of CtkGroup or CtkNote.
+argument::bus
+The bus id to write values to. Defaults to nil, where an id will be allocated for you.
+argument::server
+An instance of Server to write control values out to. Defaults to Server.default.
+
+INSTANCEMETHODS::
+
+method::play
+Enable an instance of CtkControl for real-time use.
+
+method::set
+Set the value of CtkControl to val. If used in real-time, the time parameter schedules when the change of value should occur. In NRT, schedules the change at time from the value of starttime (or starttime + time).
+argument:: val
+The value to which the control bus will be set.
+argument:: time
+The time at which to set the conrtol bus to val.
+
+method:bus
+Returns the id of the CtkControl bus.
+
+method::free
+Returns the bus id to the allocation pool.
+
+
+Examples::
+
+code::
+s = Server.local.boot;
+Server.default = s;
+
+(
+var pnotes, group, bus1, bus2, env, freq, control, task;
+var cond;
+cond = Condition.new;
+Routine.run({
+	pnotes = CtkProtoNotes(
+		SynthDef(\test, {arg dur, freq, amp;
+			var env, envgen, src;
+			env = Control.names([\env]).kr(Env.newClear(8));
+			envgen = EnvGen.kr(env, timeScale: dur, doneAction: 2);
+			src = SinOsc.ar(freq, 0, amp * envgen);
+			Out.ar(0, Pan2.ar(src, Rand(-1.0, 1.0)));
+			}),
+		SynthDef(\control, {arg outbus, rate, low, hi;
+			Out.kr(outbus, LFNoise2.kr(rate).range(low, hi))
+			}),
+		SynthDef(\controlenv, {arg gate = 1, outbus;
+			var env;
+			env = Control.names([\env]).kr(Env.newClear(8));
+			Out.kr(outbus, EnvGen.kr(env, gate));
+			}).load(s)
+		);
+
+	s.sync(cond);
+
+	group = CtkGroup.play;
+	bus1 = CtkControl.play; // create a CtkControl for writing out to
+	bus2 = CtkControl.play; // create a CtkControl for writing out to
+
+	env = Env([0, 1, 0], [1, 4], [3, -4], 1);
+
+	// create a controlenv and a loop of CtkNotes to play inside the CtkGroup
+	freq = pnotes[\control].new(addAction: \head, target: group)
+		.outbus_(bus1) // need to use the .bus method on CtkControl to just pass in its bus id
+		.rate_(1)
+		.low_(100)
+		.hi_(1050)
+		.play;
+
+	control = pnotes[\controlenv].new(addAction: \head, target: group)
+		.outbus_(bus2) // need to use the .bus method on CtkControl to just pass in its bus id
+		.env_(env)
+		.play;
+
+	task = Task({
+		var reltime, dur;
+		reltime = env.releaseTime;
+		dur = 10;
+		// schedule the release of the global envelope
+		SystemClock.sched(dur - reltime, {
+			group.release;
+			});
+		// schedule the release of the Task
+		SystemClock.sched(dur, {
+			group.freeAll;
+			task.stop;
+			});
+		loop({
+			pnotes[\test].new(addAction: \tail, target: group)
+				.dur_(1)
+				.env_(Env([0, 1, 0], [0.5, 0.5], \sin))
+				.freq_(bus1) // if a CtkControl is passed in, the arg will be mapped to the
+				.amp_(bus2) // CtkControls bus
+				.play;
+			0.5.wait;
+			})
+		});
+
+	task.play;
+	})
+)
+::
+
+subsection:: Real-Time Uses
+
+Examples that set the value of the CtkControl in real-time, and take advantage of SynthDefs lag controls.
+
+code::
+a = CtkNoteObject(
+	SynthDef(\test, {arg freq = 440, amp = 0;
+		Out.ar(0, Pan2.ar(SinOsc.ar(freq, 0, amp), LFNoise2.kr(0.3)))
+	}, [2, 1])
+	);
+
+b = CtkControl.play(initVal: 440);
+c = CtkControl.play(initVal: 0);
+
+// create a new instance, and map the freq and amp parameters to the CtkControls
+d = a.new.freq_(b).amp_(c).play;
+
+c.set(0.4);
+b.set(660);
+
+// unmap the control
+d.freq_(440);
+
+// remap it
+d.freq_(b);
+
+// set the amp to 0.0
+c.set(0.0);
+
+// kill the node
+d.free;
+::
+
+subsection:: CtkScore Uses
+
+Examples that populate an instance of CtkScore. The CtkScore can then be rendered in NRT, played or saved as a file. See CtkScore for more examples.
+
+code::
+(
+var scpn, score, grainfun, gliss;
+scpn = CtkProtoNotes(
+	SynthDef(\control, {arg outbus, rate, low, hi;
+		Out.kr(outbus, LFNoise2.kr(rate).range(low, hi))
+		}),
+	SynthDef(\test, {arg freq, amp, dur;
+		var env, envgen, src;
+		env = Env([0, 1, 0], [0.5, 0.5], \sin);
+		envgen = EnvGen.kr(env, timeScale: dur);
+		src = BPF.ar(WhiteNoise.ar(amp), freq, 0.01, amp * envgen);
+		Out.ar(0, Pan2.ar(src, Rand(-1.0, 1.0)));
+		})
+	);
+
+score = CtkScore.new;
+
+/*
+creates a granular gesture of duration. Each grain is 0.1 seconds long, new grain every 0.02 seconds
+*/
+
+grainfun = {arg starttime, duration, ampenv, lowfreq, hifreq;
+	var now, note;
+	now = 0;
+	ampenv.times = ampenv.times.normalizeSum * duration; // scale the Env's time to the gestures
+	while({
+		// create a note... add it to the CtkScore
+		note = scpn[\test].new(starttime + now, 0.1)
+			.freq_(lowfreq.rrand(hifreq))
+			.amp_(ampenv[now])
+			.dur_(0.1);
+		score.add(note); // tell CtkScore to add the note
+		now = now + 0.02;
+		now < duration;
+		});
+	};
+
+gliss = {arg starttime, duration, rate, lowfreq, hifreq;
+	var cbus, control, note, group;
+	cbus = CtkControl.new;
+	// run these processes within its own CtkGroup
+	group = CtkGroup.new(addAction: \head, target: 1).addTo(score);
+	control = scpn[\control].new(starttime, duration, \head, group)
+		.outbus_(cbus)
+		.rate_(rate)
+		.low_(lowfreq)
+		.hi_(hifreq)
+		.addTo(score); // tell CtkNote to add to a CtkScore
+	note = scpn[\test].new(starttime, duration, \tail, group)
+		.freq_(cbus)
+		.amp_(2)
+		.dur_(duration)
+		.addTo(score);
+	};
+
+grainfun.value(1, 10, Env([0, 1, 0], [0.5, 0.5], [3, -5]), 440, 880);
+grainfun.value(4, 4, Env([0, 1, 0], [0.5, 0.5], [3, -5]), 4400, 8800);
+grainfun.value(6, 12, Env([0, 1, 0], [0.5, 0.5], [3, -5]), 300, 400);
+grainfun.value(3, 10, Env([0, 1, 0], [0.5, 0.5], [3, -5]), 200, 200);
+grainfun.value(1.5, 20, Env([0, 1, 0], [0.5, 0.5], [3, -5]), 7000, 7100);
+
+5.do({arg i;
+	var j;
+	j = i + 1;
+	gliss.value(3 + (i + 4), 10.rrand(7), j.reciprocal, 440 * j, 880 * j);
+	});
+
+// uncomment to play the CtkScore you have created
+score.play(s);
+
+// uncomment to write the score to a soundfile
+//score.write("~/Desktop/test.aiff".standardizePath, 22,
+//	options: ServerOptions.new.numOutputBusChannels_(2));
+
+// uncomment to save the CtkScore as a file
+//score.saveToFile("~/Desktop/test.sc".standardizePath);
+)
+::
+
+subsection:: Env and LFO Uses
+
+code::
+s.boot;
+a = CtkControl.lfo(LFSaw, 10, 1, 0, 0);
+a.play;
+
+c = CtkNoteObject(
+	SynthDef(\test, {arg freq, amp, pan;
+		Out.ar(0, SinOsc.ar(freq, 0, amp))
+		})
+	);
+
+b = c.new().freq_(440).amp_(a).play
+
+b.freq_(CtkControl.env(Env([440, 550], [5], \exp)));
+
+b.amp_(0.1);
+b.amp_(a);
+
+b.freq_(z = CtkControl.lfo(LFNoise1, 1, 550, y = CtkControl.env(Env([550, 330], [10]))))
+
+b.amp_(0.1);
+b.amp_(CtkControl.lfo(LFNoise1, 1, 0.1, CtkControl.env(Env([0.1, 1.0], [2]))))
+// wait at least 2 seconds
+b.amp.high_(CtkControl.env(Env([1.0, 0.1], [10])))
+b.amp.high_(1)
+b.amp_(a);
+// free the LFSaw
+a.free
+// free the synth
+b.free;
+::

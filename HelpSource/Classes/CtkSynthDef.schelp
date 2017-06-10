@@ -1,0 +1,25 @@
+CLASS::CtkSynthDef
+summary::A prototyping system based on SynthDefs - wraps a SynthDef inside a CtkNoteObject
+categories::Libraries>Composition ToolKit
+keyword::Ctk
+
+CLASSMETHODS::
+method::new
+argument::name
+A Symbol for the name of the SynthDef.
+argument::ugenGraphFunc
+The Function that contains the UGen graph.  See link::Classes/SynthDef::.
+argument::rates
+argument::prependArgs
+argument::variants
+
+EXAMPLES::
+code::
+a = CtkSynthDef(\test2, {arg gate = 1, freq, amp;
+	var env, envgen, src;
+	env = Control.names([\env]).kr(Env.newClear(8));
+	envgen = EnvGen.kr(env, gate, doneAction: 2);
+	src = BPF.ar(WhiteNoise.ar(amp), freq, 0.01, amp * envgen);
+	Out.ar(0, Pan2.ar(src, Rand(-1.0, 1.0)));
+})
+::
