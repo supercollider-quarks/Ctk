@@ -1,5 +1,5 @@
 TITLE:: CtkGroup
-summary:: Allocate a Group on the server for use with CTK
+summary:: Representation of a group on the server for use with CTK objects
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 keyword::CTK

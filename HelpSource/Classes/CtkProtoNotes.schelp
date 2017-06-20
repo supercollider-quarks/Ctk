@@ -1,5 +1,5 @@
 TITLE:: CtkProtoNotes
-summary:: A dictionary of CtkNoteObjetcs created from SynthDefs
+summary:: A note prototyping system using a dictionary of CtkNoteObjects created from SynthDefs
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 keyword::CTK

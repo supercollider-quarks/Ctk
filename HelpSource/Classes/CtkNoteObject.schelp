@@ -1,5 +1,5 @@
 TITLE:: CtkNoteObject
-summary:: A prototyping system based on SynthDefs
+summary:: A supporting class for note prototyping system
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 keyword::CTK
@@ -15,7 +15,7 @@ In general, you will not need to create instances of CtkNoteObj. CtkProtoNotes w
 CLASSMETHODS::
 
 METHOD:: new
-Create a new instance of a note object.  STRING::Mostly used internally by CtkSynthDef or CtkProtoNotes.::
+Create a new instance of a note object.  STRING::Used internally by CtkSynthDef or CtkProtoNotes.::
 ARGUMENT:: synthdef
 An instance of SynthDef to base the new instance on.
 ARGUMENT:: server

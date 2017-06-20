@@ -1,5 +1,5 @@
 TITLE:: CtkScore
-summary:: A system for rendering Scores with the CTK objects
+summary:: Score of OSC commands for non-real-time rendering, used with CTK objects
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 keyword::CTK

@@ -1,5 +1,5 @@
 TITLE:: CtkControl
-summary:: Allocate and send values to a control bus for CTK objects
+summary:: Representation of a control bus for CTK objects
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 keyword::CTK
@@ -18,7 +18,7 @@ The number of channels to allocate.
 ARGUMENT:: initVal
 Initial value to set the bus to.
 ARGUMENT:: starttime
-start time, useful use in CtkScore
+Start time, useful in CtkScore
 ARGUMENT:: bus
 The bus index to use (optional). Normally you don't need to specify it, as it will be allocated for you.
 ARGUMENT:: server
@@ -128,8 +128,13 @@ c.get({arg index, val; [index, val].postln});
 ::
 
 METHOD:: getSynchronous
-Get the value of the bus. This command is synchronous. See link::Classes/Bus#Synchronous%20Control%20Bus%20Methods#Bus help:: for more information on synchronous acccess to control buses.
-Returns:: Value of the control bus.
+Get the value of the bus. This command is synchronous. See link::Classes/Bus#Synchronous%20Control%20Bus%20Methods#Bus help:: for more information on synchronous access to control buses.
+ARGUMENT:: indexOffset
+channel offset into a multichannel CtkControl
+NOTE::
+This method returns a single value, even in the case of a multichannel CtkControl. The indexOffset argument enables reading into other channels of a multichannel CtkControl, e.g. indexOffset: 3 would give you the value of the 4th channel of a multichannel bus.
+::
+Returns:: A single value of the control bus.
 
 METHOD:: high
 returns:: the upper bounds value when using link::#*lfo::
@@ -288,7 +293,7 @@ c.set(0.0);
 d.free;
 ::
 
-subsection:: CtkScore Uses
+subsection:: CtkScore uses
 Examples that populate an instance of CtkScore. The CtkScore can then be rendered in NRT, played or saved as a file. See link::Classes/CtkScore:: for more examples.
 code::
 (
