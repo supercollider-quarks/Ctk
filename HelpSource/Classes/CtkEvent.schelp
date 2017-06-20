@@ -45,7 +45,7 @@ METHOD:: play
 Plays this CtkEvent, while the condition is true.
 
 METHOD:: function
-A function to be evaluated for every occurrence in the CtkEvent. May be defined at the creation time (see link::#*new::). It should be used to link::#-collect:: CtkObjects for this CtkEvent. If the link::#-condition:: is an Env, the function will also be typically used to set the link::-next:: parameter, scheduling repeated execution appropriately. The function will have five parameters passed to it:
+A function to be evaluated for every occurrence in the CtkEvent. May be defined at the creation time (see link::#*new::). It should be used to link::#-collect:: CtkObjects for this CtkEvent. If the link::#-condition:: is an Env, the function will also be typically used to set the link::#-next:: parameter, scheduling repeated execution appropriately. The function will have five parameters passed to it:
 LIST::
 ##theCtkEvent itself
 ##this instance's	CtkGroup
@@ -59,7 +59,7 @@ Function to be used.
 
 METHOD:: collect
 This is the method to populate CtkEvent with CtkObjects (like CtkNote). Typically .collect will be called inside this CtkEvent's link::#-function::.
-ARGUMENT::  ... ctkevents
+ARGUMENT:: ... ctkevents
 any number of CtlObjects to be performed by this event.
 
 METHOD:: condition
@@ -68,7 +68,7 @@ returns::
 Condition to be used by this CtkEvent
 
 METHOD:: next
-A duration in beats for rescheduling the execution of the CtkEvent function. Typically used with conjunction with link::#-condition:: being set to a number of iterations. Defaults to 'nil'. Strong::If the value remains 'nil', no further execution will be allowed, regardless of condition.:: 0.0 is an allowable value, but if this is the case, your condition must terminate the execution of the event to avoid an infinite loop.
+A duration in beats for rescheduling the execution of the CtkEvent function. Typically used in conjunction with link::#-condition:: being set to a number of iterations. Defaults to 'nil'. Strong::If the value remains 'nil', no further execution will be allowed, regardless of condition.:: 0.0 is an allowable value, but if this is the case, your condition must terminate the execution of the event to avoid an infinite loop.
 ARGUMENT:: inval
 Duration in beats.
 

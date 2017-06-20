@@ -40,7 +40,6 @@ d = CtkProtoNotes(SynthDescLib.global);
 d[\default]; // returns the CtkNoteObject from the SynthDef \default
 d[\default].args;
 ::
-::
 
 INSTANCEMETHODS::
 
