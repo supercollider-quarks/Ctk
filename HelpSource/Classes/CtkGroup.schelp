@@ -147,7 +147,7 @@ Routine.run({
 })
 )
 ::
-subsection:: CtkScore Uses
+subsection:: CtkScore uses
 Examples that populate an instance of CtkScore. The CtkScore can then be rendered in NRT, played or saved as a file. See link::Classes/CtkScore:: for more examples.
 code::
 (
