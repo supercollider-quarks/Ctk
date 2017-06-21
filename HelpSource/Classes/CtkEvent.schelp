@@ -60,7 +60,7 @@ Function to be used.
 METHOD:: collect
 This is the method to populate CtkEvent with CtkObjects (like CtkNote). Typically .collect will be called inside this CtkEvent's link::#-function::.
 ARGUMENT:: ... ctkevents
-any number of CtKObjects to be performed by this event.
+any number of CtkObjects to be performed by this event.
 
 METHOD:: condition
 If this is a number, the link::#-function:: of the CtkEvent will be executed that many times. If it is an Env, the function will be executed until the duration is satisfied (or, if the Env has a releaseNode, until .release is called and the Env has finished). Condition can also be a Boolean, or a function to be evaluated on each execution of the function. If a function is given for the condition, the internal CtkTimer and instance var 'inc' are available as arguments. The function should return a Boolean.
