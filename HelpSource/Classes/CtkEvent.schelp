@@ -68,7 +68,7 @@ returns::
 Condition to be used by this CtkEvent
 
 METHOD:: next
-A duration in beats for rescheduling the execution of the CtkEvent function. Typically used in conjunction with link::#-condition:: being set to a number of iterations. Defaults to 'nil'. Strong::If the value remains 'nil', no further execution will be allowed, regardless of condition.:: 0.0 is an allowable value, but if this is the case, your condition must terminate the execution of the event to avoid an infinite loop.
+A duration in beats for rescheduling the execution of the CtkEvent function. Defaults to 'nil'. Strong::If the value remains 'nil', no further execution will be allowed, regardless of condition.:: 0.0 is an allowable value, but if this is the case, your condition must terminate the execution of the event to avoid an infinite loop.
 ARGUMENT:: inval
 Duration in beats.
 
