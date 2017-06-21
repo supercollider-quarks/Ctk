@@ -1,5 +1,5 @@
 TITLE:: CtkNote
-summary:: A supporting class for note prototyping system
+summary:: A note prototyping object
 categories:: Libraries>CTK
 related:: Overviews/CTK, Classes/CtkScore, Classes/CtkSynthDef, Classes/CtkProtoNotes, Classes/CtkNote, Classes/CtkBuffer, Classes/CtkControl, Classes/CtkAudio, Classes/CtkEvent, Classes/CtkGroup
 keyword::CTK
@@ -10,10 +10,6 @@ Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more
 CtkNotes are most easily created through the use of link::Classes/CtkProtoNotes:: and link::Classes/CtkSynthDef:: (CtkNoteObjects). Rarely will you create them directly (since it would be difficult to enable all of the functionality available). Examples below show the intended use.
 
 In addition, getter and setter arguments are created for each instance of CtkNote based on the SynthDef's arguments.
-
-NOTE::In order to ensure proper timing of scheduled events, CTK sends messages to the server as OSC bundles with a default latency of 0.1s (see link::Guides/ServerTiming::). This is settable in link::Classes/CtkObj#*latency:: class variable.
-When CTK messages are meant to be set in real-time using input interfaces (MIDI, GUI etc), setting the link::Classes/CtkObj#*latency:: to code::0:: will result in processing the messages as soon as possible (but printing the "late" messages from the server as well).
-::
 
 CLASSMETHODS::
 
@@ -66,6 +62,9 @@ INSTANCEMETHODS::
 
 METHOD:: play
 Play an instance of CtkNote, for real-time use.
+NOTE::In order to ensure proper timing of scheduled events, CTK sends messages to the server as OSC bundles with a default latency of 0.1s (see link::Guides/ServerTiming::). This is settable in link::Classes/CtkObj#*latency:: class variable.
+When CTK messages are meant to be set in real-time using input interfaces (MIDI, GUI etc), setting the link::Classes/CtkObj#*latency:: to code::0:: will result in processing the messages as soon as possible (but printing the "late" messages from the server as well).
+::
 ARGUMENT:: group
 Schedule with a given group.
 
@@ -90,6 +89,30 @@ show the args
 ARGUMENT:: argdict
 returns:: CtkNote's args
 
+private::buildBundle
+private::bundle
+private::checkIfRelease
+private::checkNewValue
+private::copy
+private::duration
+private::endtime
+private::getFreeMsg
+private::getValueAtTime
+private::handleRealTimeUpdate
+private::initCN
+private::mapDict
+private::msgBundle
+private::newBundle
+private::noMaps
+private::parseKeys
+private::performArgs
+private::playAutomations
+private::prBundle
+private::refsDict
+private::setDuration
+private::setStarttime
+private::setnDict
+private::synthdefname
 
 EXAMPLES::
 
@@ -130,7 +153,7 @@ c.release;
 
 
 ::
-subsection:: Examples that create new instances of a SynthDef directly from CtkProtoNotes
+subsection:: Examples that create new instances of a CtkNote directly from CtkProtoNotes
 code::
 
 s = Server.internal.boot;
