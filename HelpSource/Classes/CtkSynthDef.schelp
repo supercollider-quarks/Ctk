@@ -46,7 +46,7 @@ code::
 s.boot;
 (
 a = CtkSynthDef(\noise, {arg amp = 0.25;
-    Out.ar(0, PinkNoise.ar(amp ! 2));
+    Out.ar(0, PinkNoise.ar(amp ! 2));
 });
 );
 b = a.note; //returns a CtkNote
@@ -92,7 +92,7 @@ a = CtkSynthDef(\test2, {arg gate = 1, freq = 440, amp = 0.5;
 )
 
 // create a new instance of CtkNote based on this prototype
-b = a.new;
+b = a.note;
 
 // set values for its arguments. See the CtkNote helpfile for more info on arguments
 b.freq_(440).amp_(1.0).env_(Env([0, 1, 0], [0.5, 0.5], \sin, 1));
