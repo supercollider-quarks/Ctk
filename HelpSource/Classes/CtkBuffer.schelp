@@ -480,7 +480,7 @@ playfun = {arg starttime, gestdur, rateenv;
 	while({
 		ratio = now / gestdur;
 		rate = rateenv[ratio];
-		play.note(now + starttime, 0.5)
+		play.new(now + starttime, 0.5)
 			.buffer_(buf) // the arg will parse the CtkBuffer and grab its bufnum
 			.rate_(CtkControl.env(Env([rate, 1], [1])))
 			.dur_(0.5)
@@ -499,6 +499,7 @@ score.play
 // uncomment to save the score
 //score.saveToFile("~/Desktop/test.sc".standardizePath);
 // uncomment to write the score to a soundfile
-//score.write("~/Desktop/test.aiff".standardizePath, options: ServerOptions.new.numOutputBusChannels_(2));
+//score.write("~/Desktop/test.aiff".standardizePath,
+//	options: ServerOptions.new.numOutputBusChannels_(2));
 )
 ::
