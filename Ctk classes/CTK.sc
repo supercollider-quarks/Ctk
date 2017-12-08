@@ -240,12 +240,12 @@ CtkScore : CtkObj {
 					data = me.collection.collectAs({|item| item}, FloatArray);
 					(data.size / 1024).floor.do({arg i;
 						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, i * 1024, 1024] ++
-							data[(i*1024).asInt..((i*1024)+1023).asInt]));
+							data[(i*1024).asInteger..((i*1024)+1023).asInteger]));
 					});
 					chunk = (data.size / 1024).floor * 1024;
 					(data.size > chunk).if({
 						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk, data.size-chunk-1] ++
-							data[chunk.asInt..(data.size-chunk-1).asInt]));
+							data[chunk.asInteger..(data.size-chunk-1).asInteger]));
 					});
 				});
 				(me.closeBundle.notNil).if({
@@ -1854,20 +1854,20 @@ CtkBuffer : CtkObj {
 				// check if channels array is specified
 				nFrames = numFrames ?? {0};
 				channels.notNil.if({
-					bundle = [\b_allocReadChannel, bufnum, path, startFrame, nFrames] ++ channels;
+					bundle = [\b_allocReadChannel, bufnum, path, startFrame, nFrames.asInteger] ++ channels;
 					}, {
-					bundle = [\b_allocRead, bufnum, path, startFrame, nFrames];
+					bundle = [\b_allocRead, bufnum, path, startFrame, nFrames.asInteger];
 					});
 				} {// path, size ( for DiskIn )
 				path.notNil && size.notNil
 				} {
 				nFrames = size; //numFrames ?? {size};
 				channels.notNil.if({
-					bundle = [\b_alloc, bufnum, size, numChannels,
-						[\b_readChannel, bufnum, path, startFrame, nFrames, 0, 1] ++ channels];
+					bundle = [\b_alloc, bufnum, size.asInteger, numChannels,
+						[\b_readChannel, bufnum, path, startFrame, nFrames.asInteger, 0, 1] ++ channels];
 					}, {
 					bundle = [\b_alloc, bufnum, size, numChannels,
-						[\b_read, bufnum, path, startFrame, nFrames, 0, 1]];
+						[\b_read, bufnum, path, startFrame, nFrames.asInteger, 0, 1]];
 					});
 				closeBundle = [\b_close, bufnum];
 				} { /// just allocate memory (for delays, FFTs etc.)
@@ -1875,7 +1875,7 @@ CtkBuffer : CtkObj {
 				} {
 				numChannels = numChannels ?? {1};
 				numFrames = size / numChannels;
-				bundle = [\b_alloc, bufnum, size, numChannels];
+				bundle = [\b_alloc, bufnum, size.asInteger, numChannels];
 				};
 			freeBundle = [\b_free, bufnum];
 			}, {
@@ -1997,7 +1997,7 @@ CtkBuffer : CtkObj {
 	read {arg time = 0.0, path, fileFrameStart = 0, numFrames, bufStartFrame = 0,
 			leaveOpen = false, completionMessage, action;
 		var bund;
-		bund = [\b_read, bufnum, path, fileFrameStart, (numFrames ? -1).asInt,
+		bund = [\b_read, bufnum, path, fileFrameStart, (numFrames ? -1).asInteger,
 			bufStartFrame, leaveOpen.binaryValue, completionMessage.value(this)];
 		this.bufferFunc(time, bund, action);
 	}
