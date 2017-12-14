@@ -2039,28 +2039,28 @@ CtkBuffer : CtkObj {
 
 	// write a buffer out to a file. For DiskOut usage in real-time, use openWrite and closeWrite
 	write {arg time = 0.0, path, headerFormat = 'aiff', sampleFormat='int16',
-			numberOfFrames = -1, startingFrame = 0;
+			numberOfFrames = -1, startingFrame = 0, action;
 		var bund;
 		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames.asInteger,
 			startingFrame, 0];
-		this.bufferFunc(time, bund);
+		this.bufferFunc(time, bund, action);
 		}
 
 	// prepare a buffer for use with DiskOut
 	openWrite {arg time = 0.0, path, headerFormat = 'aiff', sampleFormat='int16',
-			numberOfFrames = -1, startingFrame = 0;
+			numberOfFrames = -1, startingFrame = 0, action;
 		var bund;
 		isOpen = true;
 		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames.asInteger,
 			startingFrame, 1];
-		this.bufferFunc(time, bund);
+		this.bufferFunc(time, bund, action);
 		}
 
-	closeWrite {arg time = 0.0;
+	closeWrite {arg time = 0.0, action;
 		var bund;
 		isOpen = false;
 		bund = [\b_close, bufnum];
-		this.bufferFunc(time, bund);
+		this.bufferFunc(time, bund, action);
 		}
 
 	gen {arg time = 0.0, cmd, normalize = 0, wavetable = 0, clear = 1 ... args;
@@ -2163,9 +2163,8 @@ CtkBuffer : CtkObj {
 				condition = Condition.new;
 				path = PathName.tmp ++ this.hash.asString;
 
-				msg = this.write(0.0, path, "aiff", "float", count, index);
-				latency.wait;
-				server.sync(condition);
+				msg = this.write(0.0, path, "aiff", "float", count, index, {condition.test_(true); condition.signal});
+				condition.wait;
 				file = SoundFile.new;
 				protect {
 					file.openRead(path);
