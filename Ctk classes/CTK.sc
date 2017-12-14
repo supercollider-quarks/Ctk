@@ -2100,30 +2100,50 @@ CtkBuffer : CtkObj {
 	// slightly hackish, yes, but tricks a Buffer into writing its contents into a Ctk buffer
 	copyFromBuffer { arg buf, dstStartAt = 0, srcStartAt = 0, numSamples = -1;
 		server.listSendMsg(
-			buf.copyMsg(this, dstStartAt, srcStartAt, numSamples)
+			buf.copyMsg(this, dstStartAt.asInteger, srcStartAt.asInteger, numSamples.asInteger)
 		)
 	}
 	copyMsg { arg buf, dstStartAt = 0, srcStartAt = 0, numSamples = -1;
 		^[\b_gen, buf.bufnum, "copy", dstStartAt, bufnum, srcStartAt, numSamples]
 	}
 
-	preparePartConv { arg time = 0.001, buf, fftsize;
+	preparePartConv { arg time = 0.001, buf, fftsize, action;
 		var bund;
 		//server.listSendMsg(["/b_gen", bufnum, "PreparePartConv", buf.bufnum, fftsize]);
 		bund = [\b_gen, bufnum, "PreparePartConv", buf.bufnum, fftsize];
-		this.bufferFunc(time, bund)
+		this.bufferFunc(time, bund, action)
 	}
 
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
 	bufferFunc {arg time, bund, action;
-		var cond;
+		var cond, id, command, syncUsingDoneMsg = true;
 		isPlaying.if({
 			SystemClock.sched(time, {
 				Routine.run({
 					cond = Condition.new;
-					server.sendBundle(latency, bund);
-					server.sync(cond);
-					latency.wait;
+					command = bund[0];
+					command.switch(
+						\b_write, {
+							OSCFunc({|msg| cond.test_(true); cond.signal}, '/done', server.addr, nil, ['/b_write', bufnum]).oneShot;
+						},
+						\b_read, {
+							OSCFunc({|msg| cond.test_(true); cond.signal}, '/done', server.addr, nil, ['/b_read', bufnum]).oneShot;
+						},
+						\b_gen, {
+							OSCFunc({|msg| cond.test_(true); cond.signal}, '/done', server.addr, nil, ['/b_gen', bufnum]).oneShot;
+						},
+						{ //in all other cases
+							syncUsingDoneMsg = false;
+						}
+					);
+					if(syncUsingDoneMsg, {
+						server.sendBundle(latency, bund);
+						cond.wait;
+					}, {
+						server.sendBundle(latency, bund);
+						latency.wait;
+						server.sync(cond);
+					});
 					action.value(this);
 				})
 			})
