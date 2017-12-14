@@ -154,6 +154,8 @@ ARGUMENT:: numberOfFrames
 The number of frames to write. The defaults is -1 (all frames).
 ARGUMENT:: startingFrame
 The starting frame of the buffer to write. The default is 0.
+ARGUMENT:: action
+An action to be executed when the buffer is ready
 
 METHOD:: openWrite
 Write a buffer to file at path. This file is left open for use by DiskOut, and will need to have the link::#-closeWrite:: method	applied to the CtkBuffer.
@@ -169,11 +171,15 @@ ARGUMENT:: numberOfFrames
 The number of frames to write. The defaults is -1 (all frames).
 ARGUMENT:: startingFrame
 The starting frame of the buffer to write. The default is 0.
+ARGUMENT:: action
+An action to be executed when the buffer is ready
 
 METHOD:: closeWrite
 Close and write the header for a file that had been created and left open with openWrite.
 argument::time
 In real-time mode, 'time' schedules the closeWrite in the future.
+ARGUMENT:: action
+An action to be executed when the buffer is ready
 
 METHOD:: fill
 Fill a buffer with newValue starting at sample start for numSamples.
@@ -220,6 +226,8 @@ ARGUMENT:: buf
 impulse response buffer
 ARGUMENT:: fftsize
 spectral convolution partition size
+ARGUMENT:: action
+An action to be executed when the buffer is ready
 returns::
 CtkBuffer for use with PartConv
 
