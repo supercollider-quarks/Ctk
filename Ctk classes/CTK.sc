@@ -2041,7 +2041,7 @@ CtkBuffer : CtkObj {
 	write {arg time = 0.0, path, headerFormat = 'aiff', sampleFormat='int16',
 			numberOfFrames = -1, startingFrame = 0;
 		var bund;
-		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames,
+		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames.asInteger,
 			startingFrame, 0];
 		this.bufferFunc(time, bund);
 		}
@@ -2051,7 +2051,7 @@ CtkBuffer : CtkObj {
 			numberOfFrames = -1, startingFrame = 0;
 		var bund;
 		isOpen = true;
-		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames,
+		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames.asInteger,
 			startingFrame, 1];
 		this.bufferFunc(time, bund);
 		}
