@@ -1904,8 +1904,8 @@ CtkBuffer : CtkObj {
 					bundle = bundle.add(completion)
 					});
 //				cond = cond ?? {Condition.new};
-				server.sendBundle(latency, bundle);
-				sync.if({server.sync(cond);});
+				// server.sendBundle(latency, bundle);
+				sync.if({server.sync(cond, [bundle], latency)}, {server.sendBundle(latency, bundle)});
 				// are there already messages to send? If yes... SYNC!, then send NOW
 				((messages.size > 0) or: {collection.notNil}).if({
 					server.sync(cond);
@@ -1913,9 +1913,9 @@ CtkBuffer : CtkObj {
 						msg = me.messages;
 						msg.do({arg thismsg;
 							server.sendBundle(latency, thismsg);
-							});
-						server.sync(cond);
 						});
+						server.sync(cond);
+					});
 					server.sync(cond);
 					collection.notNil.if({
 						(collection.size < 1025).if({
@@ -2121,29 +2121,7 @@ CtkBuffer : CtkObj {
 			SystemClock.sched(time, {
 				Routine.run({
 					cond = Condition.new;
-					command = bund[0];
-					command.switch(
-						\b_write, {
-							OSCFunc({|msg| cond.test_(true); cond.signal}, '/done', server.addr, nil, ['/b_write', bufnum]).oneShot;
-						},
-						\b_read, {
-							OSCFunc({|msg| cond.test_(true); cond.signal}, '/done', server.addr, nil, ['/b_read', bufnum]).oneShot;
-						},
-						\b_gen, {
-							OSCFunc({|msg| cond.test_(true); cond.signal}, '/done', server.addr, nil, ['/b_gen', bufnum]).oneShot;
-						},
-						{ //in all other cases
-							syncUsingDoneMsg = false;
-						}
-					);
-					if(syncUsingDoneMsg, {
-						server.sendBundle(latency, bund);
-						cond.wait;
-					}, {
-						server.sendBundle(latency, bund);
-						latency.wait;
-						server.sync(cond);
-					});
+					server.sync(cond, [bund], latency);
 					action.value(this);
 				})
 			})
@@ -2181,7 +2159,7 @@ CtkBuffer : CtkObj {
 		{
 			Routine.run({
 				condition = Condition.new;
-				path = PathName.tmp ++ this.hash.asString;
+				path = PathName.tmp ++ this.hash.asString ++ action.hash.asString;
 
 				msg = this.write(0.0, path, "aiff", "float", count, index, {condition.test_(true); condition.signal});
 				condition.wait;
