@@ -430,7 +430,7 @@ a = CtkBuffer(size: 32768).load;
 // open a file for writing with DiskOut
 a.openWrite(0.0, "~/Desktop/test.aiff".standardizePath, 'aiff', 'int16', -1);
 
-b = {DiskOut.ar(a, SinOsc.ar(440, 0, 0.2))}.play(s);
+b = {var sig =  SinOsc.ar(440, 0, 0.2); DiskOut.ar(a, sig); sig}.play(s);
 
 // let it run for a moment... then kill
 b.free;
