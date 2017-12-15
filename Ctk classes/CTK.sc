@@ -2116,7 +2116,7 @@ CtkBuffer : CtkObj {
 
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
 	bufferFunc {arg time, bund, action;
-		var cond, id, command, syncUsingDoneMsg = true;
+		var cond;
 		isPlaying.if({
 			SystemClock.sched(time, {
 				Routine.run({
