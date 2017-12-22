@@ -1589,40 +1589,49 @@ CtkNote : CtkNode {
 	play {arg group;
 		var bund, start;
 		this.isPlaying.not.if({
-			SystemClock.sched(starttime ?? {0.0}, {
+			var playFunc = {arg sendImmediately = false;
 				bund = OSCBundle.new;
 				bund.add(this.buildBundle);
 				setnDict.keysValuesDo({arg key, val;
 					val = val.perform(\asUGenInput);
 					bund.add([\n_setn, node, key, val.size] ++ val);
-					});
+				});
 				mapDict.keysValuesDo({arg key, val;
 					(val.isPlaying.not).if({
 						this.checkIfRelease(val);
 						val.play;
-						});
+					});
 					val.isKindOf(CtkControl).if({
 						bund.add([\n_map, node, key, val.asUGenInput]);
-						}, {
+					}, {
 						bund.add([\n_mapa, node, key, val.asUGenInput]);
-						})
-					});
-				bund.send(server, latency);
+					})
+				});
+				if(sendImmediately, {
+					server.sendBundle(nil, bund.messages);
+				}, {
+					bund.send(server, latency);
+				});
 				// for CtkControl mapping... make sure things are running!
 				this.watch(group ?? {target}); // don't think this is correct - how to figure out which group things are runningin?
 				// if a duration is given... kill it
 				duration.notNil.if({
 					SystemClock.sched(duration, {this.free(0.1, false)})
-					});
+				});
 				(automations.size > 0).if({
 					this.playAutomations;
-					})
-				});
-			^this;
+				})
+			};
+			if(starttime.notNil || latency.notNil, {
+				SystemClock.sched(starttime, {playFunc.value(false)});
 			}, {
+				playFunc.value(true); //if starttime is nil, send immediately
+			});
+			^this;
+		}, {
 			"This instance of CtkNote is already playing".warn;
-			})
-		}
+		})
+	}
 
 	playAutomations {
 		var events, curtime = 0.0, firstev, idx = 0;
@@ -1738,11 +1747,13 @@ CtkGroup : CtkNode {
 	// create the group for RT uses
 	play {arg neg = 0.01; // neg helps insure that CtkGroups will be created first
 		var bundle = this.buildBundle;
-		starttime.notNil.if({
+		(starttime.notNil && latency.notNil).if({
 			SystemClock.sched(starttime, {server.sendBundle(latency - neg, bundle)});
-			}, {
-			server.sendBundle(latency - neg, bundle);
-			});
+		}, {
+			// WARNING: possible change in behavior. Instead of sending at latency - neg, it is sent immediately. This enables s.sync afterwards though!
+			// server.sendBundle(latency - neg, bundle);
+			server.sendBundle(nil, bundle); //if starttime or latency is nil, send right away
+		});
 		duration.notNil.if({
 			SystemClock.sched(duration, {this.freeAll})
 			});
