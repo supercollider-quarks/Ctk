@@ -240,12 +240,12 @@ CtkScore : CtkObj {
 					data = me.collection.collectAs({|item| item}, FloatArray);
 					(data.size / 1024).floor.do({arg i;
 						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, i * 1024, 1024] ++
-							data[(i*1024).asInt..((i*1024)+1023).asInt]));
+							data[(i*1024).asInteger..((i*1024)+1023).asInteger]));
 					});
 					chunk = (data.size / 1024).floor * 1024;
 					(data.size > chunk).if({
 						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk, data.size-chunk-1] ++
-							data[chunk.asInt..(data.size-chunk-1).asInt]));
+							data[chunk.asInteger..(data.size-chunk-1).asInteger]));
 					});
 				});
 				(me.closeBundle.notNil).if({
@@ -1854,20 +1854,20 @@ CtkBuffer : CtkObj {
 				// check if channels array is specified
 				nFrames = numFrames ?? {0};
 				channels.notNil.if({
-					bundle = [\b_allocReadChannel, bufnum, path, startFrame, nFrames] ++ channels;
+					bundle = [\b_allocReadChannel, bufnum, path, startFrame, nFrames.asInteger] ++ channels;
 					}, {
-					bundle = [\b_allocRead, bufnum, path, startFrame, nFrames];
+					bundle = [\b_allocRead, bufnum, path, startFrame, nFrames.asInteger];
 					});
 				} {// path, size ( for DiskIn )
 				path.notNil && size.notNil
 				} {
 				nFrames = size; //numFrames ?? {size};
 				channels.notNil.if({
-					bundle = [\b_alloc, bufnum, size, numChannels,
-						[\b_readChannel, bufnum, path, startFrame, nFrames, 0, 1] ++ channels];
+					bundle = [\b_alloc, bufnum, size.asInteger, numChannels,
+						[\b_readChannel, bufnum, path, startFrame, nFrames.asInteger, 0, 1] ++ channels];
 					}, {
 					bundle = [\b_alloc, bufnum, size, numChannels,
-						[\b_read, bufnum, path, startFrame, nFrames, 0, 1]];
+						[\b_read, bufnum, path, startFrame, nFrames.asInteger, 0, 1]];
 					});
 				closeBundle = [\b_close, bufnum];
 				} { /// just allocate memory (for delays, FFTs etc.)
@@ -1875,7 +1875,7 @@ CtkBuffer : CtkObj {
 				} {
 				numChannels = numChannels ?? {1};
 				numFrames = size / numChannels;
-				bundle = [\b_alloc, bufnum, size, numChannels];
+				bundle = [\b_alloc, bufnum, size.asInteger, numChannels];
 				};
 			freeBundle = [\b_free, bufnum];
 			}, {
@@ -1904,8 +1904,8 @@ CtkBuffer : CtkObj {
 					bundle = bundle.add(completion)
 					});
 //				cond = cond ?? {Condition.new};
-				server.sendBundle(latency, bundle);
-				sync.if({server.sync(cond);});
+				// server.sendBundle(latency, bundle);
+				sync.if({server.sync(cond, [bundle], latency)}, {server.sendBundle(latency, bundle)});
 				// are there already messages to send? If yes... SYNC!, then send NOW
 				((messages.size > 0) or: {collection.notNil}).if({
 					server.sync(cond);
@@ -1913,9 +1913,9 @@ CtkBuffer : CtkObj {
 						msg = me.messages;
 						msg.do({arg thismsg;
 							server.sendBundle(latency, thismsg);
-							});
-						server.sync(cond);
 						});
+						server.sync(cond);
+					});
 					server.sync(cond);
 					collection.notNil.if({
 						(collection.size < 1025).if({
@@ -1997,7 +1997,7 @@ CtkBuffer : CtkObj {
 	read {arg time = 0.0, path, fileFrameStart = 0, numFrames, bufStartFrame = 0,
 			leaveOpen = false, completionMessage, action;
 		var bund;
-		bund = [\b_read, bufnum, path, fileFrameStart, (numFrames ? -1).asInt,
+		bund = [\b_read, bufnum, path, fileFrameStart, (numFrames ? -1).asInteger,
 			bufStartFrame, leaveOpen.binaryValue, completionMessage.value(this)];
 		this.bufferFunc(time, bund, action);
 	}
@@ -2039,28 +2039,28 @@ CtkBuffer : CtkObj {
 
 	// write a buffer out to a file. For DiskOut usage in real-time, use openWrite and closeWrite
 	write {arg time = 0.0, path, headerFormat = 'aiff', sampleFormat='int16',
-			numberOfFrames = -1, startingFrame = 0;
+			numberOfFrames = -1, startingFrame = 0, action;
 		var bund;
-		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames,
+		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames.asInteger,
 			startingFrame, 0];
-		this.bufferFunc(time, bund);
+		this.bufferFunc(time, bund, action);
 		}
 
 	// prepare a buffer for use with DiskOut
 	openWrite {arg time = 0.0, path, headerFormat = 'aiff', sampleFormat='int16',
-			numberOfFrames = -1, startingFrame = 0;
+			numberOfFrames = -1, startingFrame = 0, action;
 		var bund;
 		isOpen = true;
-		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames,
+		bund = [\b_write, bufnum, path, headerFormat, sampleFormat, numberOfFrames.asInteger,
 			startingFrame, 1];
-		this.bufferFunc(time, bund);
+		this.bufferFunc(time, bund, action);
 		}
 
-	closeWrite {arg time = 0.0;
+	closeWrite {arg time = 0.0, action;
 		var bund;
 		isOpen = false;
 		bund = [\b_close, bufnum];
-		this.bufferFunc(time, bund);
+		this.bufferFunc(time, bund, action);
 		}
 
 	gen {arg time = 0.0, cmd, normalize = 0, wavetable = 0, clear = 1 ... args;
@@ -2100,18 +2100,18 @@ CtkBuffer : CtkObj {
 	// slightly hackish, yes, but tricks a Buffer into writing its contents into a Ctk buffer
 	copyFromBuffer { arg buf, dstStartAt = 0, srcStartAt = 0, numSamples = -1;
 		server.listSendMsg(
-			buf.copyMsg(this, dstStartAt, srcStartAt, numSamples)
+			buf.copyMsg(this, dstStartAt.asInteger, srcStartAt.asInteger, numSamples.asInteger)
 		)
 	}
 	copyMsg { arg buf, dstStartAt = 0, srcStartAt = 0, numSamples = -1;
 		^[\b_gen, buf.bufnum, "copy", dstStartAt, bufnum, srcStartAt, numSamples]
 	}
 
-	preparePartConv { arg time = 0.001, buf, fftsize;
+	preparePartConv { arg time = 0.001, buf, fftsize, action;
 		var bund;
 		//server.listSendMsg(["/b_gen", bufnum, "PreparePartConv", buf.bufnum, fftsize]);
 		bund = [\b_gen, bufnum, "PreparePartConv", buf.bufnum, fftsize];
-		this.bufferFunc(time, bund)
+		this.bufferFunc(time, bund, action)
 	}
 
 	// checks if this is a live, active buffer for real-time use, or being used to build a CtkScore
@@ -2121,9 +2121,7 @@ CtkBuffer : CtkObj {
 			SystemClock.sched(time, {
 				Routine.run({
 					cond = Condition.new;
-					server.sendBundle(latency, bund);
-					server.sync(cond);
-					latency.wait;
+					server.sync(cond, [bund], latency);
 					action.value(this);
 				})
 			})
@@ -2161,11 +2159,10 @@ CtkBuffer : CtkObj {
 		{
 			Routine.run({
 				condition = Condition.new;
-				path = PathName.tmp ++ this.hash.asString;
+				path = PathName.tmp ++ this.hash.asString ++ action.hash.asString;
 
-				msg = this.write(0.0, path, "aiff", "float", count, index);
-				latency.wait;
-				server.sync(condition);
+				msg = this.write(0.0, path, "aiff", "float", count, index, {condition.test_(true); condition.signal});
+				condition.wait;
 				file = SoundFile.new;
 				protect {
 					file.openRead(path);
