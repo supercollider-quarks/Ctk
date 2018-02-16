@@ -1608,7 +1608,9 @@ CtkNote : CtkNode {
 					})
 				});
 				if(sendImmediately, {
-					server.sendBundle(nil, bund.messages);
+					bund.messages.do({|thisMsg| //not sure if we ever have more than one...
+						server.sendBundle(nil, thisMsg);
+					});
 				}, {
 					bund.send(server, latency);
 				});
@@ -1622,10 +1624,10 @@ CtkNote : CtkNode {
 					this.playAutomations;
 				})
 			};
-			if(starttime.notNil || latency.notNil, {
+			if(starttime.notNil && latency.notNil, {
 				SystemClock.sched(starttime, {playFunc.value(false)});
 			}, {
-				playFunc.value(true); //if starttime is nil, send immediately
+				playFunc.value(true); //if starttime or latency is nil, send immediately
 			});
 			^this;
 		}, {
