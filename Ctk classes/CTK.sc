@@ -1908,46 +1908,52 @@ CtkBuffer : CtkObj {
 		})
 	}
 
-	load {arg time = 0.0, sync = true, onComplete;
-		SystemClock.sched(time, {
-			Routine.run({
-				var msg;
-				isPlaying = true;
-				completion.notNil.if({
-					bundle = bundle.add(completion)
-					});
-//				cond = cond ?? {Condition.new};
-				// server.sendBundle(latency, bundle);
-				sync.if({server.sync(cond, [bundle], latency)}, {server.sendBundle(latency, bundle)});
-				// are there already messages to send? If yes... SYNC!, then send NOW
-				((messages.size > 0) or: {collection.notNil}).if({
-					server.sync(cond);
-					messages.do({arg me;
-						msg = me.messages;
-						msg.do({arg thismsg;
-							server.sendBundle(latency, thismsg);
-						});
-						server.sync(cond);
-					});
-					server.sync(cond);
-					collection.notNil.if({
-						(collection.size < 1025).if({
-							this.set(0.0, 0, collection);
-						}, {
-							this.loadCollection(0.0, 0);
-						})
-					})
-				}, {
-					isPlaying = true;
-				});
-				sync.if({
-					server.sync(cond);
-					("CtkBuffer with bufnum id "++bufnum++" loaded").postln;
-					onComplete.value;
-					});
-				})
+	load {arg time, sync = true, onComplete;
+		var loadFunc;
+		loadFunc = {
+			var msg;
+			isPlaying = true;
+			completion.notNil.if({
+				bundle = bundle.add(completion)
 			});
-		}
+			//				cond = cond ?? {Condition.new};
+			// server.sendBundle(latency, bundle);
+			sync.if({server.sync(cond, [bundle], latency)}, {server.sendBundle(latency, bundle)});
+			// are there already messages to send? If yes... SYNC!, then send NOW
+			((messages.size > 0) or: {collection.notNil}).if({
+				server.sync(cond);
+				messages.do({arg me;
+					msg = me.messages;
+					msg.do({arg thismsg;
+						server.sendBundle(latency, thismsg);
+					});
+					server.sync(cond);
+				});
+				server.sync(cond);
+				collection.notNil.if({
+					(collection.size < 1025).if({
+						this.set(0.0, 0, collection);
+					}, {
+						this.loadCollection(0.0, 0);
+					})
+				})
+			}, {
+				isPlaying = true;
+			});
+			sync.if({
+				server.sync(cond);
+				("CtkBuffer with bufnum id "++bufnum++" loaded").postln;
+				onComplete.value;
+			});
+		};
+		(time.isNil).if({
+			loadFunc.forkIfNeeded;
+		}, {
+			SystemClock.sched(time, {
+				Routine.run(loadFunc)
+			});
+		});
+	}
 
 	bundle {
 		completion.notNil.if({
