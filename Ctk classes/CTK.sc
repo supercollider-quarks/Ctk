@@ -1,5 +1,6 @@
 CtkObj {
 	classvar <>latency = 0.1, <cond, <addActions;
+	classvar <interplEnvExists;
 	var <objargs;
 	var <uniqueMethods;
 
@@ -1442,7 +1443,11 @@ CtkNote : CtkNode {
 
 	checkNewValue {arg argname, newValue, oldval;
 		case {
-			(newValue.isArray || newValue.isKindOf(Env) || newValue.isKindOf(InterplEnv))
+			interplEnvExists.if({
+				(newValue.isArray || newValue.isKindOf(Env) || newValue.isKindOf(InterplEnv))
+			}, {
+				(newValue.isArray || newValue.isKindOf(Env))
+			});
 			}{
 			newValue = newValue.asArray;
 			this.setn(nil, argname, newValue.asUGenInput);
@@ -1549,7 +1554,11 @@ CtkNote : CtkNode {
 
 	parseKeys {arg key, val;
 		case {
-			(val.isArray || val.isKindOf(Env) || val.isKindOf(InterplEnv))
+			interplEnvExists.if({
+				(val.isArray || val.isKindOf(Env) || val.isKindOf(InterplEnv))
+			}, {
+				(val.isArray || val.isKindOf(Env))
+			});
 			}{
 			setnDict.add(key -> val.asArray); ^nil;
 			}{
@@ -2279,9 +2288,11 @@ CtkControl : CtkBus {
 	initEnv {arg argenv, argLevelScale, argLevelBias, argTimeScale, argAddAction, argTarget,
 			argDoneAction;
 		env = argenv;
-		env.isKindOf(InterplEnv).if({
-			env = env.asEnv
+		interplEnvExists.if({
+			env.isKindOf(InterplEnv).if({
+				env = env.asEnv
 			});
+		});
 		timeScale = argTimeScale;
 		levelScale = argLevelScale;
 		levelBias = argLevelBias;
@@ -2512,6 +2523,7 @@ CtkControl : CtkBus {
 				});
 				sddict.add(thisctkno);
 			});
+			interplEnvExists = Class.allClasses.collect({|cl| cl.name}).includes(\InterplEnv); //workaround for SC 3.10+
 		})
 		}
 
