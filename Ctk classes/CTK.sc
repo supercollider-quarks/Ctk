@@ -1589,40 +1589,51 @@ CtkNote : CtkNode {
 	play {arg group;
 		var bund, start;
 		this.isPlaying.not.if({
-			SystemClock.sched(starttime ?? {0.0}, {
+			var playFunc = {arg sendImmediately = false;
 				bund = OSCBundle.new;
 				bund.add(this.buildBundle);
 				setnDict.keysValuesDo({arg key, val;
 					val = val.perform(\asUGenInput);
 					bund.add([\n_setn, node, key, val.size] ++ val);
-					});
+				});
 				mapDict.keysValuesDo({arg key, val;
 					(val.isPlaying.not).if({
 						this.checkIfRelease(val);
 						val.play;
-						});
+					});
 					val.isKindOf(CtkControl).if({
 						bund.add([\n_map, node, key, val.asUGenInput]);
-						}, {
+					}, {
 						bund.add([\n_mapa, node, key, val.asUGenInput]);
-						})
+					})
+				});
+				if(sendImmediately, {
+					bund.messages.do({|thisMsg| //not sure if we ever have more than one...
+						server.sendBundle(nil, thisMsg);
 					});
-				bund.send(server, latency);
+				}, {
+					bund.send(server, latency);
+				});
 				// for CtkControl mapping... make sure things are running!
 				this.watch(group ?? {target}); // don't think this is correct - how to figure out which group things are runningin?
 				// if a duration is given... kill it
 				duration.notNil.if({
 					SystemClock.sched(duration, {this.free(0.1, false)})
-					});
+				});
 				(automations.size > 0).if({
 					this.playAutomations;
-					})
-				});
-			^this;
+				})
+			};
+			if(starttime.notNil && latency.notNil, {
+				SystemClock.sched(starttime, {playFunc.value(false)});
 			}, {
+				playFunc.value(true); //if starttime or latency is nil, send immediately
+			});
+			^this;
+		}, {
 			"This instance of CtkNote is already playing".warn;
-			})
-		}
+		})
+	}
 
 	playAutomations {
 		var events, curtime = 0.0, firstev, idx = 0;
@@ -1738,11 +1749,13 @@ CtkGroup : CtkNode {
 	// create the group for RT uses
 	play {arg neg = 0.01; // neg helps insure that CtkGroups will be created first
 		var bundle = this.buildBundle;
-		starttime.notNil.if({
+		(starttime.notNil && latency.notNil).if({
 			SystemClock.sched(starttime, {server.sendBundle(latency - neg, bundle)});
-			}, {
-			server.sendBundle(latency - neg, bundle);
-			});
+		}, {
+			// WARNING: possible change in behavior. Instead of sending at latency - neg, it is sent immediately. This enables s.sync afterwards though!
+			// server.sendBundle(latency - neg, bundle);
+			server.sendBundle(nil, bundle); //if starttime or latency is nil, send right away
+		});
 		duration.notNil.if({
 			SystemClock.sched(duration, {this.freeAll})
 			});
@@ -1895,46 +1908,52 @@ CtkBuffer : CtkObj {
 		})
 	}
 
-	load {arg time = 0.0, sync = true, onComplete;
-		SystemClock.sched(time, {
-			Routine.run({
-				var msg;
-				isPlaying = true;
-				completion.notNil.if({
-					bundle = bundle.add(completion)
-					});
-//				cond = cond ?? {Condition.new};
-				// server.sendBundle(latency, bundle);
-				sync.if({server.sync(cond, [bundle], latency)}, {server.sendBundle(latency, bundle)});
-				// are there already messages to send? If yes... SYNC!, then send NOW
-				((messages.size > 0) or: {collection.notNil}).if({
-					server.sync(cond);
-					messages.do({arg me;
-						msg = me.messages;
-						msg.do({arg thismsg;
-							server.sendBundle(latency, thismsg);
-						});
-						server.sync(cond);
-					});
-					server.sync(cond);
-					collection.notNil.if({
-						(collection.size < 1025).if({
-							this.set(0.0, 0, collection);
-						}, {
-							this.loadCollection(0.0, 0);
-						})
-					})
-				}, {
-					isPlaying = true;
-				});
-				sync.if({
-					server.sync(cond);
-					("CtkBuffer with bufnum id "++bufnum++" loaded").postln;
-					onComplete.value;
-					});
-				})
+	load {arg time, sync = true, onComplete;
+		var loadFunc;
+		loadFunc = {
+			var msg;
+			isPlaying = true;
+			completion.notNil.if({
+				bundle = bundle.add(completion)
 			});
-		}
+			//				cond = cond ?? {Condition.new};
+			// server.sendBundle(latency, bundle);
+			sync.if({server.sync(cond, [bundle], latency)}, {server.sendBundle(latency, bundle)});
+			// are there already messages to send? If yes... SYNC!, then send NOW
+			((messages.size > 0) or: {collection.notNil}).if({
+				server.sync(cond);
+				messages.do({arg me;
+					msg = me.messages;
+					msg.do({arg thismsg;
+						server.sendBundle(latency, thismsg);
+					});
+					server.sync(cond);
+				});
+				server.sync(cond);
+				collection.notNil.if({
+					(collection.size < 1025).if({
+						this.set(0.0, 0, collection);
+					}, {
+						this.loadCollection(0.0, 0);
+					})
+				})
+			}, {
+				isPlaying = true;
+			});
+			sync.if({
+				server.sync(cond);
+				("CtkBuffer with bufnum id "++bufnum++" loaded").postln;
+				onComplete.value;
+			});
+		};
+		(time.isNil).if({
+			loadFunc.forkIfNeeded;
+		}, {
+			SystemClock.sched(time, {
+				Routine.run(loadFunc)
+			});
+		});
+	}
 
 	bundle {
 		completion.notNil.if({
