@@ -1074,7 +1074,7 @@ CtkNode : CtkObj {
 			servers.add(server -> server);
 			nodes.add(server -> []);
 			groups.add(server -> []);
-			resps.add(server -> OSCresponderNode(server.addr, '/n_end', {arg time, resp, msg, addr;
+			resps.add(server -> OSCFunc({arg msg, time, addr;
 				var tag, nodeID, prevNodeID, nextNodeID, group, headNode, tailNode;
 				#tag, nodeID, prevNodeID, nextNodeID, group, headNode, tailNode = msg;
 				group = (group == 1);
@@ -1085,7 +1085,7 @@ CtkNode : CtkObj {
 						me.noteDict.removeAt(msg[1]);
 						})
 					});
-				}).add);
+				}, '/n_end', server.addr));
 		});
 		cmd.if({cmd = false; CmdPeriod.doOnce({this.cmdPeriod})});
 	}
@@ -1142,7 +1142,7 @@ CtkNode : CtkObj {
 	}
 
 	cmdPeriod {
-		resps.do({arg me; me.remove});
+		resps.do({arg me; me.free});
 		resps = Dictionary.new;
 		servers = Dictionary.new;
 		nodes = Dictionary.new;
@@ -1859,11 +1859,13 @@ CtkBuffer : CtkObj {
 						numChannels = channels.size
 						})
 					});
-				duration = sf.duration;
 				sampleRate = sf.sampleRate;
 				numFrames.isNil.if({
 					numFrames = sf.numFrames;
-					});
+					duration = sf.duration;
+					}, {
+					duration = numFrames/sampleRate;
+				});
 				sf.close;
 				}, {
 				("No soundfile found at: "++path).warn;
@@ -2476,12 +2478,12 @@ CtkControl : CtkBus {
 
 	get {arg action;
 		var o;
-		OSCresponderNode(nil, '/c_set', {arg time, resp, msg;
+		o = OSCFunc({arg msg, time;
 			(msg[1] == bus).if({
 				action.value(msg[1], msg[2]);
-				resp.remove;
+				o.free;
 			})
-		}).add;
+		}, '/c_set');
 		server.sendMsg(\c_get, bus);
 	}
 
