@@ -1247,7 +1247,7 @@ CtkNode : CtkObj {
 				});
 			}, {
 			addMsg.if({
-				messages = messages.add(CtkMsg(server, time+starttime, bund));
+				messages = messages.add(CtkMsg(server, if(starttime.isNil || time.isNil, {nil}, {time+starttime}), bund));
 				})
 			})
 		}
