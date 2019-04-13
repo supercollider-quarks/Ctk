@@ -1,46 +1,46 @@
-/* 
- * time to make versions of ProcModR and ProcEvents with Ctk CtkPMod will actually work 
- * more like CtkEvent with routing, recording, OSCresponder handling, releaseFunc, onReleaseFunc,  
- * also - make an addParameter method that adds a getter and setter for a parameter that can be used 
- * inside the loop?	
- */ 
+/*
+* time to make versions of ProcModR and ProcEvents with Ctk CtkPMod will actually work
+* more like CtkEvent with routing, recording, OSCresponder handling, releaseFunc, onReleaseFunc,
+* also - make an addParameter method that adds a getter and setter for a parameter that can be used
+* inside the loop?
+*/
 
 CtkPMod : CtkObj {
- 	classvar <envsd;
- 	var <starttime, <condition, <amp, <id, <server, <function, <>version;
- 	var <isPlaying = false, <isReleasing = false, isRecording = false, releaseTime = 0.0, <timer, clock;
- 	var <>recordPath, <>headerFormat = "wav", <>sampleFormat = "float", hdr;
- 	var <audioIn, <routebus, <outbus, <numChannels;
- 	var <>releaseFunc, <>onReleaseFunc, <responder, <>initFunc, <>internalReleaseFunc;
- 	var <slots, <inputOptions;
- 	var <inc, notes, buffers, allBuffers, watch, playinit, addAction, target, <group, <wrapGroup, envSynth, envNode;
- 	var <endtime, endtimeud, noFunc = false, cper, <>hasGUI = false, <gui;
- 	var <ctkPEvents, <>ampFunc, <routeOut, <routeAmp;
- 	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
- 	
- 	
- 	*new {arg starttime = 0.0, condition, amp = 1, id, outbus = 0, numChannels = 1, 
-	 		audioIn, numInChannels, addAction = 0, target = 1, server;
-	 	^super.newCopyArgs(Dictionary.new, nil, starttime, condition, amp, id, server)
-	 		.initCPMod(addAction, target, outbus, numChannels, audioIn, numInChannels);
- 	}
+	classvar <envsd;
+	var <starttime, <condition, <amp, <id, <server, <function, <>version;
+	var <isPlaying = false, <isReleasing = false, isRecording = false, releaseTime = 0.0, <timer, clock;
+	var <>recordPath, <>headerFormat = "wav", <>sampleFormat = "float", hdr;
+	var <audioIn, <routebus, <outbus, <numChannels;
+	var <>releaseFunc, <>onReleaseFunc, <responder, <>initFunc, <>internalReleaseFunc;
+	var <slots, <inputOptions;
+	var <inc, notes, buffers, allBuffers, watch, playinit, addAction, target, <group, <wrapGroup, envSynth, envNode;
+	var <endtime, endtimeud, noFunc = false, cper, <>hasGUI = false, <gui;
+	var <ctkPEvents, <>ampFunc, <routeOut, <routeAmp;
+	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
 
- 	initCPMod {arg argAddAction, argTarget, argoutbus, argNumChannels, argAudioIn, 
-	 		argNumInChannels;
-	 	addAction = addActions[argAddAction];
-	 	target = argTarget.asUGenInput ?? {1};
-	 	server = server ?? {Server.default};
-	 	version = 0;
-	 	scoreCapturePath = "";
-	 	inputOptions = [];
-	 	timer = CtkTimer.new(starttime);
+
+	*new {arg starttime = 0.0, condition, amp = 1, id, outbus = 0, numChannels = 1,
+		audioIn, numInChannels, addAction = 0, target = 1, server;
+		^super.newCopyArgs(Dictionary.new, nil, starttime, condition, amp, id, server)
+		.initCPMod(addAction, target, outbus, numChannels, audioIn, numInChannels);
+	}
+
+	initCPMod {arg argAddAction, argTarget, argoutbus, argNumChannels, argAudioIn,
+		argNumInChannels;
+		addAction = addActions[argAddAction];
+		target = argTarget.asUGenInput ?? {1};
+		server = server ?? {Server.default};
+		version = 0;
+		scoreCapturePath = "";
+		inputOptions = [];
+		timer = CtkTimer.new(starttime);
 		(condition.isKindOf(Env) and: {condition.releaseNode.isNil}).if({
 			endtime = condition.times.sum + starttime;
 			endtimeud = false
-			}, {
+		}, {
 			endtime = starttime;
 			endtimeud = true;
-			});
+		});
 		routeOut = 0;
 		routeAmp = 0;
 		inc = 0;
@@ -71,29 +71,29 @@ CtkPMod : CtkObj {
 			audioIn = nil;
 		});
 		// when we 'play', if condition is an Env - send it in, otherwise make a dummy Env of 1
-		envsd = CtkSynthDef(("ctkpmod_"++numChannels).asSymbol, {arg inbus, outbus, pgate = 1, amp = 1, 
-				timeScale = 1, lag = 0.1, routeOut = 0, routeAmp = 0;
+		envsd = CtkSynthDef(("ctkpmod_"++numChannels).asSymbol, {arg inbus, outbus, pgate = 1, amp = 1,
+			timeScale = 1, lag = 0.1, routeOut = 0, routeAmp = 0;
 			var env, sig;
 			env = EnvGen.kr(
-				Control.names(\env).kr(Env.newClear(32)), 
-				pgate, 
-				1, 
-				0, 
-				timeScale, 
+				Control.names(\env).kr(Env.newClear(32)),
+				pgate,
+				1,
+				0,
+				timeScale,
 				doneAction: 13) * Lag2.kr(amp, lag);
 			sig = In.ar(inbus, numChannels) * env;
 			ReplaceOut.ar(inbus, sig);
 			Out.ar(outbus, sig);
 			Out.ar(routeOut, sig * routeAmp);
 		});
- 	}
+	}
 
- 	// override addParameter
+	// override addParameter
 	addSetter {arg key, func, isGroup = false;
-		this.addUniqueMethod((key.asString++"_").asSymbol, 
-//			{arg object, newval; object.objargs[key] = newval.value; object;
-			{arg object, newval; 
-				object.objargs[key] = newval; func.value(object, newval); 
+		this.addUniqueMethod((key.asString++"_").asSymbol,
+			//			{arg object, newval; object.objargs[key] = newval.value; object;
+			{arg object, newval;
+				object.objargs[key] = newval; func.value(object, newval);
 				isGroup.if({
 					group.noteDict.keysValuesDo({arg node, thisNote;
 						thisNote.args[(key).asSymbol].notNil.if({
@@ -102,54 +102,54 @@ CtkPMod : CtkObj {
 					})
 				});
 				object;
-			});
-		}
- 	
- 	addSlot {arg key, defaultVal, func;
-	 	slots = slots.add([key, false]);
+		});
+	}
+
+	addSlot {arg key, defaultVal, func;
+		slots = slots.add([key, false]);
 		this.addGetter(key, defaultVal);
 		this.addSetter(key, func);
 		^this;
-		}
-	
+	}
+
 	addGroupSlot {arg key, defaultVal, func;
 		slots = slots.add([key, true]);
 		this.addGetter(key, defaultVal);
 		this.addSetter(key, func, true);
 		^this;
 	}
-		
+
 	addReleaseFunc {arg func;
 		releaseFunc = releaseFunc.addFunc(func);
 	}
-	
+
 	removeReleaseFunc {arg func;
 		releaseFunc.removeFunc(func);
 	}
-	
+
 	addOnReleaseFunc {arg func;
 		onReleaseFunc = onReleaseFunc.addFunc(func);
 	}
-	
+
 	removeOnReleaseFunc {arg func;
 		onReleaseFunc.removeFunc(func);
 	}
-	
+
 	addInitFunc {arg func;
 		initFunc = initFunc.addFunc(func);
 	}
-	
+
 	removeInitFunc {arg func;
 		initFunc.removeFunc(func);
 	}
-		
- 	/* NOTE TO SELF! WHEN A NOTE FINISHES PLAYING, REMOVE IT FROM NOTES! 
- 	use CtkNote:releaseFunc_ to remove from 'children' array!
- 	... will CtkBuffers work as well?
- 	*/ 
- 	audioIn_ {arg newIn, numInChannels, update = false;
-	 	var tmp;
-	 	tmp = audioIn;
+
+	/* NOTE TO SELF! WHEN A NOTE FINISHES PLAYING, REMOVE IT FROM NOTES!
+	use CtkNote:releaseFunc_ to remove from 'children' array!
+	... will CtkBuffers work as well?
+	*/
+	audioIn_ {arg newIn, numInChannels, update = false;
+		var tmp;
+		tmp = audioIn;
 		newIn.notNil.if({
 			newIn.isKindOf(CtkAudio).not.if({
 				audioIn = CtkAudio.new(numInChannels, newIn.asUGenInput, server);
@@ -172,8 +172,8 @@ CtkPMod : CtkObj {
 				})
 			})
 		})
-			
- 	}
+
+	}
 
 	amp_ {arg newAmp, runAmpFunc = true;
 		amp = newAmp;
@@ -194,20 +194,20 @@ CtkPMod : CtkObj {
 			gui.updateAmp(newAmp.ampdb, false)
 		});
 	}
-	
+
 	addInputOptions {arg ... ctkAudios;
-		inputOptions = inputOptions ++ ctkAudios.flat;	
+		inputOptions = inputOptions ++ ctkAudios.flat;
 	}
-	
+
 	value {arg recPath, timeStamp = true, hFormat, sFormat, updateGUI = true;
 		this.play(recPath, timeStamp, hFormat, sFormat, updateGUI);
 	}
-	
+
 	ctkPEvents_ {arg pevent, add = true;
 		ctkPEvents = pevent;
 		add.if({pevent.watchedMods = pevent.watchedMods.add(this)});
 	}
-	
+
 	play {arg recPath, timeStamp = true, hFormat, sFormat, updateGUI = true;
 		var initSched, tmp;
 		Routine.run({
@@ -223,44 +223,44 @@ CtkPMod : CtkObj {
 					playinit.if({
 						tmp = timer.next; // just in case it is accidentally overridden in initFunc...
 						this.initPlay;
-						timer.next_(tmp); 
+						timer.next_(tmp);
 					});
 					0.01.wait;
 					hdr.notNil.if({
 						hdr.record;
 					});
 					clock.notNil.if({
-					clock.sched(starttime + CtkObj.latency, {
-						ready.if({	
-							timer.next_(nil);
-							function.value(this, group, routebus, inc, audioIn, server);
-							// ... set it back again
-							this.run; // plays the notes array
-							this.checkCond.if({
-								timer.next;
-							}, {
-								initSched = (endtime > timer.now).if({endtime - timer.now}, {0.1});
-								timer.clock.notNil.if({
-									timer.clock.sched(initSched, {
-										(group.children.size == 0).if({
-											this.clear;
-										}, {
-											0.1;
-										})
-									})
+						clock.sched(starttime + CtkObj.latency, {
+							ready.if({
+								timer.next_(nil);
+								function.value(this, group, routebus, inc, audioIn, server);
+								// ... set it back again
+								this.run; // plays the notes array
+								this.checkCond.if({
+									timer.next;
 								}, {
-									this.clear;
+									initSched = (endtime > timer.now).if({endtime - timer.now}, {0.1});
+									timer.clock.notNil.if({
+										timer.clock.sched(initSched, {
+											(group.children.size == 0).if({
+												this.clear;
+											}, {
+												0.1;
+											})
+										})
+									}, {
+										this.clear;
+									});
 								});
-							});
-	
-					}, {
-					clock.notNil.if({
-						0.02;	
-					}, {
-						nil
-					})
-					})
-				})
+
+							}, {
+								clock.notNil.if({
+									0.02;
+								}, {
+									nil
+								})
+							})
+						})
 					})
 				})
 			}, {
@@ -268,7 +268,7 @@ CtkPMod : CtkObj {
 			})
 		})
 	}
-	
+
 	/* NOT SURE _ THIS MIGHT MESS UP TIMINGS WITH PLAYBUFS >>> TEST!!! */
 	initPlay {
 		var theEnv;
@@ -280,16 +280,16 @@ CtkPMod : CtkObj {
 		initFunc.value(this, group, routebus, 0, audioIn, server);
 		notes = notes.add(
 			envSynth = envsd.note(0.0, addAction: \tail, target: wrapGroup, server: server)
-				.inbus_(routebus).outbus_(outbus).env_(theEnv).amp_(amp).routeOut_(routeOut)
-				.routeAmp_(routeAmp);
+			.inbus_(routebus).outbus_(outbus).env_(theEnv).amp_(amp).routeOut_(routeOut)
+			.routeAmp_(routeAmp);
 		);
 		envNode = envSynth.node;
-//		hdr.notNil.if({
-//			hdr.record;
-//		});
+		//		hdr.notNil.if({
+		//			hdr.record;
+		//		});
 		playinit = false;
 	}
-	
+
 	setup {arg recPath, timeStamp = true, hFormat, sFormat;
 		routebus = CtkAudio.play(outbus.numChans, server: server);
 		wrapGroup = CtkGroup.play(0.0, addAction: addAction, target: target, server: server);
@@ -310,25 +310,25 @@ CtkPMod : CtkObj {
 		cper = {this.free};
 		CmdPeriod.add(cper);
 	}
-	
+
 	run {
 		ready = false;
 		Routine.run({
 			var cond;
 			cond = Condition.new;
 			buffers.do({arg thisBuffer;
+				cond.test = false;
 				thisBuffer.load(sync: true, onComplete:{cond.test = true; cond.signal;});
 				scoreCapture.if({
 					capturedScore.add(thisBuffer);
 				});
-				cond.test = false;
 				cond.wait;
 				allBuffers = allBuffers.add(thisBuffer);
 			});
 			isPlaying.if({
 				notes.do({arg me;
 					clock.sched(me.starttime, {
-						me.setStarttime(0.0); 
+						me.setStarttime(0.0);
 						me.play(group);
 						scoreCapture.if({
 							var newNote;
@@ -350,21 +350,21 @@ CtkPMod : CtkObj {
 			ready = true;
 		});
 	}
-	
+
 	routeOut_ {arg newOut;
 		routeOut = newOut;
 		isPlaying.if({
 			envSynth.routeOut_(routeOut)
 		});
 	}
-	
+
 	routeAmp_ {arg newAmp;
 		routeAmp = newAmp;
 		isPlaying.if({
 			envSynth.routeAmp_(routeAmp)
 		});
 	}
-	
+
 	// duration says total duration! Release will happen at starttime + duration - releaseTime
 	score {arg duration;
 		var relTime, envCopy, tmp, score;
@@ -381,16 +381,16 @@ CtkPMod : CtkObj {
 			routebus = CtkAudio.new(outbus.numChans, server: server);
 			wrapGroup = CtkGroup.new(addAction: addAction, target: target, server: server);
 			group = CtkGroup.new(addAction: \head, target: wrapGroup, server: server);
-			);
-			
+		);
+
 		condition = tmp;
 		^score;
 	}
-	
+
 	function_ {arg newFunction;
 		noFunc = newFunction.notNil;
 		function = newFunction;
-		}
+	}
 
 	responder_ {arg aResponder;
 		aResponder.isKindOf(OSCresponder).if({
@@ -402,49 +402,49 @@ CtkPMod : CtkObj {
 			responder.add
 		});
 	}
-	
+
 	next_ {arg inval;
 		timer.next_(inval);
-		}
-	
+	}
+
 	curtime {
 		^timer.curtime;
-		}
+	}
 
 	now {
 		^timer.now;
-		}
+	}
 
 	checkCond {
 		case
-			// prevent inf loops
-			{
-			(timer.next == nil)// and: {noFunc.not}
-			} {
-			^false; // for now - function.notNil;
-			} {
+		// prevent inf loops
+		{
 			condition.isKindOf(Boolean) || condition.isKindOf(Function)
-			} {
+		} {
 			^condition.value(timer, inc)
-			} {
+		} {
 			condition.isKindOf(SimpleNumber)
-			} {
+		} {
 			^inc < condition
-			} {
+		} {
 			condition.isKindOf(Env)
-			} {
+		} {
 			^condition.releaseNode.isNil.if({
 				timer.now < (condition.times.sum + starttime);
-				}, {
+			}, {
 				(isReleasing || (releaseTime < condition.releaseTime))
-				})
-			} {
+			})
+		} {
+			(timer.next == nil)// and: {noFunc.not}
+		} {
+			^false; // for now - function.notNil;
+		} {
 			true
-			} {
+		} {
 			^false
-			}
-			
 		}
+
+	}
 
 	collect {arg ... ctkevents;
 		var thisend, theseNotes;
@@ -468,42 +468,41 @@ CtkPMod : CtkObj {
 			})
 		});
 		notes = (notes ++ theseNotes).flat;
- 	}
- 		
+	}
+
 	free {
-		onReleaseFunc.value;
+		onReleaseFunc.value(this);
 		this.clear;
-		}
-	
+	}
+
 	release {
 		isPlaying.if({
 			hasGUI.if({
 				{gui.startButton.value_(2)}.defer;
 			});
 			noFunc.if({noFunc = false});
-			onReleaseFunc.value;
+			onReleaseFunc.value(this);
 			condition.isKindOf(Env).if({
 				condition.releaseNode.notNil.if({
 					isReleasing = true;
 					envSynth.release(key: \pgate);
 					this.releaseSetup(condition.releaseTime);
-					}, {
-					this.free;
-					})
 				}, {
-				this.free;
+					this.free;
 				})
 			}, {
+				this.free;
+			})
+		}, {
 			"This CtkPMod is not playing".warn
-			});
-		}
-		
+		});
+	}
+
 	releaseSetup {arg reltime;
 		clock.sched(reltime, {this.clear});
-		}
-		
-	clear { 
+	}
 
+	clear {
 		CmdPeriod.remove(cper);
 		cper = nil;
 		scoreCapture.if({
@@ -512,14 +511,6 @@ CtkPMod : CtkObj {
 			}, {
 				capturedScore.add(CtkMsg(server, timer.now + 1.0, 0));
 			});
-//			wrapGroup.setStarttime(0).setDuration(1000);
-//			group.setStarttime(0).setDuration(1000);
-//			capturedScore.add(wrapGroup.deepCopy, group.deepCopy);
-//			allBuffers.do({arg thisBuffer;
-//				var buf;
-//				buf = thisBuffer.deepCopy;
-//				capturedScore.add(buf)		
-//			})
 		});
 		wrapGroup.free;
 		group.free;
@@ -533,14 +524,13 @@ CtkPMod : CtkObj {
 				gui.startButton.value_(0)
 			}.defer;
 		});
-		releaseFunc.value;
-		internalReleaseFunc.value;
+		releaseFunc.value(this);
+		internalReleaseFunc.value(this);
 		isPlaying = false;
 		isReleasing = false;
 		playinit = true;
 		inc = 0;
 		scoreCapture.if({
-//			capturedScore.saveToFile(scoreCapturePath);
 			capturedScore.score;
 			capturedScore.saveToFile(scoreCapturePath);
 		});
@@ -553,11 +543,11 @@ CtkPMod : CtkObj {
 			clock.clear;
 			clock.stop;
 			timer.free;
-		 	timer = CtkTimer.new(starttime);
+			timer = CtkTimer.new(starttime);
 			clock = timer.clock;
 		}.defer(0.1)
 	}
-	
+
 	makeGUI {arg parent, bounds;
 		hasGUI = true;
 		^gui = CtkPModGUI(this, parent, bounds);
@@ -565,27 +555,27 @@ CtkPMod : CtkObj {
 
 	setupScoreCapture {arg path;
 		this.scoreCapture_(true);
-		scoreCapturePath = path;	
+		scoreCapturePath = path;
 	}
-	
- 	scoreCapture_ {arg bool;
-	 	// = false, <capturedScore, ready = true;
-	 	scoreCapture = bool;
-	 	(scoreCapture).if({
-	 		capturedScore = CtkScore.new;
-	 	});
-	}
- 	
- 	*initClass {
- 	}
- 	
 
- 	
+	scoreCapture_ {arg bool;
+		// = false, <capturedScore, ready = true;
+		scoreCapture = bool;
+		(scoreCapture).if({
+			capturedScore = CtkScore.new;
+		});
+	}
+
+	*initClass {
+	}
+
+
+
 }
 
 // hold lots of CtkPModGUIs
 CtkPModSheet {
-	
+
 }
 
 CtkPModGUI {
@@ -596,7 +586,7 @@ CtkPModGUI {
 	*new {arg ctkPMod, parent, bounds;
 		^super.newCopyArgs(ctkPMod, parent).initCtkPModGUI(bounds);
 	}
-	
+
 	initCtkPModGUI {arg argBounds;
 		var id, ins, slots;
 		spec = [-120, 12, \db].asSpec;
@@ -609,7 +599,7 @@ CtkPModGUI {
 			width = bounds.width;
 			win = Window.new(id = ctkPMod.id, bounds);
 			win.onClose_({
-				ctkPMod.releaseFunc.removeFunc(relFunc); 
+				ctkPMod.releaseFunc.removeFunc(relFunc);
 				ctkPMod.hasGUI = false;
 				ctkPMod.isPlaying.if({ctkPMod.free})
 			});
@@ -617,102 +607,102 @@ CtkPModGUI {
 		});
 		win.front;
 		startButton = Button(win, (width * 0.1) @ 40)
-			.states_([
-				["Start\n" + id, Color.black, Color.green],
-				["Release\n" + id, Color.black, Color.red],
-				["Releasing\n" + id, Color.black, Color.yellow]
-			])
-			.action_({arg button;
-				this.updatePlayState(button.value)
-			});
+		.states_([
+			["Start\n" + id, Color.black, Color.green],
+			["Release\n" + id, Color.black, Color.red],
+			["Releasing\n" + id, Color.black, Color.yellow]
+		])
+		.action_({arg button;
+			this.updatePlayState(button.value)
+		});
 		dec.shift(0, 5);
 		ampNum = NumberBox(win, (width * 0.04) @ 30)
-			.value_(ctkPMod.amp.ampdb.round(0.01))
-			.action_({arg numBox;
-				this.updateAmp(numBox.value);
-			});
+		.value_(ctkPMod.amp.ampdb.round(0.01))
+		.action_({arg numBox;
+			this.updateAmp(numBox.value);
+		});
 		ampSlide = Slider(win, (width * 0.23 - 10) @ 30)
-			.value_( spec.unmap(ctkPMod.amp.ampdb) ) // map it!
-			.action_({arg slide;
-				this.updateAmp(spec.map(slide.value));
-			});
+		.value_( spec.unmap(ctkPMod.amp.ampdb) ) // map it!
+		.action_({arg slide;
+			this.updateAmp(spec.map(slide.value));
+		});
 		ins = ctkPMod.inputOptions.collect({arg me; me.label.asString});
 
 		(ins.size > 0).if({
 			StaticText(win, 50 @ 30)
-				.string_("Input:");
+			.string_("Input:");
 			PopUpMenu(win, 80 @ 30)
-				.items_(ins)
-				.value_(
-					ctkPMod.audioIn.notNil.if({
-						ctkPMod.inputOptions.indexOf(ctkPMod.audioIn)
-					})
-				)		
-				.action_({arg pm; this.updateInput(pm.value)});
-		});
-		StaticText(win, 80 @ 30)
-			.string_("Slots:");
-		slots = ctkPMod.slots.collect({arg me; me[0].asString});
-//		activeParam = params[0];
-		PopUpMenu(win, 80 @ 30)
-			.items_(slots ?? {[""]})
-			.value_(0)
-			.action_({arg pm;
-				this.setActiveSlot(pm.value)
-			});
-		slotField = TextField(win, ((width * 0.55) - 440) @ 30)
-			.string_(
-				curSlot.notNil.if({
-					curSlot = ctkPMod.perform(ctkPMod.slots[0]).asCompileString
-				}, {
+			.items_(ins)
+			.value_(
+				ctkPMod.audioIn.notNil.if({
+					ctkPMod.inputOptions.indexOf(ctkPMod.audioIn)
 				})
 			)
-			.action_({arg field;
-				field.value.interpret.postcs;
-				ctkPMod.perform((activeSlot ++ "_").asSymbol, field.value.interpret);
-				isGroupSlot.if({
-					ctkPMod.group.noteDict.keysValuesDo({arg key, thisNote;
-						thisNote.args[(activeSlot).asSymbol].notNil.if({
-							thisNote.perform((activeSlot ++ "_").asSymbol,
-								field.value.interpret);
-						})
+			.action_({arg pm; this.updateInput(pm.value)});
+		});
+		StaticText(win, 80 @ 30)
+		.string_("Slots:");
+		slots = ctkPMod.slots.collect({arg me; me[0].asString});
+		//		activeParam = params[0];
+		PopUpMenu(win, 80 @ 30)
+		.items_(slots ?? {[""]})
+		.value_(0)
+		.action_({arg pm;
+			this.setActiveSlot(pm.value)
+		});
+		slotField = TextField(win, ((width * 0.55) - 440) @ 30)
+		.string_(
+			curSlot.notNil.if({
+				curSlot = ctkPMod.perform(ctkPMod.slots[0]).asCompileString
+			}, {
+			})
+		)
+		.action_({arg field;
+			field.value.interpret.postcs;
+			ctkPMod.perform((activeSlot ++ "_").asSymbol, field.value.interpret);
+			isGroupSlot.if({
+				ctkPMod.group.noteDict.keysValuesDo({arg key, thisNote;
+					thisNote.args[(activeSlot).asSymbol].notNil.if({
+						thisNote.perform((activeSlot ++ "_").asSymbol,
+							field.value.interpret);
 					})
 				})
-			});
+			})
+		});
 		dec.shift(0, -5);
 		Button(win, 50 @ 40)
-			.states_([
-				["Post", Color.black, Color.white]]
-				)
-			.action_({
-				this.postSlots;
-			});
-			
+		.states_([
+			["Post", Color.black, Color.white]]
+		)
+		.action_({
+			this.postSlots;
+		});
+
 		(ctkPMod.slots.size > 0).if({
-			this.setActiveSlot(0);		
+			this.setActiveSlot(0);
 		})
 	}
-	
+
 	updatePlayState {arg stateIdx;
 		case
-			{stateIdx == 0}
-			{				
-				ctkPMod.isReleasing.if({
-					startButton.value_(2)
-				})
-			}
-			{stateIdx == 1}
-			{
-				relFunc = {{startButton.value_(0)}.defer; ctkPMod.releaseFunc.removeFunc(relFunc)};
-				ctkPMod.releaseFunc_(ctkPMod.releaseFunc.addFunc(relFunc));
-				ctkPMod.play(updateGUI: false);
-			}
-			{stateIdx == 2}
-			{
-				ctkPMod.release;
-			}	
+		{stateIdx == 0}
+		{
+			ctkPMod.isReleasing.if({
+				startButton.value_(2)
+			})
+		}
+		{stateIdx == 1}
+		{
+			relFunc = {{startButton.value_(0)}.defer; ctkPMod.releaseFunc.removeFunc(relFunc)};
+			ctkPMod.releaseFunc_(ctkPMod.releaseFunc.addFunc(relFunc));
+			ctkPMod.play(updateGUI: false);
+		}
+		{stateIdx == 2}
+		{
+			ctkPMod.release;
+		}
 	}
-	
+
 	updateAmp {arg newAmp, updatePmod = true;
 		{
 			ampNum.value_(newAmp.round(0.01));
@@ -720,19 +710,19 @@ CtkPModGUI {
 		}.defer;
 		updatePmod.if({ctkPMod.amp_(newAmp.dbamp)});
 	}
-	
-	// is there a way to 
+
+	// is there a way to
 	updateInput {arg idx;
 		ctkPMod.audioIn_(ctkPMod.inputOptions[idx], update: true);
 	}
-	
+
 	setActiveSlot {arg idx;
 		activeSlot = ctkPMod.slots[idx][0];
 		isGroupSlot = ctkPMod.slots[idx][1];
 		curSlot = ctkPMod.perform(ctkPMod.slots[idx][0]).asCompileString;
 		slotField.string_(curSlot)
 	}
-	
+
 	postSlots {
 		ctkPMod.slots.do({arg thisData;
 			var thisSlot, global;
@@ -740,53 +730,53 @@ CtkPModGUI {
 			("\t" ++ thisSlot.asString ++ ": " + ctkPMod.perform(thisSlot).asCompileString).postln;
 		})
 	}
-	
+
 	close {
-		win.close;	
+		win.close;
 	}
-		
+
 	front {
 		win.front;
 	}
-	
+
 	addTrigger {arg label, action;
 		{
 			Button(win, 50 @ 40)
-				.states_([
-					[label.asString, Color.black, Color.white]]
-					)
-				.action_({
-					action.value(ctkPMod)
-				});
+			.states_([
+				[label.asString, Color.black, Color.white]]
+			)
+			.action_({
+				action.value(ctkPMod)
+			});
 			win.refresh;
 		}.defer;
 	}
-	
+
 	window {
-		^win;	
+		^win;
 	}
 
 }
 
 CtkPEvents : CtkObj {
-	var <id, <amp, lag, init, kill, <erlisting, <events, <releases, <eventDict, <index, 
-		<first, <gui, <out, numChannels, scaler, <scalerSynth, <server, cperFunc, <>ampSpec, 
-		show, place, pmodWins, timer, clock, <>onEvent, startTimes, <>ampFunc, <>watchedMods;
-//	var recPath, timeStamp = true, hFormat, sFormat, updateGUI = true;
- 	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
+	var <id, <amp, lag, init, kill, <erlisting, <events, <releases, <eventDict, <index,
+	<first, <gui, <out, numChannels, scaler, <scalerSynth, <server, cperFunc, <>ampSpec,
+	show, place, pmodWins, timer, clock, <>onEvent, startTimes, <>ampFunc, <>watchedMods;
+	var <recPath, timeStamp = true, <hFormat, <sFormat, updateGUI = true, hdr;
+	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
 
 
 	*new {arg erlisting, amp = 1, out, init, kill, id, lag = 0.1;
-	 	^super.newCopyArgs(Dictionary.new, nil, id, amp, lag).initCtkPEvents(erlisting, out, init, kill);
+		^super.newCopyArgs(Dictionary.new, nil, id, amp, lag).initCtkPEvents(erlisting, out, init, kill);
 	}
-	
+
 	initCtkPEvents {arg argErlisting, argOut, argInit, argKill;
 		ampSpec = [-90, 12, \db].asSpec;
 		eventDict = IdentityDictionary.new;
 		index = 0;
 		watchedMods = [];
 		this.erlisting_(argErlisting);
-		init = argInit; 
+		init = argInit;
 		init.isKindOf(CtkPMod).if({
 			init.ctkPEvents_(this, false);
 		});
@@ -810,8 +800,8 @@ CtkPEvents : CtkObj {
 					(thisOut.isKindOf(SimpleNumber)).if({
 						(thisOut == 0).if({
 							server = server.add(Server.default);
-							out = out.add(CtkAudio.play(server[i].numOutputBusChannels, 0, Server.default));
-							numChannels = numChannels.add(Server.default.numOutputBusChannels);
+							out = out.add(CtkAudio.play(server[i].options.numOutputBusChannels, 0, Server.default));
+							numChannels = numChannels.add(Server.default.options.numOutputBusChannels);
 						}, {
 							out = out.add(CtkAudio.play(2, thisOut, Server.default));
 							numChannels = numChannels.add(2);
@@ -823,18 +813,31 @@ CtkPEvents : CtkObj {
 				})
 			});
 		});
-//		screenHeight = Window.screenBounds.height;
+		//		screenHeight = Window.screenBounds.height;
 		pmodWins = [];
 		scaler = [];
 		out.do({arg thisOut;
 			scaler = scaler.add(
 				CtkSynthDef(("ctkpevents"++thisOut.numChans.asStringToBase(10, 3)).asSymbol, {arg inbus, amp, lag = 0.1;
-				ReplaceOut.ar(inbus, In.ar(inbus, thisOut.numChans) * Lag2.kr(amp, lag));
-			});
+					ReplaceOut.ar(inbus, In.ar(inbus, thisOut.numChans) * Lag2.kr(amp, lag));
+				});
 			)
 		});
 	}
-	
+	prepareForRecord {arg numChannels = 1, startIdx = 0, argRecPath, argTimeStamp = true, argHFormat, argSFormat, argUpdateGUI;
+		recPath = argRecPath;
+		timeStamp = argTimeStamp;
+		hFormat = argHFormat;
+		sFormat = argSFormat;
+		updateGUI = argUpdateGUI;
+		recPath.notNil.if({
+			hdr = HDR.new(Server.default, Array.fill(numChannels, {arg i; startIdx + i}),
+				3, 1, "", recPath ++ "RawInput_", hFormat,
+				sFormat, 1, timeStamp);
+		});
+
+	}
+
 	erlisting_ {arg anErlisting;
 		#events, releases = anErlisting.flop;
 		events.do({arg evs;
@@ -847,7 +850,7 @@ CtkPEvents : CtkObj {
 			});
 		});
 	}
-	
+
 	index_ {arg anIndex;
 		index = anIndex;
 		// GUI update later?
@@ -855,7 +858,7 @@ CtkPEvents : CtkObj {
 			gui.indexView.value_(index)
 		});
 	}
-		
+
 	play {arg anIndex, update = true;
 		var tmp;
 		update.if({
@@ -868,25 +871,28 @@ CtkPEvents : CtkObj {
 			this.index_(tmp);
 		});
 	}
-	
+
 	runInit {
 		first.if({
 			first = false;
 			cperFunc = {this.kill};
 			CmdPeriod.add(cperFunc);
+			hdr.notNil.if({
+				hdr.record;
+			});
 			scalerSynth = [];
-			out.do({arg thisOut, i;				
+			out.do({arg thisOut, i;
 				scalerSynth = scalerSynth.add(
 					scaler[i].note(addAction: \after, target: 1, server: thisOut.server)
-						.inbus_(thisOut).amp_(amp).play;
-					)
+					.inbus_(thisOut).amp_(amp).play;
+				)
 			});
 			init.value;
 			timer.play;
 			startTimes.add(\init -> this.now);
 		});
 	}
-	
+
 	next {
 		this.runInit;
 		(index < events.size).if({
@@ -894,7 +900,11 @@ CtkPEvents : CtkObj {
 			events[index].asArray.do({arg thisEv;
 				var evGui;
 				thisEv.isKindOf(CtkPMod).if({
-					thisEv.play;
+					var thisRecPath;
+					(timeStamp && recPath.notNil).if({
+						thisRecPath = recPath ++ (this.now.trunc(0.00001)) ++ "_";
+					});
+					thisEv.play(thisRecPath, timeStamp, hFormat, sFormat, updateGUI);
 					startTimes.add(thisEv.id -> this.now);
 					show.if({
 						{
@@ -917,12 +927,14 @@ CtkPEvents : CtkObj {
 				eventDict[sym].notNil.if({
 					eventDict[sym].release;
 				}, {
-					/// warn that a release was asked for that didn't exist!
-					("Event with id of "++sym++" not found").warn;
+					(sym != nil).if({
+						/// warn that a release was asked for that didn't exist!
+						("Event with id of "++sym++" not found").warn;
+					})
 				})
 			});
 			gui.notNil.if({
-				gui.curEvString.string_("Current Event: "+index); 
+				gui.curEvString.string_("Current Event: "+index);
 			});
 			this.index_(index + 1);
 			onEvent.value(this);
@@ -930,17 +942,17 @@ CtkPEvents : CtkObj {
 		}, {
 			"No event at that index".warn;
 		})
-			
+
 	}
-	
+
 	timeStamp {arg id = 0;
 		^startTimes[id];
 	}
-	
+
 	isPlaying {
 		^first.not;
 	}
-	
+
 	kill {
 		kill.play;
 		first = true;
@@ -950,10 +962,6 @@ CtkPEvents : CtkObj {
 				thisSynth.free
 			})
 		});
-//			
-//		(scalerSynth.notNil and: {scalerSynth.isPlaying}).if({
-//			scalerSynth.free;
-//		});
 		(events.flat ++ init).do({arg thisEv;
 			thisEv.isPlaying.if({
 				thisEv.free;
@@ -962,12 +970,13 @@ CtkPEvents : CtkObj {
 		gui.notNil.if({
 			gui.curEvString.string_("No events running");
 		});
+		hdr.notNil.if({hdr.stop; hdr = nil});
 		kill.clear;
 		timer.free;
 		timer = CtkTimer.new;
 		clock = timer.clock;
 	}
-	
+
 	reset {
 		(events.flat).do({arg thisEv;
 			thisEv.isPlaying.if({
@@ -977,9 +986,9 @@ CtkPEvents : CtkObj {
 		gui.notNil.if({
 			gui.curEvString.string_("No events running");
 		});
-		this.index_(0);	
+		this.index_(0);
 	}
-	
+
 	amp_ {arg newAmp, runAmpFunc = true;
 		amp = newAmp;
 		runAmpFunc.if({ampFunc.value(this, amp)});
@@ -995,45 +1004,45 @@ CtkPEvents : CtkObj {
 			}.defer
 		})
 	}
-	
+
 	releaseAll {
-//		first = true;
+		//		first = true;
 		events.flat.do({arg thisEv;
 			thisEv.isPlaying.if({
 				thisEv.release;
 			})
 		});
 	}
-	
-	makeGUI {arg showProcs, parent, bounds;
+
+	makeGUI {arg showProcs = false, parent, bounds;
 		show = showProcs;
 		place = 0;
 		gui = CtkPEventsGUI(this, parent, bounds);
 	}
-	
+
 	now {
 		^timer.now;
 	}
-	
+
 	playingEvents {
 		^watchedMods.flat.select({arg thisEv; thisEv.isPlaying});
 	}
-	
+
 	at {arg id;
 		^eventDict[id]
 	}
-	
+
 	setupScoreCapture {arg path;
 		this.scoreCapture_(true);
-		scoreCapturePath = path;	
+		scoreCapturePath = path;
 	}
-	
- 	scoreCapture_ {arg bool;
-	 	// = false, <capturedScore, ready = true;
-	 	scoreCapture = bool;
-	 	(scoreCapture).if({
-	 		capturedScore = CtkScore.new;
-	 	});
+
+	scoreCapture_ {arg bool;
+		// = false, <capturedScore, ready = true;
+		scoreCapture = bool;
+		(scoreCapture).if({
+			capturedScore = CtkScore.new;
+		});
 	}
 
 }
@@ -1041,15 +1050,15 @@ CtkPEvents : CtkObj {
 CtkPEventsGUI {
 	var <ctkPEvent, parent, <window, <dec, width, height, spec, bounds;
 	var <indexView, <ampNum, <ampSlide, <curEvString;
-	
+
 	*new {arg ctkPEvent, parent, bounds;
 		^super.new.initCtkPEventsGUI(ctkPEvent, parent, bounds);
 	}
-	
+
 	close {
 		window.close;
 	}
-	
+
 	initCtkPEventsGUI {arg argCtkPEvent, argParent, argBounds;
 		var widgetHeight, widgetWidth, marginX, marginY, gapX, gapY, font;
 		font = Font("Arial", 20);
@@ -1076,84 +1085,84 @@ CtkPEventsGUI {
 		});
 		widgetWidth = (width - (marginX * 2) - (gapX * 2) * 0.333).asInteger;
 		widgetHeight = (height - (marginY * 2) - (gapY * 3) * 0.25).asInteger;
-		
+
 		Button(window, widgetWidth @ widgetHeight)
-			.font_(font)
-			.states_([
-				["Next Event", Color.black, Color.rand]
-			])
-			.action_({arg button;
-				ctkPEvent.next;
-			});
-		
+		.font_(font)
+		.states_([
+			["Next Event", Color.black, Color.rand]
+		])
+		.action_({arg button;
+			ctkPEvent.next;
+		});
+
 		dec.shift(0, 10);
-		
+
 		indexView = NumberBox(window, (widgetWidth * 0.6) @ widgetHeight - 20)
-			.font_(font)
-			.value_(0)
-			.action_({arg numBox;
-				ctkPEvent.index_(numBox.value);
-				window.view.children[0].focus(true);
-			});
-		
+		.font_(font)
+		.value_(0)
+		.action_({arg numBox;
+			ctkPEvent.index_(numBox.value);
+			window.view.children[0].focus(true);
+		});
+
 		dec.shift(0, -10);
 		dec.nextLine;
-		
+
 		curEvString = StaticText(window, width @ widgetHeight)
-			.font_(font)
-			.string_("No events running");
-			
+		.font_(font)
+		.string_("No events running");
+
 		dec.shift(0, 10);
-		
+
 		ampSlide = Slider(window, (widgetWidth * 2 + gapX) @ (widgetHeight * 0.6))
-			.value_(ctkPEvent.ampSpec.unmap(ctkPEvent.amp.ampdb)) // setup the ControlSpec!
-			.action_({arg slider;
-				ctkPEvent.amp_(ctkPEvent.ampSpec.map(slider.value).dbamp);
-				window.view.children[0].focus(true);
-			});
-			
+		.value_(ctkPEvent.ampSpec.unmap(ctkPEvent.amp.ampdb)) // setup the ControlSpec!
+		.action_({arg slider;
+			ctkPEvent.amp_(ctkPEvent.ampSpec.map(slider.value).dbamp);
+			window.view.children[0].focus(true);
+		});
+
 		ampNum = NumberBox(window, widgetWidth @ (widgetHeight * 0.6))
-			.font_(font)
-			.value_(0)
-			.action_({arg numBox;
-				ctkPEvent.amp_(numBox.value.dbamp);
-				window.view.children[0].focus(true);
-			});
-			
+		.font_(font)
+		.value_(0)
+		.action_({arg numBox;
+			ctkPEvent.amp_(numBox.value.dbamp);
+			window.view.children[0].focus(true);
+		});
+
 		dec.shift(0, 10);
 		dec.nextLine;
-		
+
 		Button(window, widgetWidth @ widgetHeight)
-			.font_(font)
-			.states_([
-				["Release All", Color.black, Color.white]
-			])
-			.action_({arg button;
-				ctkPEvent.releaseAll;
-				window.view.children[0].focus(true);
-			});
-		
+		.font_(font)
+		.states_([
+			["Release All", Color.black, Color.white]
+		])
+		.action_({arg button;
+			ctkPEvent.releaseAll;
+			window.view.children[0].focus(true);
+		});
+
 		Button(window, widgetWidth @ widgetHeight)
-			.font_(font)
-			.states_([
-				["Reset", Color.black, Color.white]
-			])
-			.action_({arg button;
-				ctkPEvent.reset;
-				window.view.children[0].focus(true);
-			});
-		
+		.font_(font)
+		.states_([
+			["Reset", Color.black, Color.white]
+		])
+		.action_({arg button;
+			ctkPEvent.reset;
+			window.view.children[0].focus(true);
+		});
+
 		Button(window, widgetWidth @ widgetHeight)
-			.font_(font)
-			.states_([
-				["Kill all", Color.black, Color.white]
-			])
-			.action_({arg button;
-				ctkPEvent.kill;
-			});
-			
+		.font_(font)
+		.states_([
+			["Kill all", Color.black, Color.white]
+		])
+		.action_({arg button;
+			ctkPEvent.kill;
+		});
+
 		window.view.children[0].focus(true);
 	}
-	
+
 }
 
