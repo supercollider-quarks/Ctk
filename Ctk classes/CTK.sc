@@ -2100,6 +2100,13 @@ CtkBuffer : CtkObj {
 		this.bufferFunc(time, bund);
 		}
 
+	normalize {arg time = 0.0, newmax = 1.0, asWavetable=false, action;
+		var bund, cmd;
+		cmd = asWavetable.if({"wnormalize"}, {"normalize"});
+		bund = [\b_gen, bufnum, cmd, newmax];
+		this.bufferFunc(time, bund, action);
+	}
+
 	sine1 {arg time, normalize = 0, wavetable = 0, clear = 1 ... args;
 		this.gen(time, \sine1, normalize, wavetable, clear, args);
 		}
