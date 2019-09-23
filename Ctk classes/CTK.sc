@@ -2503,6 +2503,26 @@ CtkControl : CtkBus {
 		}
 	}
 
+	getn {arg numChannels, action;
+		var o;
+		o = OSCFunc({arg msg, time;
+			(msg[1] == bus).if({
+				action.value(msg[1], msg[2], msg[3..(2+numChannels)]);
+				o.free;
+			})
+		}, '/c_setn');
+		server.sendMsg(\c_getn, bus, numChannels);
+	}
+
+	// indexOffset is for multichannel busses
+	getnSynchronous { |numChannels, indexOffset=0|
+		^try {
+			server.getControlBusValues(bus+indexOffset, numChannels)
+		} { |error|
+			error.errorString.postln; nil
+		}
+	}
+
 	+ { arg index;
 		^this.at(index)
 	}
