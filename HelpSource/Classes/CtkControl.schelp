@@ -125,6 +125,22 @@ s.boot;
 c = CtkControl.play;
 c.set(0.5);
 c.get({arg index, val; [index, val].postln});
+c.free;
+::
+
+METHOD:: getn
+Get the value of the multichannel bus (asynchronous)
+ARGUMENT:: numChannels
+Number of channels to return; defaults to code::this.numChannels::
+ARGUMENT:: action
+The action to be executed when the value is received. The function is passed two parameters: bus index and an array of actual bus values
+DISCUSSION::
+code::
+s.boot;
+c = CtkControl.play(4);
+c.set([0.5, 0.1, 0.2, 0.3]);
+c.getn(nil, {arg index, vals; [index, vals].postln});
+c.free;
 ::
 
 METHOD:: getSynchronous
@@ -135,6 +151,23 @@ Returns:: A single value of the control bus.
 NOTE::
 This method returns a single value, even in the case of a multichannel CtkControl. The indexOffset argument enables reading into other channels of a multichannel CtkControl, e.g. indexOffset: 3 would give you the value of the 4th channel of a multichannel bus.
 ::
+
+METHOD:: getnSynchronous
+Get values of a multichannel bus. This command is synchronous. See link::Classes/Bus#Synchronous%20Control%20Bus%20Methods#Bus help:: for more information on synchronous access to control buses.
+ARGUMENT:: numChannels
+Number of channels to return; defaults to code::this.numChannels::
+ARGUMENT:: indexOffset
+Channel offset into a multichannel CtkControl
+Returns:: An array of values
+DISCUSSION::
+code::
+s.boot;
+c = CtkControl.play(4);
+c.set([0.5, 0.1, 0.2, 0.3]);
+c.getnSynchronous; //returns [ 0.5, 0.10000000149012, 0.20000000298023, 0.30000001192093 ]
+c.free;
+::
+
 
 METHOD:: high
 returns:: the upper bounds value when using link::#*lfo::
