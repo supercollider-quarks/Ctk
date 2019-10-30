@@ -2507,17 +2507,17 @@ CtkControl : CtkBus {
 		var o;
 		o = OSCFunc({arg msg, time;
 			(msg[1] == bus).if({
-				action.value(msg[1], msg[2], msg[3..(2+numChannels)]);
+				action.value(msg[1], msg[3..]);
 				o.free;
 			})
 		}, '/c_setn');
-		server.sendMsg(\c_getn, bus, numChannels);
+		server.sendMsg(\c_getn, bus, numChannels ? this.numChannels);
 	}
 
 	// indexOffset is for multichannel busses
 	getnSynchronous { |numChannels, indexOffset=0|
 		^try {
-			server.getControlBusValues(bus+indexOffset, numChannels)
+			server.getControlBusValues(bus+indexOffset, numChannels ? this.numChannels)
 		} { |error|
 			error.errorString.postln; nil
 		}
