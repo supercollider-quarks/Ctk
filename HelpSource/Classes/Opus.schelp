@@ -1,0 +1,110 @@
+TITLE:: Opus
+summary:: A project management system to be used with Ctk objects for real-time and non-real-time works or project organization
+categories:: Libraries>Opus
+keyword::Ctk, Opus
+
+DESCRIPTION::
+Opus helps organize projects based around the Composer's Took Kit (Ctk). A hierarchy of folders to manage Ctk objects (CtkNoteObjects, CtkScores, CtkPMods, etc).
+
+
+CLASSMETHODS::
+
+METHOD:: new
+Create new instance of a Opus.
+ARGUMENT::  path
+The full path for this project.
+ARGUMENT::  server
+A server object to use. Defaults to Server.default
+ARGUMENT::  createIfMissing
+If this project isn't set up at this path, this tells SuperCollider to create it.
+
+PRIVATE::initAtPath
+PRIVATE::prCreateTemplateWithStringAtPath
+
+INSTANCEMETHODS::
+
+METHOD:: copyToNewOpus
+Crete a copy of an Opus project to a new path.
+
+ARGUMENT::  path
+The full path for this copy of the project.
+
+PRIVATE::prCreateTemplateWithStringAtPath
+PRIVATE::prLoadAudioInRoutes
+PRIVATE::prLoadAudioOutRoutes
+PRIVATE::prLoadEventAtPath
+PRIVATE::prLoadEvents
+PRIVATE::prLoadFolders
+PRIVATE::prLoadInitProcessAtPath
+PRIVATE::prLoadKillProcessAtPath
+PRIVATE::prLoadProcessAtPath
+PRIVATE::prLoadProcesses
+PRIVATE::prLoadScoreAtPath
+PRIVATE::prLoadScores
+PRIVATE::prLoadSynths
+PRIVATE::prLoadSynthsAtPath
+
+
+
+
+
+EXAMPLES::
+code::
+// create a project called test
+o = Opus("~/Desktop/test".standardizePath, s);
+// set a function to be called when setup is done.
+o.onReadyFunc_({"Booted!".postln;});
+// run setup!
+o.setup;
+
+// using the template functionality to create a CtkSynthDef prototype
+o.createTemplateSynthWithName(\example1);
+// open the file
+o.openSynthFile(\example1);
+
+// Update the file. Paste the code inside the block quote into the file just opened, then save the file
+/*
+
+{arg opus, sdKey;
+var sd;
+sd = CtkSynthDef(sdKey, {arg outBus = 0, inBus = 2, freq, dur = 1;
+	Out.ar(outBus, SinOsc.ar(freq, 0, 0.4) * EnvGen.kr(Env([0, 1, 0], [0.1, 0.9], \sin), timeScale: dur))
+});
+sd;
+}
+*/
+
+// reload files after making changes in them
+o.loadFiles;
+
+// access and play the note!
+o.synths[\example1].note(0.0, 1.0).freq_(440).play
+
+// using the template functionality to create a CtkScore
+o.createTemplateScoreWithName(\example1Score);
+o.openScoreFile(\example1Score);
+
+// paste the code inside the block quote into the file just opened
+/*
+{arg opus, fileKey;
+    opus.newScore(fileKey, {
+		var score, sd;
+        // return a CtkScore
+        score = CtkScore.new;
+        // access the CtkSynthDef
+		sd = opus.synths[\example1];
+		10.do({arg i;
+			var freqScaler = 1 + i;
+			score.add(sd.note(i, 1).freq_(440 * freqScaler).dur_(1));
+		});
+		score
+});
+}
+*/
+
+// reload files after making changes in them
+o.loadFiles;
+z = o.scores[\example1Score];
+z.play;
+
+::

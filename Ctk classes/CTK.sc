@@ -78,6 +78,7 @@ CtkScore : CtkObj {
 		<buffermsg, <buffersScored = false, <groups, oscready = false, <messages, <sds;
 	var <masterScore, <allScores, <masterNotes, <masterControls, <masterBuffers,
 		<masterGroups, <masterMessages, cmdPeriod;
+	var <>id;
 
 	*new {arg ... events;
 		^super.new.init(events);
@@ -610,6 +611,7 @@ CtkScore : CtkObj {
 		this.add(addScore.items ++ addScore.ctkscores);
 		}
 }
+
 // creates a dictionary of Synthdefs, and CtkNoteObjects
 CtkProtoNotes {
 	var <synthdefs, <dict;
