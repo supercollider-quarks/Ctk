@@ -26,7 +26,7 @@
 	createTemplateSynthWithName {arg name, force = false;
 		var fileStr, file, filePath, pathName;
 		fileStr = "/*
-Synth files should contain a Function that returns a CtkSynthDef. These can be used in your CtkPMods that are created from the Functions created in Opus processes. Each file should contain one CtkSynthDef that is the last statement in the file, and it should have a unique name (preferably the sdKey passed in to the Function).
+Synth files should contain a Function that returns a CtkSynthDef. These can be used in your CtkPMods that are created from the Functions created in Opus processes, or referenced for CtkScores. Each file should contain one CtkSynthDef that is the last statement in the file, and it should have a unique name (preferably the sdKey passed in to the Function).
 */
 {arg opus, sdKey;
 var sd;
