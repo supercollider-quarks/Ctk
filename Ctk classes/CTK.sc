@@ -747,13 +747,13 @@ CtkNoteObject {
 
 	// for loading directly to a specific server
 	load {arg ... servers;
-		server.do({arg aServer;
+		servers.do({arg aServer;
 			synthdef.load(aServer)
 		})
 		}
 
 	send {arg ... servers;
-		server.do({arg aServer;
+		servers.do({arg aServer;
 			synthdef.send(aServer)
 		})
 		}
