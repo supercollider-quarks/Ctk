@@ -246,8 +246,8 @@ CtkScore : CtkObj {
 					});
 					chunk = (data.size / 1024).floor * 1024;
 					(data.size > chunk).if({
-						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk, data.size-chunk-1] ++
-							data[chunk.asInteger..(data.size-chunk-1).asInteger]));
+						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk, data.size-chunk] ++
+							data[chunk.asInteger..]));
 					});
 				});
 				(me.closeBundle.notNil).if({
