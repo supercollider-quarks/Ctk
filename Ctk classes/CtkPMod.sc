@@ -13,7 +13,7 @@ CtkPMod : CtkObj {
 	var <audioIn, <routebus, <outbus, <numChannels;
 	var <>releaseFunc, <>onReleaseFunc, <responder, <>initFunc, <>internalReleaseFunc;
 	var <slots, <inputOptions;
-	var <inc, notes, buffers, allBuffers, watch, playinit, addAction, target, <group, <wrapGroup, envSynth, envNode;
+	var <inc, notes, buffers, allBuffers, watch, playinit, addAction, <target, <group, <wrapGroup, envSynth, envNode;
 	var <endtime, endtimeud, noFunc = false, cper, <>hasGUI = false, <gui;
 	var <ctkPEvents, <>ampFunc, <routeOut, <routeAmp;
 	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
@@ -194,6 +194,13 @@ CtkPMod : CtkObj {
 		});
 		hasGUI.if({
 			gui.updateAmp(newAmp.ampdb, false)
+		});
+	}
+
+	target_ {arg newTarget;
+		target = newTarget;
+		isPlaying.if({
+			format("%: new target will be used once the process is restarted", this.class).warn;
 		});
 	}
 
