@@ -200,7 +200,7 @@ CtkPMod : CtkObj {
 	target_ {arg newTarget;
 		target = newTarget;
 		isPlaying.if({
-			format("%: new target will be used once the process is restarted", this.class).warn;
+			format("% %: new target will be used once the process is restarted", this.class, this.id).warn;
 		});
 	}
 
