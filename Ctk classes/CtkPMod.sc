@@ -944,10 +944,10 @@ CtkPEvents : CtkObj {
 			});
 			gui.notNil.if({
 				gui.curEvString.string_("Current Event: "+index);
+				gui.window.front;
 			});
 			this.index_(index + 1);
 			onEvent.value(this);
-			gui.window.front;
 		}, {
 			"No event at that index".warn;
 		})
