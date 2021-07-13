@@ -200,7 +200,7 @@ CtkPMod : CtkObj {
 	target_ {arg newTarget;
 		target = newTarget;
 		isPlaying.if({
-			format("%: new target will be used once the process is restarted", this.class).warn;
+			format("% %: new target will be used once the process is restarted", this.class, this.id).warn;
 		});
 	}
 
@@ -944,10 +944,10 @@ CtkPEvents : CtkObj {
 			});
 			gui.notNil.if({
 				gui.curEvString.string_("Current Event: "+index);
+				gui.window.front;
 			});
 			this.index_(index + 1);
 			onEvent.value(this);
-			gui.window.front;
 		}, {
 			"No event at that index".warn;
 		})
