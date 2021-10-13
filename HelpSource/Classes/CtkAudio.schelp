@@ -10,6 +10,7 @@ Part of the Composer's Tool Kit (CTK) system. See link::Overviews/Ctk:: for more
 CtkAudio is a wrapper for an audio link::Classes/Bus:: suitable for use with CTK objects.
 CtkAudio object can be passed in straight to a CtkNotes arg. The bus id will be extracted for you.
 
+Note:: See link::#Using CtkAudio to set output bus:: for caveats. ::
 
 CLASSMETHODS::
 
@@ -245,4 +246,44 @@ score.play(s);
 // uncomment to save the CtkScore as a file
 // score.saveToFile("~/Desktop/test.sc".standardizePath);
 )
+::
+subsection:: Using CtkAudio to set output bus
+CtkAudio can be passed directly to set an argument specifying the output bus, but this will not work if that bus number is subject to any operation (e.g. addition).
+code::
+s.boot;
+
+// This works as expected - CtkAudio's bus number is extracted and used
+(
+~sd = CtkSynthDef(\mapTest0, {|out = 1|
+	out.poll(1, \outNoAddition);
+	Out.ar(out, DC.ar(0));
+})
+)
+
+~bus = CtkAudio().play; // create a private bus
+~bus.bus; // check bus index
+~note = ~sd.note.play; // play the note and observe post window
+~note.out_(~bus); // the bus index is extracted and properly used as the bus number
+
+~note.free; ~bus.free; // free everything
+
+
+// However, this doesn't work as expected
+// Instead of using CtkAudio bus number, value from the bus is mapped to the bus number
+(
+~sd = CtkSynthDef(\mapTest1, {|out = 1|
+	out.poll(1, \outBeforeAddition);
+	Out.ar(out + 1, DC.ar(0)); // note that we add an offset to the bus number here
+})
+)
+
+~bus = CtkAudio().play; // create a private bus
+~bus.bus; // check bus index
+~note = ~sd.note.play; // play the note and observe post window
+~note.out_(~bus); // the value of out is mapped to CtkAudio, i.e. it reads values from the bus instead of using bus index
+
+~note.out_(~bus.bus); // in that case we need to pass the bus value explicitly
+~note.out_(~bus.index); // this is a synonymous method
+
+~note.free; ~bus.free; // free everything
 ::
