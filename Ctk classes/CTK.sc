@@ -66,7 +66,14 @@ CtkObj {
 			1 -> 1,
 			2 -> 2,
 			3 -> 3,
-			4 -> 4
+			4 -> 4,
+			\addToHead -> 0,
+			\addToTail -> 1,
+			\addBefore -> 2,
+			\addAfter -> 3,
+			\addReplace -> 4,
+			\h -> 0,
+			\t -> 1,
 			];
 		}
 	}
