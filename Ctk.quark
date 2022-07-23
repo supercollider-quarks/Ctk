@@ -3,6 +3,6 @@
 	\path: 		"Ctk",
 	\summary:	"Composer's Tool Kit - objects for real-time and non-real-time composition",
 	\schelp: 	"Overviews/Ctk",
-	\author: 	"Joshua Parmenter",
+	\author: 	"Joshua Parmenter, Marcin Pączkowski",
 	\dependencies: [("XML" -> 0.21)]
 )

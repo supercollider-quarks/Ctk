@@ -238,27 +238,30 @@ CtkScore : CtkObj {
 		}
 
 	addBuffers {
-		var data, chunk;
+		var data, chunk, sizeLimit, sizeLimitMinusOne, bufferEndTime;
+		sizeLimit = 1024;
+		sizeLimitMinusOne = sizeLimit - 1;
+		bufferEndTime = endtime + 0.1;
 		buffersScored.not.if({
 			buffersScored = true;
 //			endtime = endtime + 0.1;
 			buffers.do({arg me;
 				this.add(CtkMsg(me.server, 0.0, me.bundle).bufflag_(true));
-				this.add(CtkMsg(me.server, endtime + 0.1, me.freeBundle));
+				this.add(CtkMsg(me.server, bufferEndTime, me.freeBundle));
 				me.collection.notNil.if({
 					data = me.collection.collectAs({|item| item}, FloatArray);
-					(data.size / 1024).floor.do({arg i;
-						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, i * 1024, 1024] ++
-							data[(i*1024).asInteger..((i*1024)+1023).asInteger]));
+					(data.size / sizeLimit).floor.do({arg i;
+						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, (i * sizeLimit).asInteger, sizeLimit] ++
+							data[(i*sizeLimit).asInteger..((i*sizeLimit)+sizeLimitMinusOne).asInteger]));
 					});
-					chunk = (data.size / 1024).floor * 1024;
+					chunk = (data.size / sizeLimit).floor * sizeLimit;
 					(data.size > chunk).if({
-						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk, data.size-chunk] ++
-							data[chunk.asInteger..]));
+						this.add(CtkMsg(me.server, 0.0, [\b_setn, me.bufnum, chunk.asInteger, data.size-chunk-1] ++
+							data[chunk.asInteger..(data.size-chunk-1).asInteger]));
 					});
 				});
 				(me.closeBundle.notNil).if({
-					this.add(CtkMsg(me.server, endtime + 0.1, me.closeBundle));
+					this.add(CtkMsg(me.server, bufferEndTime, me.closeBundle));
 					});
 				});
 			})
@@ -507,14 +510,15 @@ CtkScore : CtkObj {
 	objectsToOSC {
 		masterScore.do({arg thisTimeEvent;
 			var offset, block, thisBundle, thisTime = thisTimeEvent[0].starttime;
-			var tmpBundle, tmp;
+			var tmpBundle, tmp, maxBundleSize;
 			block = 0;
 			offset = 1.0e-07;
+			maxBundleSize = 2048;
 			thisBundle = [];
 			thisTimeEvent.do({arg me;
 				thisBundle = thisBundle ++ me.msgBundle;
 				});
-			(thisBundle.bundleSize < 4096).if({
+			(thisBundle.bundleSize < maxBundleSize).if({
 				thisBundle = thisBundle.addFirst(thisTime);
 				score.add(thisBundle);
 				}, {
@@ -525,7 +529,7 @@ CtkScore : CtkObj {
 					// remove a message
 					tmp = thisBundle.removeAt(0);
 					// check if tmpBundle is above our desired size first
-					((tmpBundle ++ tmp).bundleSize > 4096).if({
+					((tmpBundle ++ tmp).bundleSize > maxBundleSize).if({
 						tmpBundle = tmpBundle.addFirst(thisTime + (block * offset));
 						score.add(tmpBundle);
 						tmpBundle = [];
@@ -1103,6 +1107,18 @@ CtkNode : CtkObj {
 		^node ?? {node = server.nextNodeID};
 		}
 
+	nodeID {
+		^this.node;
+	}
+
+	onFree { arg obj;
+		releaseFunc.notNil.if({
+			releaseFunc = FunctionList([releaseFunc, obj]);
+		}, {
+			releaseFunc = obj;
+		});
+	}
+
 	// server is the server assigned already to an object or. If
 	// an object is inited without a server, Server.default is used
 	watch {arg group;
@@ -1341,6 +1357,10 @@ CtkNote : CtkNode {
 		releases = [];
 		automations = [];
 		}
+
+	defName {
+		^synthdefname;
+	}
 
 	setStarttime {arg newstart;
 		starttime = newstart;
