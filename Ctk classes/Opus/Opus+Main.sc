@@ -6,7 +6,6 @@
 			filePath = this.mainPath;
 		});
 		fileName = filePath.fileName;
-		filePath.postln;
 		main = thisProcess.interpreter.executeFile(filePath.absolutePath);
 		main.notNil.if({
 			this.mainFunc = main;

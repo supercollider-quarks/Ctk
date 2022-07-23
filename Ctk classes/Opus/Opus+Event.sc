@@ -1,5 +1,4 @@
 + Opus {
-
 	prLoadEventAtPath {arg filePath;
 		var fileName, process, key, name, splits, pmod, fileKey;
 		fileName = filePath.fileName.splitext;
@@ -7,16 +6,13 @@
 		(fileName.size > 0).if({
 			fileKey = fileName[0].asSymbol;
 		});
-		filePath.postln;
 		thisProcess.interpreter.executeFile(filePath.absolutePath).value(this, fileKey);
 	}
 
 	newEventFromProcess {arg processID, eventID ... args;
 		var event, process;
 		process = processes[processID];
-		process.postln;
 		event = process.value(this, eventID, *args);
-		event.postln;
 		event.notNil.if({
 			event.isKindOf(CtkPMod).if({
 			var key;
@@ -27,7 +23,7 @@
 		^event;
 	}
 
-	createTemplateProcessWithName {arg name, force = false;
+	createTemplateEventWithName {arg name, force = false;
 		var fileStr, file, filePath, pathName;
 		fileStr = "/*
 Event files should contain a Function that takes an instance of Opus and fileKey that is generated for you from the file name. Saving this as ev.scd, will create an event in the Opus:events Dictionary with the key \ev, and give the CtkPMod the same ID.
@@ -50,5 +46,22 @@ Template below. The insance of opus, and an event ID generated from the event fi
 		var filePath;
 		filePath = this.eventPath.absolutePath ++ "/" ++ name ++ ".scd";
 		Document.open(filePath);
+	}
+
+
+	eventForKey {arg key;
+		var opusEvents, foundEvent;
+		opusEvents = this.prGetEvents;
+		foundEvent = opusEvents[key];
+		foundEvent.isNil.if({
+			("Event for \\" ++ key ++ " not found").warn;
+		});
+		^foundEvent;
+	}
+
+	addEventForKey {arg key, event;
+		var opusEvents;
+		opusEvents = this.prGetEvents;
+		opusEvents.add(key -> event);
 	}
 }

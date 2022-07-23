@@ -9,7 +9,6 @@
 	prLoadInitProcessAtPath {arg filePath;
 		var fileName, process, key, name, splits, pmod;
 		fileName = filePath.fileName;
-		filePath.postln;
 		process = thisProcess.interpreter.executeFile(filePath.absolutePath);
 		pmod = process.value(this);
 		pmod.isKindOf(CtkPMod).if({
@@ -18,7 +17,6 @@
 			("The file for the init process in the init folder should be a Function that returns a CtkPMod. Please check the file at "++ filePath.absolutePath ++ " to fix this").warn;
 			this.createTemplateInitProcess(true);
 		});
-		fileName.postln;
 	}
 
 	openInitFile {
@@ -68,7 +66,6 @@ This is a special instance of CtkPMod that will include code that should be run 
 	prLoadKillProcessAtPath {arg filePath;
 		var fileName, process, key, name, splits, pmod;
 		fileName = filePath.fileName;
-		filePath.postln;
 		process = thisProcess.interpreter.executeFile(filePath.absolutePath);
 		pmod = process.value(this);
 		pmod.isKindOf(CtkPMod).if({
@@ -77,7 +74,6 @@ This is a special instance of CtkPMod that will include code that should be run 
 			("The file for the kill process in the init folder should be a Function that returns a CtkPMod. Please check the file at "++ filePath.absolutePath ++ " to fix this").warn;
 			this.createTemplateKillProcess(true);
 		});
-		fileName.postln;
 	}
 
 	createTemplateKillProcess{arg force = false;

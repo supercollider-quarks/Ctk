@@ -2,7 +2,6 @@
 
 	prLoadSynthsAtPath {arg filePath;
 		var fileName, sd, key, name, splits, fileKey;
-		filePath.postln;
 		fileName = filePath.fileName.splitext;
 		fileKey = fileName;
 		(fileName.size > 0).if({
@@ -20,7 +19,6 @@
 				synthNames.add(name -> filePath.absolutePath);
 				synths.add(key -> sd);
 			});
-			fileName.postln;
 	}
 
 	createTemplateSynthWithName {arg name, force = false;
@@ -49,4 +47,21 @@ sd
 		filePath = this.synthPath.absolutePath ++ "/" ++ name ++ ".scd";
 		Document.open(filePath);
 	}
+
+	synthForKey {arg key;
+		var opusSynths, foundSynth;
+		opusSynths = this.prGetSynths;
+		foundSynth = opusSynths[key];
+		foundSynth.isNil.if({
+			("Synth for \\" ++ key ++ " not found").warn;
+		});
+		^foundSynth;
+	}
+
+	addSynthForKey {arg key, synth;
+		var opusSynths;
+		opusSynths = this.prGetSynths;
+		opusSynths.add(key -> synth);
+	}
+
 }

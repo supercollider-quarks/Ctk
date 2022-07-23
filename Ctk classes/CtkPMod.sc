@@ -234,6 +234,7 @@ CtkPMod : CtkObj {
 						this.initPlay;
 						timer.next_(tmp);
 					});
+					server.sync;
 					0.01.wait;
 					hdr.notNil.if({
 						hdr.record;
@@ -770,10 +771,10 @@ CtkPModGUI {
 CtkPEvents : CtkObj {
 	var <id, <amp, lag, init, kill, <erlisting, <events, <releases, <eventDict, <index,
 	<first, <gui, <out, numChannels, scaler, <scalerSynth, <server, cperFunc, <>ampSpec,
-	show, place, pmodWins, timer, clock, <>onEvent, startTimes, <>ampFunc, <>watchedMods;
+	show, place, pmodWins, timer, clock, <>onEvent, <startTimes, <>ampFunc, <>watchedMods;
 	var <recPath, timeStamp = true, <hFormat, <sFormat, updateGUI = true, hdr;
 	var scoreCapture = false, <capturedScore, ready = true, <>scoreCapturePath;
-
+	var stamps;
 
 	*new {arg erlisting, amp = 1, out, init, kill, id, lag = 0.1;
 		^super.newCopyArgs(Dictionary.new, nil, id, amp, lag).initCtkPEvents(erlisting, out, init, kill);
@@ -785,6 +786,7 @@ CtkPEvents : CtkObj {
 		index = 0;
 		watchedMods = [];
 		this.erlisting_(argErlisting);
+		stamps = Array.fill(argErlisting.size, {0.0});
 		init = argInit;
 		init.isKindOf(CtkPMod).if({
 			init.ctkPEvents_(this, false);
@@ -833,6 +835,7 @@ CtkPEvents : CtkObj {
 			)
 		});
 	}
+
 	prepareForRecord {arg numChannels = 1, startIdx = 0, argRecPath, argTimeStamp = true, argHFormat, argSFormat, argUpdateGUI;
 		recPath = argRecPath;
 		timeStamp = argTimeStamp;
@@ -913,8 +916,8 @@ CtkPEvents : CtkObj {
 					(timeStamp && recPath.notNil).if({
 						thisRecPath = recPath ++ (this.now.trunc(0.00001)) ++ "_";
 					});
-					thisEv.play(thisRecPath, timeStamp, hFormat, sFormat, updateGUI);
 					startTimes.add(thisEv.id -> this.now);
+					thisEv.play(thisRecPath, timeStamp, hFormat, sFormat, updateGUI);
 					show.if({
 						{
 							evGui = thisEv.makeGUI(bounds: Rect(400, Window.screenBounds.height - 120 - (80 * place), 1200, 60));

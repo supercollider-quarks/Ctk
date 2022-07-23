@@ -5,16 +5,33 @@
 		this.prLoadAudioOutRoutes(force);
 	}
 
+	inputForKey {arg key;
+		var opusInputs, foundInput;
+		opusInputs = this.prGetInputs;
+		foundInput = opusInputs[key];
+		foundInput.isNil.if({
+			("Input for \\" ++ key ++ " not found").warn;
+		});
+		^foundInput;
+	}
+
+	addInputForKey {arg key, audioBus;
+		var opusInputs;
+		opusInputs = this.prGetInputs;
+		opusInputs.add(key -> audioBus);
+	}
+
 	prLoadAudioInRoutes {arg force = false;
 		var inputs;
 		inputs = thisProcess.interpreter.executeFile(audioInPath.absolutePath);
 		inputs.notNil.if({
-			"Inputs".postln;
+			var opusInputs;
+			opusInputs = this.prGetInputs;
 			inputs.do({arg inputArray;
 				var key, idx, numChannels, audioBus;
 				#key, idx, numChannels = inputArray;
 				audioBus = CtkAudio.play(numChannels, idx + this.server.options.numOutputBusChannels, this.server);
-				this.inputs.add(key -> audioBus);
+				this.addInputForKey(key, audioBus);
 			})
 		}, {
 			force.if({
@@ -30,16 +47,33 @@
 		})
 	}
 
+	outputForKey {arg key;
+		var opusOutputs, foundOutput;
+		opusOutputs = this.prGetOutputs;
+		foundOutput = opusOutputs[key];
+		foundOutput.isNil.if({
+			("Output for \\" ++ key ++ " not found").warn;
+		});
+		^foundOutput;
+	}
+
+	addOutputForKey {arg key, audioBus;
+		var opusOutputs;
+		opusOutputs = this.prGetOutputs;
+		opusOutputs.add(key -> audioBus);
+	}
+
 	prLoadAudioOutRoutes {arg force = false;
 		var outputs;
 		outputs = thisProcess.interpreter.executeFile(audioOutPath.absolutePath);
 		outputs.notNil.if({
-			"Outputs".postln;
+			var opusOutputs;
+			opusOutputs = this.prGetOutputs;
 			outputs.do({arg outputArray;
 				var key, idx, numChannels, audioBus;
 				#key, idx, numChannels = outputArray;
 				audioBus = CtkAudio.play(numChannels, idx, this.server);
-				this.outputs.add(key -> audioBus);
+				this.addOutputForKey(key, audioBus);
 			})
 		}, {
 			force.if({
@@ -66,7 +100,6 @@ A sample set of audio inputs. This should be an array of arrays. Each secondary 
     [\\myInputTwo, 1, 1],
 ];";
 		filePath = this.audioInPath.absolutePath;
-		filePath.postln;
 		^this.prCreateTemplateWithStringAtPath("inputs", filePath, fileStr, force);
 	}
 

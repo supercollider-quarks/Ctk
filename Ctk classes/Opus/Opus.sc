@@ -17,13 +17,13 @@ Opus : CtkObj {
 	classvar baseInitModPath = "/init.scd";
 	classvar baseKillModPath = "/kill.scd";
 
-	var <path, basePath, <audioRoutePath, <synthPath, eventPath, <processesPath, <scoresPath, initPath,
+	var <path, basePath, <audioRoutePath, <synthPath, <eventPath, <processesPath, <scoresPath, initPath,
 	<audioInPath, <audioOutPath, <mainPath;
 	// dictionaries that hold instances of OpusInput, OpusProcess and OpusEvent
-	var <synths, synthNames, <processes, <scores, <events, <>mainFunc, <>pevents, <initModPath, <killModPath;
-	var <>initMod, <>killMod, <id, <inputs, <outputs, <>onReadyFunc;
+	var synths, synthNames, processes, scores, events, <>mainFunc, <>pevents, <initModPath, <killModPath;
+	var <>initMod, <>killMod, <id, inputs, outputs, <>onReadyFunc;
 	var resourcesToFree;
-	var <server, <data, <buffers, createIfMissing;
+	var <server, data, buffers, createIfMissing;
 
 	*new {arg path, server = Server.default, createIfMissing = true;
 		var newOpus;
@@ -103,7 +103,7 @@ Opus : CtkObj {
 		});
 	}
 
-	addBufferForKey {arg buffer, key;
+	addBufferForKey {arg key, buffer;
 		buffers.add(key -> buffer);
 	}
 
@@ -111,7 +111,7 @@ Opus : CtkObj {
 		^buffers[key];
 	}
 
-	freeBufferForKey {arg buffer, key;
+	freeBufferForKey {arg key, buffer;
 		buffers[key].free;
 	}
 
@@ -120,6 +120,19 @@ Opus : CtkObj {
 			value.free;
 		});
 		buffers.removeAll;
+	}
+
+	dataForKey {arg key;
+		var foundData;
+		foundData = data[key];
+		foundData.isNil.if({
+			("Data for \\" ++ key ++ " not found").warn;
+		});
+		^foundData;
+	}
+
+	addDataForKey {arg key, val;
+		data.add(key -> val);
 	}
 
 	*initAtPath {arg path;
@@ -218,4 +231,13 @@ o = Opus(\"" ++ path ++ "\".standardizePath, server: s)
 		^Opus.prCreateTemplateWithStringAtPath(name, filePath, fileStr, force);
 	}
 
+	prGetSynths { ^synths }
+	prGetProcesses { ^processes }
+	prGetSynthNames { ^synthNames }
+	prGetEvents { ^events }
+	prGetInputs { ^inputs }
+	prGetOutputs { ^outputs }
+	prGetData { ^data }
+	prGetBuffers { ^buffers }
+	prGetScores { ^scores }
 }

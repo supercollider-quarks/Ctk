@@ -3,7 +3,6 @@
 	prLoadProcessAtPath {arg filePath;
 		var fileName, process, key, name, splits, pmod;
 		fileName = filePath.fileName;
-		filePath.postln;
 		process = thisProcess.interpreter.executeFile(filePath.absolutePath);
 		pmod = process.value(this, fileName);
 		pmod.isKindOf(CtkPMod).if({
@@ -12,12 +11,12 @@
 		}, {
 			("Files in the processes folder should be a Function that returns a CtkPMod. Please check the file at "++ filePath.absolutePath ++ " to fix this").warn;
 		});
-		fileName.postln;
 	}
 
 	argsForProcessAtKey {arg key;
-		var process, returnArray;
+		var processes, process, returnArray;
 		returnArray = [];
+		processes = this.prGetProcesses;
 		process = processes[key];
 		process.notNil.if({
 			returnArray = process.def.argNames;
@@ -66,4 +65,10 @@ Template below. The insance of opus, and an event ID generated from the event fi
 			this.prLoadProcessAtPath(pathName);
 		});
 		}
+
+	openProcessFile {arg name;
+		var filePath;
+		filePath = this.processesPath.absolutePath ++ "/" ++ name ++ ".scd";
+		Document.open(filePath);
+	}
 }
