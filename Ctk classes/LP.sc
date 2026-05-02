@@ -1326,8 +1326,8 @@ LPKeySig : LPEvent {
 	}
 	
 LPTempo : LPEvent {
-	var <>beat, <>tempo, <>string;
 	
+	var <>tempo, <>string; // <>beat from LPEvent
 	*new {arg beat, tempo, string;
 		^super.new.initLPTempo(beat, tempo, string);
 		}

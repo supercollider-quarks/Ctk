@@ -2740,7 +2740,7 @@ CtkEvent : CtkObj {
 	classvar <envsd;
 	var <starttime, <>condition, <function, amp, <server, addAction, target, isRecording = false;
 	var isPlaying = false, isReleasing = false, releaseTime = 0.0, <timer, clock,
-		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, envbus, playinit, notes,
+		<envbus, inc, <group, <>for = 0, <>by = 1, envsynth, playinit, notes,
 		score, <endtime, endtimeud, noFunc = false, eventDur;
 
 	*new {arg starttime = 0.0, condition, amp = 1, function, addAction = 0, target = 1, server;
