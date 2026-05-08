@@ -1097,7 +1097,7 @@ XMLKey {
 /* user probably won't see XMLMeasures. XMLPart will create these */
 XMLMeasure : XMLMusicObj {
 	// no need for notes anymore... they are stored in voices' arrays
-	var <measureNumber, <meter, <clef, <key, <firstBeat,/*<notes,*/<>divisions = 240, <key, <time,
+	var <measureNumber, <meter, <clef, <key, <firstBeat,/*<notes,*/<>divisions = 240, <time,
 		<lastBeat, <numBeats, <>voiceNum = 1, <>voices;
 	
 	*new {arg measureNumber, meter, clef, key, firstBeat = 1 ... notes;

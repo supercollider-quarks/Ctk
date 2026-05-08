@@ -419,7 +419,7 @@ GuidoClef : GuidoEvent {
 // the spanner symbol (e.g. \tie)
 
 GuidoSpanner : GuidoEvent {
-	var <>arrGuidoNotes, <>beat, <>spanner;
+	var <>arrGuidoNotes, <>spanner; // <>beat from GuidoEvent
 
 	*new {arg arrGuidoNotes, spanner;
 		^super.newCopyArgs(arrGuidoNotes, spanner);
